@@ -131,7 +131,16 @@ to check completion status.`,
               "src/index.ts",
               sceneId,
               outputFile,
-              "--log=verbose"
+              "--log=verbose",
+              // Scenes commonly load Google Fonts at render time (see
+              // DIRECTOR_SYSTEM_PROMPT.md). Some sandboxed/CI network setups
+              // terminate TLS via a local egress proxy that Chrome Headless
+              // Shell won't trust for those font requests even though the
+              // certificate chain is otherwise valid, causing every such
+              // render to fail with ERR_CERT_AUTHORITY_INVALID. Chromium
+              // itself is still enforcing HTTPS for the actual connection,
+              // so this only affects certificate *trust*, not encryption.
+              "--ignore-certificate-errors",
             ],
             {
               cwd: REMOTION_DIR,

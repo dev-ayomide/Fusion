@@ -1,14 +1,20 @@
-import { remotionAgent } from "../src/agents/remotion-agent.js";
 import { readFile } from "fs/promises";
 import { fileURLToPath } from "url";
 import { dirname, resolve, join } from "path";
-import { renderStates } from "../src/lib/render-state.js";
 import { config } from "dotenv";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-config({ path: resolve(__dirname, '../.env') }); // Load server .env
+// Must run before importing remotion-agent.js: that module (via gateway.js)
+// reads provider API keys/model IDs from process.env at import time, so
+// loading .env after the static import (as this script previously did) meant
+// values here were silently ignored in favor of whatever was already in the
+// ambient shell environment.
+config({ path: resolve(__dirname, "../.env") });
+
+const { remotionAgent } = await import("../src/agents/remotion-agent.js");
+const { renderStates } = await import("../src/lib/render-state.js");
 
 async function run() {
   try {

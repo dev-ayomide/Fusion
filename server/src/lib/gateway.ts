@@ -3,6 +3,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGroq } from "@ai-sdk/groq";
 import { createVertex } from "@ai-sdk/google-vertex";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createMistral } from "@ai-sdk/mistral";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
 // ==============================================================================
@@ -51,10 +52,29 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 // Pros: Easy setup, works perfectly with `gen-lang-client` projects
 // Cons: Rate limits on free tier
 const google = createGoogleGenerativeAI({
-  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
-const Agent_model = process.env.AGENT_MODEL || "gemini-2.5-pro";
-export const model = google(Agent_model);
+
+// OPTION 7: Mistral AI (direct API key) — DEFAULT PROVIDER
+// Set MISTRAL_API_KEY in your .env file
+// Pros: Strong tool-calling support, generous rate limits, no vision on text models
+// Cons: mistral-large-latest / mistral-small-latest do not accept image input
+//       (set AGENT_SUPPORTS_VISION=false, or switch to pixtral-large-latest for vision)
+const mistral = createMistral({
+  apiKey: process.env.MISTRAL_API_KEY,
+});
+
+// Smaller/cheaper Mistral model, handy for lighter-weight or higher-throughput tasks
+export const mistralSmall = mistral("mistral-small-latest");
+
+// AI_PROVIDER lets you flip providers without touching code — defaults to Mistral.
+// Set AI_PROVIDER=google (+ AGENT_MODEL=gemini-2.5-flash, say) to fall back to Gemini,
+// e.g. while a Mistral account/billing issue is blocking requests. See PR notes.
+const provider = process.env.AI_PROVIDER || "mistral";
+export const model =
+  provider === "google"
+    ? google(process.env.AGENT_MODEL || "gemini-2.5-flash")
+    : mistral(process.env.AGENT_MODEL || "mistral-large-latest");
 
 
 // OPTION 6: OpenRouter (free models, unified API gateway)

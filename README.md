@@ -37,12 +37,24 @@ npm install
 ```
 
 ### Set Up Environment Variables
-Create a `.env` file inside the `server/` directory (`server/.env`) and add your API keys:
+
+**Server** — create `server/.env` (see `server/.env.example`) with at least one AI provider key:
 ```ini
-AI_GATEWAY_API_KEY=your_ai_gateway_api_key
-GROQ_API_KEY=your_groq_api_key
-GOOGLE_GENERATIVE_AI_API_KEY=your_google_generative_ai_api_key
-ANTHROPIC_API_KEY=your_anthropic_api_key
+# Pick one provider (see server/src/lib/gateway.ts) — Mistral is the default:
+MISTRAL_API_KEY=your_mistral_api_key
+# AI_GATEWAY_API_KEY=your_ai_gateway_api_key
+# GROQ_API_KEY=your_groq_api_key
+# GOOGLE_GENERATIVE_AI_API_KEY=your_google_generative_ai_api_key
+# ANTHROPIC_API_KEY=your_anthropic_api_key
+
+USE_LOCAL_RENDER=true
+```
+
+**Client** — create `client/.env` (see `client/.env.example`). This is required — the Vite dev
+server refuses to start without `VITE_API_PROXY_TARGET`:
+```ini
+VITE_API_PROXY_TARGET=http://localhost:3001
+VITE_ENABLE_PAYWALL=false
 ```
 
 ### Run the Application
