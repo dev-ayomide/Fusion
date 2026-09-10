@@ -1,11 +1,37 @@
 import { motion } from "framer-motion";
+import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface GeneratingAnimationProps {
   sceneTitle?: string;
   message?: string;
+  /** When set, shows an error state with this message instead of the spinner. */
+  errorMessage?: string;
+  onRetry?: () => void;
 }
 
-const GeneratingAnimation = ({ sceneTitle, message }: GeneratingAnimationProps) => {
+const GeneratingAnimation = ({ sceneTitle, message, errorMessage, onRetry }: GeneratingAnimationProps) => {
+  if (errorMessage) {
+    return (
+      <div className="flex items-center justify-center h-full bg-card relative overflow-hidden">
+        <div className="text-center z-10 max-w-sm px-6">
+          <div className="mx-auto w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+          </div>
+          <p className="text-sm font-medium text-foreground">
+            Generation failed{sceneTitle ? ` for "${sceneTitle}"` : ""}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1.5 break-words">{errorMessage}</p>
+          {onRetry && (
+            <Button size="sm" variant="outline" className="mt-4" onClick={onRetry}>
+              Retry
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-center h-full bg-card relative overflow-hidden">
       {/* Subtle ambient gradient animation */}

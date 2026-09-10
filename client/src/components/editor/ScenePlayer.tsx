@@ -21,6 +21,9 @@ interface ScenePlayerProps {
   onNextScene?: () => void;
   /** Message shown during generating stage */
   generatingMessage?: string;
+  /** When set during the generating stage, shows an error + retry instead of the spinner. */
+  errorMessage?: string;
+  onRetry?: () => void;
   sceneTitle?: string;
   /** Ref forwarded for the native <video> element (rendered stage) */
   videoRef?: React.RefObject<HTMLVideoElement>;
@@ -50,6 +53,8 @@ const ScenePlayer = ({
   onTogglePlay,
   onNextScene,
   generatingMessage,
+  errorMessage,
+  onRetry,
   videoRef,
   isRefining = false,
   className,
@@ -66,7 +71,12 @@ const ScenePlayer = ({
             transition={{ duration: 0.2 }}
             className="w-full h-full"
           >
-            <GeneratingAnimation sceneTitle={sceneTitle} message={generatingMessage} />
+            <GeneratingAnimation
+              sceneTitle={sceneTitle}
+              message={generatingMessage}
+              errorMessage={errorMessage}
+              onRetry={onRetry}
+            />
           </motion.div>
         ) : stage === "rendered" && videoUrl ? (
           <motion.div
