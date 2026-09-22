@@ -38,13 +38,12 @@ npm install
 
 ### Set Up Environment Variables
 
-**Server** — create `server/.env` (see `server/.env.example`) with at least one AI provider key:
+**Server** — create `server/.env` (see `server/.env.example`) with an AI provider key. The active
+provider is whichever one is uncommented in `server/src/lib/gateway.ts` — Google AI Studio by default:
 ```ini
-# Pick one provider (see server/src/lib/gateway.ts) — Mistral is the default:
-MISTRAL_API_KEY=your_mistral_api_key
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_generative_ai_api_key
 # AI_GATEWAY_API_KEY=your_ai_gateway_api_key
 # GROQ_API_KEY=your_groq_api_key
-# GOOGLE_GENERATIVE_AI_API_KEY=your_google_generative_ai_api_key
 # ANTHROPIC_API_KEY=your_anthropic_api_key
 
 USE_LOCAL_RENDER=true

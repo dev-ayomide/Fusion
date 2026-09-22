@@ -13,7 +13,6 @@
     "@ai-sdk/anthropic": "^3.0.63",
     "@ai-sdk/google": "^3.0.52",
     "@ai-sdk/google-vertex": "^4.0.93",
-    "@ai-sdk/mistral": "^3.0.64",
     "@google/genai": "^1.46.0",
     "@openrouter/ai-sdk-provider": "^2.8.0",
     "@remotion/lambda": "^4.0.440",

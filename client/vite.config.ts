@@ -73,7 +73,7 @@ export default defineConfig(({ mode, command }) => {
 
   return {
     server: {
-    host: "0.0.0.0",
+    host: "::",
     port: 8080,
     hmr: {
       overlay: false,

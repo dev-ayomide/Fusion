@@ -113,9 +113,9 @@ Scenes should import from `@/components` (path alias configured).
 
 ## Environment Variables
 
-- **Server** (`server/.env`, never commit): at least one AI provider key — see `server/src/lib/gateway.ts`
-  for the full list. Default provider is Mistral (`MISTRAL_API_KEY`); `AI_PROVIDER=google` +
-  `GOOGLE_GENERATIVE_AI_API_KEY` is a built-in fallback.
+- **Server** (`server/.env`, never commit): an AI provider key matching whichever provider is
+  uncommented in `server/src/lib/gateway.ts` — Google AI Studio (`GOOGLE_GENERATIVE_AI_API_KEY`)
+  by default. `AGENT_MODEL` overrides the model id.
 - **Client** (`client/.env`, never commit): `VITE_API_PROXY_TARGET` is **required** — the Vite dev
   server throws on startup without it (see `client/vite.config.ts`).
 
