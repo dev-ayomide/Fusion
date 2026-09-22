@@ -27,6 +27,7 @@ interface UseAgentReturn {
   latestPreviewUrl: string | null;
   latestPreviewSceneId: string | null;
   latestVideoUrl: string | null;
+  renderError: { sceneId: string; message: string } | null;
 }
 
 function makeChat(
@@ -52,6 +53,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     string | null
   >(null);
   const [latestVideoUrl, setLatestVideoUrl] = useState<string | null>(null);
+  const [renderError, setRenderError] = useState<{ sceneId: string; message: string } | null>(null);
   const stepIdRef = useRef(0);
   const startTimeRef = useRef<number>(0);
   const renderPollIntervalsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
@@ -110,7 +112,10 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
         const response = await fetch(
           `/api/agent/render-status/${renderSceneId}`,
         );
-        const data = (await response.json()) as { status: string };
+        const data = (await response.json()) as {
+          status: string;
+          error?: string;
+        };
 
         if (data.status === "complete") {
           setLatestVideoUrl(videoUrl);
@@ -118,6 +123,17 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
           renderPollIntervalsRef.current.delete(renderSceneId);
           onRenderCompleteRef.current?.(renderSceneId, videoUrl);
           console.log(`[useAgent] ✅ Render complete for ${renderSceneId}`);
+        } else if (data.status === "failed") {
+          // Background render died (compile error, timeout, etc.) — without this,
+          // the UI just keeps showing the live code preview forever with no
+          // indication the actual video render never finished.
+          clearInterval(pollInterval);
+          renderPollIntervalsRef.current.delete(renderSceneId);
+          setRenderError({
+            sceneId: renderSceneId,
+            message: data.error || "Render failed",
+          });
+          console.error(`[useAgent] ❌ Render failed for ${renderSceneId}: ${data.error}`);
         }
       } catch (err) {
         console.error(`[useAgent] Poll error for ${renderSceneId}:`, err);
@@ -279,6 +295,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
       setLatestPreviewUrl(null);
       setLatestPreviewSceneId(null);
       setLatestVideoUrl(null);
+      setRenderError(null);
 
       // Immediate feedback so the UI responds within one frame
       setSteps([
@@ -310,6 +327,7 @@ export function useAgent(options: UseAgentOptions = {}): UseAgentReturn {
     latestPreviewUrl,
     latestPreviewSceneId,
     latestVideoUrl,
+    renderError,
   };
 }
 

@@ -21,6 +21,9 @@ interface MainPreviewProps {
   /** True when a refinement (or re-render) is in progress */
   isRefining?: boolean;
   generatingMessage?: string;
+  /** When set while generating, shows an error + retry instead of the spinner. */
+  errorMessage?: string;
+  onRetry?: () => void;
   videoRef?: React.RefObject<HTMLVideoElement>;
   // Per-scene extras for ScenePlayer controls
   sceneIndex?: number;
@@ -52,6 +55,8 @@ const MainPreview = ({
   refinementPreviewReady = false,
   isRefining = false,
   generatingMessage,
+  errorMessage,
+  onRetry,
   videoRef,
   sceneIndex,
   sceneCount,
@@ -131,7 +136,12 @@ const MainPreview = ({
 
   // ── Single scene view ─────────────────────────────────────────────────────────
   let stage: PlayerStage = "generating";
-  if (isQueued) {
+  if (errorMessage) {
+    // A failure (agent call or background render) always wins — otherwise a
+    // completed-but-videoless scene silently falls through to the live code
+    // preview (or nothing) with no indication the render never finished.
+    stage = "generating";
+  } else if (isQueued) {
     stage = "generating";
   } else if (isGenerating && refinementPreviewReady && previewUrl) {
     // Refinement in progress AND triggerPreview has fired with updated code:
@@ -191,6 +201,8 @@ const MainPreview = ({
         onTogglePlay={onTogglePlay}
         onNextScene={onNextScene}
         generatingMessage={isQueued ? "Queued..." : generatingMessage}
+        errorMessage={isQueued ? undefined : errorMessage}
+        onRetry={onRetry}
         videoRef={videoRef}
         isRefining={isRefining}
       />

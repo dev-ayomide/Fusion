@@ -158,6 +158,7 @@ const EditorPage = () => {
     latestPreviewUrl,
     latestPreviewSceneId,
     latestVideoUrl,
+    renderError,
   } = useAgent({
     sceneId: currentScene?.id?.toString() || "unknown",
     sceneContext: currentScene ? (currentScene as unknown as Record<string, unknown>) : undefined,
@@ -756,6 +757,28 @@ Requirements:
   const generatingMessage =
     isGenerating && generatingStep ? generatingStep.label : undefined;
 
+  // Surface agent/AI-call failures instead of leaving the scene spinning forever
+  // with no feedback (e.g. AI provider quota errors) — see useAgent's `error`.
+  const isDisplayedSceneProcessing =
+    typeof selectedScene === "number" && selectedScene === processingSceneRef.current;
+  const streamErrorMessage =
+    isGenerating && error && isDisplayedSceneProcessing ? error.message : undefined;
+  // Background render failures (compile error, timeout, etc.) surface after the
+  // agent's chat step already finished, so the scene may already read "complete"
+  // with no videoUrl — without this it silently falls back to the live code
+  // preview (or nothing) instead of telling the user the render never finished.
+  const backgroundRenderErrorMessage =
+    displayScene && renderError?.sceneId === String(displayScene.id)
+      ? renderError.message
+      : undefined;
+  const displayErrorMessage = streamErrorMessage || backgroundRenderErrorMessage;
+
+  const handleRetryCurrentScene = useCallback(() => {
+    if (typeof selectedScene === "number") {
+      startProcessingScene(selectedScene);
+    }
+  }, [selectedScene, startProcessingScene]);
+
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
       {/* Header */}
@@ -904,6 +927,8 @@ Requirements:
                 previewSceneId={displayPreviewSceneId}
                 videoUrl={displayVideoUrl}
                 generatingMessage={generatingMessage}
+                errorMessage={displayErrorMessage}
+                onRetry={handleRetryCurrentScene}
                 videoRef={videoRef}
                 sceneIndex={typeof selectedScene === "number" ? selectedScene : undefined}
                 sceneCount={scenes.length}
