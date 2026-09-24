@@ -232,15 +232,22 @@ async function main() {
   await page.keyboard.press("Control+Shift+z");
   await pause(900);
 
-  await caption("16 · Export: every frame rendered in the browser by the same renderer");
+  await caption("16 · Export: every frame rendered in-browser by the preview renderer (sped up in this recording)");
   await click(page.getByTestId("export-open"));
   await pause(500);
   await click(page.getByTestId("export-dialog").getByRole("button", { name: "MP4", exact: true }));
   await click(page.getByTestId("export-dialog").getByRole("button", { name: "1080p" }));
   await click(page.getByTestId("export-run"));
+  mark("EXPORT_START");
   await page.getByTestId("export-info").waitFor({ timeout: 600_000 });
-  await caption("Done — a 1080p MP4, and a document you can keep editing");
-  await pause(6000);
+  mark("EXPORT_END");
+  await caption("Done — a 1080p MP4 rendered frame-perfect");
+  await pause(3500);
+  await click(page.getByTestId("export-dialog").getByRole("button", { name: "Close", exact: true }));
+  await caption("…and the project stays a live, editable document");
+  await page.evaluate(() => (window as unknown as { fusion: { time: { set: (t: number) => void } } }).fusion.time.set(0));
+  await play(7600);
+  await pause(1500);
 
   const info = await page.evaluate(async () => {
     const r = (window as unknown as { __lastExport: { blob: Blob; codec: string; width: number; height: number; frames: number; ms: number; ext: string } }).__lastExport;

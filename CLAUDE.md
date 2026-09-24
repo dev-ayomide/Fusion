@@ -47,6 +47,10 @@ npm run render     # Render a specific composition
 
 ## Architecture
 
+### Fusion Motion (`motion/`)
+Standalone, JSON-driven motion editor (not in the root workspaces, no Remotion). See `motion/README.md`
+and `motion/docs/FMD-SPEC.md`. Run from `motion/`: `npm run dev` (port 5180), `npm test`, `npm run e2e`.
+
 ### Monorepo Structure
 - **client/**: Vite + React frontend with TypeScript
   - Uses shadcn/ui component library (Radix UI primitives)
