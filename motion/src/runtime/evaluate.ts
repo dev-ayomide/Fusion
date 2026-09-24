@@ -304,7 +304,7 @@ function evalClones(L: ClonerLayer, local: number, props: Record<string, number>
       x = (i - (n - 1) / 2) * gap;
     }
     let s = 1, o = 1;
-    const rz = 0;
+    const rz = L.mode === "radial" && L.orient ? ((i / n) * TAU + spin) / DEG - 90 : 0;
     if (rv && revealEase) {
       const t0 = (rv.at ?? 0) + (delay ? delay.step * i : 0);
       const p = revealEase(clamp01((local - t0) / rv.dur));

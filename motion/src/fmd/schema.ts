@@ -133,6 +133,8 @@ export const ClonerLayer = z.object({
   gap: z.number().optional(),
   spin: z.number().optional(),
   billboard: z.boolean().optional(),
+  /** radial only: turn each clone to point away from the centre (ticks, petals) */
+  orient: z.boolean().optional(),
   child: z.object({
     kind: z.enum(["shape", "image", "text"]),
     shape: z.enum(["rect", "ellipse"]).optional(),

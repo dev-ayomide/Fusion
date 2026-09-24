@@ -26,8 +26,8 @@ export function launchTemplate(): Doc {
     { id: "bg", type: "gradient", kind: "radial", colors: ["$glow", "$paper"], noise: 0.06 },
     { id: "shot", type: "camera", fov: 35, pos: [0, 0, 1713], beh: [{ id: "push", use: "dolly", at: 0, dur: 6, to: 1560, ease: "inOut" }] },
     {
-      id: "ring", type: "cloner", mode: "radial", n: 10, r: 420, in: 0.8, pos: [-420, 0, 0], rot: [68, 0, 0], depth: true, billboard: true,
-      child: { kind: "shape", shape: "ellipse", w: 64, colors: ["$accent", "$mint", "$ink"] },
+      id: "ring", type: "cloner", mode: "radial", n: 10, r: 360, in: 0.8, pos: [-420, 0, 0], rot: [68, 0, 0], depth: true, billboard: true,
+      child: { kind: "shape", shape: "ellipse", w: 52, colors: ["$accent", "$mint", "$ink"] },
       reveal: { dur: 0.7, bounce: 0.5 }, fx: [{ id: "lag", type: "delay", step: 0.05 }, { id: "drift", type: "noise", amp: [10, 10, 30], freq: 0.4 }],
       keys: { spin: [[0, 0], [5.2, 120]] },
     },
@@ -85,7 +85,7 @@ export function logoTemplate(): Doc {
   d.layers = [
     { id: "bg", type: "gradient", kind: "radial", colors: ["$deep", "$paper"], noise: 0.08 },
     { id: "shot", type: "camera", fov: 35, beh: [{ id: "push", use: "dolly", at: 0, dur: 5, to: 1500, ease: "out" }] },
-    { id: "halo", type: "cloner", mode: "radial", n: 24, r: 260, pos: [0, 60, 0], child: { kind: "shape", shape: "rect", w: 10, h: 44, radius: 5, fill: "$accent" }, reveal: { dur: 0.5, bounce: 0.3 }, fx: [{ id: "lag", type: "delay", step: 0.025 }], keys: { spin: [[0, 0], [5, 60]] }, beh: [{ id: "breathe", use: "pulse", at: 1.2, amp: 0.04, period: 1.6 }] },
+    { id: "halo", type: "cloner", mode: "radial", n: 24, r: 260, orient: true, pos: [0, 60, 0], child: { kind: "shape", shape: "rect", w: 10, h: 44, radius: 5, fill: "$accent" }, reveal: { dur: 0.5, bounce: 0.3 }, fx: [{ id: "lag", type: "delay", step: 0.025 }], keys: { spin: [[0, 0], [5, 60]] }, beh: [{ id: "breathe", use: "pulse", at: 1.2, amp: 0.04, period: 1.6 }] },
     { id: "mark", type: "shape", shape: "rect", w: 190, h: 190, radius: 48, fill: "$accent", pos: [0, 60, 0], rot: [0, 0, 45], in: 0.4, beh: [{ id: "in", use: "spinIn", at: 0, dur: 1.1, deg: -180, bounce: 0.3 }] },
     { id: "core", type: "shape", shape: "ellipse", w: 80, h: 80, fill: "$paper", parent: "mark", in: 0.9, beh: [{ id: "in", use: "popIn", at: 0, dur: 0.6, bounce: 0.5 }] },
     { id: "word", type: "text", text: "verdant", size: 120, weight: 700, color: "$ink", pos: [0, -250, 0], in: 1.5, tracking: 4, anim: [{ id: "reveal", sel: { by: "char", shape: "smooth", start: 0, end: 0.3, offset: [[0, -0.3], [1.1, 1]] }, add: { pos: [0, -40, 0], opacity: -1 } }] },

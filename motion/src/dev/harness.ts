@@ -1,0 +1,21 @@
+import "../fonts";
+import { TEMPLATES } from "../templates";
+import { evaluate } from "../runtime/evaluate";
+import { Stage } from "../render/stage";
+import { fontsReady, ensureFont, onFontsChanged } from "../render/glyphs";
+import { onAssetsChanged } from "../assets/assets";
+
+const q = new URLSearchParams(location.search);
+const tpl = TEMPLATES.find((t) => t.id === (q.get("t") ?? "launch"))!;
+const doc = tpl.make();
+const time = Number(q.get("time") ?? 3);
+const w = Number(q.get("w") ?? 1280), h = Math.round((w * doc.comp.h) / doc.comp.w);
+const canvas = document.getElementById("c") as HTMLCanvasElement;
+const stage = new Stage(canvas, { preserveDrawingBuffer: true });
+stage.setSize(w, h, 1);
+const draw = () => { stage.sync(doc, evaluate(doc, time)); stage.render(); };
+for (const L of doc.layers) if (L.type === "text") ensureFont(L.font ?? doc.brand.font, L.weight ?? 600);
+onFontsChanged(draw);
+onAssetsChanged(draw);
+fontsReady().then(() => setTimeout(() => { draw(); (window as unknown as { ready: boolean }).ready = true; }, 300));
+draw();
