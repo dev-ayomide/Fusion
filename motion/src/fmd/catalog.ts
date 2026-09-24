@@ -172,7 +172,7 @@ export const TYPE_CHANNELS: Partial<Record<LayerType, string[]>> = {
   camera: ["fov"],
   group: ["clip.w", "clip.h", "clip.radius"],
   gradient: ["angle", "noise"],
-  sky: ["clouds", "drift", "sun", "hillHeight"],
+  sky: ["clouds", "drift", "sun", "hillHeight", "stars"],
   adjust: ["blur", "exposure", "contrast", "saturation", "fade"],
 };
 /** Types that are backgrounds or pure effects: no transform channels. */

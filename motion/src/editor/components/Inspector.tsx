@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
-import type { Doc, Layer, TextLayer, ShapeLayer, ImageLayer, DeviceLayer, ClonerLayer, GradientLayer, CameraLayer, Beh } from "../../fmd/schema";
+import { MATERIALS, type Doc, type Layer, type TextLayer, type ShapeLayer, type ImageLayer, type DeviceLayer, type ClonerLayer, type GradientLayer, type CameraLayer, type Beh, type HtmlLayer, type PathLayer, type MeshLayer, type SkyLayer, type AdjustLayer } from "../../fmd/schema";
 import { applyTxn, type Op } from "../../fmd/ops";
 import { CATALOG, type BehSpec, type BehGroup } from "../../fmd/catalog";
 import { EASE_NAMES } from "../../runtime/ease";
 import { exprError } from "../../runtime/expr";
 import { activeCamera, behDur, trackValue } from "../../runtime/evaluate";
 import { FONT_NAMES } from "../../render/glyphs";
+import { ENV_NAMES } from "../../render/env";
 import { importAsset, assetUrl } from "../../assets/assets";
 import { useStore, useDisplayDoc } from "../store";
 import { playhead } from "../playhead";
@@ -382,7 +383,7 @@ function LayerInspector({ doc, L, pro }: { doc: Doc; L: Layer; pro: boolean }) {
         </Section>
       )}
 
-      {L.type !== "gradient" && (
+      {!["gradient", "sky", "adjust"].includes(L.type) && (
         <Section title="Transform">
           {P("pos.x", "Position X")}
           {P("pos.y", "Position Y")}
@@ -513,6 +514,81 @@ function LayerInspector({ doc, L, pro }: { doc: Doc; L: Layer; pro: boolean }) {
           {P("noise", "Film grain", 0.01, { min: 0, max: 1 })}
         </Section>
       )}
+
+      {L.type === "html" && (
+        <Section title="UI card">
+          {P("w", "Width", 2, { min: 1 })}
+          {P("h", "Height", 2, { min: 1 })}
+          {P("radius", "Corner radius", 1, { min: 0 })}
+          {Object.keys((L as HtmlLayer).vars ?? {}).map((k) => <div key={k}>{P(`vars.${k}`, `{{${k}}}`, 0.1)}</div>)}
+          {pro && (
+            <textarea aria-label="HTML" className="mono" rows={6} defaultValue={(L as HtmlLayer).html} key={(L as HtmlLayer).html}
+              onBlur={(e) => e.target.value !== (L as HtmlLayer).html && set("html", e.target.value, `Edited ${id} markup`)} />
+          )}
+          <div className="hint">HTML + CSS, rasterised crisply. <span className="mono">{"{{name}}"}</span> reads a keyable number — key it for rolling counters.</div>
+        </Section>
+      )}
+
+      {L.type === "path" && (
+        <Section title="Stroke">
+          <Field label="Colour"><ColorField doc={doc} value={(L as PathLayer).stroke ?? "#ffffff"} onChange={(v) => v && set("stroke", v)} /></Field>
+          {P("width", "Width", 0.5, { min: 0.5 })}
+          {P("trimStart", "Trim start", 0.01, { min: 0, max: 1 })}
+          {P("trimEnd", "Trim end", 0.01, { min: 0, max: 1 })}
+          {P("glow", "Glow", 0.01, { min: 0, max: 1 })}
+          <div className="hint">Key Trim end 0 → 1 to draw the line on (AE: Trim Paths).</div>
+        </Section>
+      )}
+
+      {L.type === "mesh" && (
+        <Section title="3D object">
+          <Field label="Shape">
+            <select value={(L as MeshLayer).geom} onChange={(e) => set("geom", e.target.value)} aria-label="3D shape">
+              {["sphere", "box", "torus", "ring", "cylinder", "capsule", "cone", "coin", "balloon", "pear", "slab"].map((g) => <option key={g}>{g}</option>)}
+            </select>
+          </Field>
+          <Field label="Material">
+            <select value={(L as MeshLayer).material ?? "plastic"} onChange={(e) => set("material", e.target.value)} aria-label="Material">
+              {MATERIALS.map((m) => <option key={m}>{m}</option>)}
+            </select>
+          </Field>
+          <Field label="Colour"><ColorField doc={doc} value={(L as MeshLayer).color ?? "#dddddd"} onChange={(v) => v && set("color", v)} /></Field>
+          {(L as MeshLayer).geom !== "slab" && P("size", "Size", 2, { min: 1 })}
+          <Field label="Lighting">
+            <select value={doc.comp.env ?? "studio"} onChange={(e) => commit([{ op: "set", path: "comp/env", value: e.target.value }], `Lighting → ${e.target.value}`)} aria-label="Environment lighting">
+              {ENV_NAMES.map((n) => <option key={n}>{n}</option>)}
+            </select>
+          </Field>
+        </Section>
+      )}
+
+      {L.type === "sky" && (
+        <Section title="Sky">
+          <Field label="Zenith"><ColorField doc={doc} value={(L as SkyLayer).top ?? "#2f7fe0"} onChange={(v) => v && set("top", v)} /></Field>
+          <Field label="Horizon"><ColorField doc={doc} value={(L as SkyLayer).horizon ?? "#bcdcf5"} onChange={(v) => v && set("horizon", v)} /></Field>
+          {P("clouds", "Clouds", 0.01, { min: 0, max: 1 })}
+          {P("sun", "Sun", 0.01, { min: 0, max: 1 })}
+          {P("drift", "Cloud drift", 0.1)}
+          {P("stars", "Stars", 0.01, { min: 0, max: 1 })}
+          <Field label="Mountains"><Seg value={(L as SkyLayer).mountains ? "on" : "off"} options={[{ v: "off", l: "Off" }, { v: "on", l: "On" }]} onChange={(v) => set("mountains", v === "on")} /></Field>
+          <Field label="Hills"><ColorField doc={doc} value={(L as SkyLayer).hills} allowNone onChange={(v) => (v ? set("hills", v) : commit([{ op: "del", path: `${id}/hills` }], "No hills"))} /></Field>
+          <Field label="Grass"><ColorField doc={doc} value={(L as SkyLayer).grass} allowNone onChange={(v) => (v ? set("grass", v) : commit([{ op: "del", path: `${id}/grass` }], "No grass"))} /></Field>
+        </Section>
+      )}
+
+      {L.type === "adjust" && (
+        <Section title="Adjustment">
+          {P("exposure", "Exposure", 0.05, { min: -4, max: 4 })}
+          {P("contrast", "Contrast", 0.01, { min: -1, max: 1 })}
+          {P("saturation", "Saturation", 0.01, { min: -1, max: 1 })}
+          {P("fade", "Fade", 0.01, { min: 0, max: 1 })}
+          <Field label="Fade to"><ColorField doc={doc} value={(L as AdjustLayer).fadeColor ?? "#ffffff"} onChange={(v) => v && set("fadeColor", v)} /></Field>
+          <Field label="Cloud dissolve"><Seg value={(L as AdjustLayer).dissolve ? "on" : "off"} options={[{ v: "off", l: "Even" }, { v: "on", l: "Clouds" }]} onChange={(v) => set("dissolve", v === "on" ? 1 : 0)} /></Field>
+          <div className="hint">Affects every layer below it. Key Fade for white-outs, dips to black and fog transitions.</div>
+        </Section>
+      )}
+
+      {pro && !["camera", "gradient", "sky", "adjust", "group"].includes(L.type) && <EffectControls doc={doc} L={L} P={P} set={set} />}
 
       {L.type !== "gradient" && (
         <Section title="Animation" right={pro ? <button className="btn sm ghost" onClick={() => setAdding(!adding)} aria-expanded={adding}><Icon name="plus" sm /> Add</button> : undefined}>
@@ -701,3 +777,47 @@ export function Inspector() {
   return <LayerInspector key={L.id} doc={doc} L={L as Layer} pro={mode === "pro"} />;
 }
 export type { CameraLayer };
+
+/* ------------------------ effect controls (AE) ------------------------ */
+const SURFACE = new Set(["shape", "image", "html", "device"]);
+function EffectControls({ doc, L, P, set }: { doc: Doc; L: Layer; P: (ch: string, label: string, step?: number, extra?: Partial<{ min: number; max: number; precision: number }>) => ReactNode; set: (k: string, v: unknown, intent?: string) => void }) {
+  const id = L.id;
+  const surf = L as Layer & { shadow?: object; glass?: object };
+  const toggle = (k: "shadow" | "glass", on: boolean, value: object) => (on ? set(k, value, `${id}: ${k} on`) : commit([{ op: "del", path: `${id}/${k}` }], `${id}: ${k} off`));
+  return (
+    <Section title="Effects">
+      {P("blur", "Gaussian blur", 0.5, { min: 0 })}
+      {doc.comp.motionBlur && (
+        <Field label="Motion blur">
+          <Seg value={L.motionBlur === false ? "off" : "on"} options={[{ v: "on", l: "On" }, { v: "off", l: "Off" }]} onChange={(v) => set("motionBlur", v === "on", `${id}: motion blur ${v}`)} />
+        </Field>
+      )}
+      {SURFACE.has(L.type) && (
+        <>
+          <Field label="Drop shadow">
+            <Seg value={surf.shadow ? "on" : "off"} options={[{ v: "off", l: "Off" }, { v: "on", l: "On" }]} onChange={(v) => toggle("shadow", v === "on", { x: 0, y: -24, blur: 40, color: "#000000", opacity: 0.35 })} />
+          </Field>
+          {surf.shadow && (
+            <>
+              {P("shadow.opacity", "Shadow opacity", 0.01, { min: 0, max: 1 })}
+              {P("shadow.blur", "Shadow softness", 1, { min: 0 })}
+              {P("shadow.y", "Shadow distance", 1)}
+            </>
+          )}
+          {L.type !== "device" && (
+            <Field label="Frosted glass">
+              <Seg value={surf.glass ? "on" : "off"} options={[{ v: "off", l: "Off" }, { v: "on", l: "On" }]} onChange={(v) => toggle("glass", v === "on", { blur: 28, tint: "#ffffff", amount: 0.18, rim: 0.5 })} />
+            </Field>
+          )}
+          {surf.glass && (
+            <>
+              {P("glass.blur", "Backdrop blur", 1, { min: 0 })}
+              {P("glass.amount", "Tint", 0.01, { min: 0, max: 1 })}
+            </>
+          )}
+        </>
+      )}
+      <div className="hint">Motion blur needs the comp switch (timeline bar). Blur, shadow and glass are keyable.</div>
+    </Section>
+  );
+}

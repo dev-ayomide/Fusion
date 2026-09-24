@@ -7,6 +7,8 @@ import { useStore, useDisplayDoc } from "../store";
 import { playhead, fmtTime } from "../playhead";
 import { behColor, BEH_COLORS } from "../edit";
 import { Icon, TYPE_ICON } from "./ui";
+import { GraphEditor } from "./GraphEditor";
+import { cubicOf } from "../../runtime/ease";
 
 const ROW = 30;
 const PAD = 12;
@@ -152,7 +154,7 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
         const kx = X(a + k[0]);
         const isK = keySel && keySel.layer === L.id && keySel.channel === row.ch && keySel.index === j;
         ctx.fillStyle = isK ? "#ffffff" : "#f3b24a";
-        diamond(ctx, kx, y + ROW / 2, isK ? 6.5 : 5.5);
+        keyGlyph(ctx, kx, y + ROW / 2, isK ? 6.5 : 5.5, j > 0 ? interp(k[2], "in") : null, j < tr.length - 1 ? interp(tr[j + 1][2], "out") : null);
         if (win.pps > 60) {
           ctx.fillStyle = "#6b7280";
           ctx.font = "10px JetBrains Mono Variable, monospace";
@@ -181,6 +183,44 @@ function diamond(ctx: CanvasRenderingContext2D, x: number, y: number, s: number)
   ctx.closePath();
   ctx.fill();
 }
+/** How one side of a key interpolates, for its AE-style glyph. */
+type Interp = "linear" | "ease" | "hold" | "curve";
+function interp(ease: string | undefined, side: "in" | "out"): Interp {
+  if (ease === "hold") return side === "in" ? "hold" : "linear";
+  const c = cubicOf(ease);
+  if (!c) return "curve";
+  const [hx, hy] = side === "in" ? [c[2], c[3]] : [c[0], c[1]];
+  if (side === "in" ? Math.abs(hx - 1) < 0.02 && Math.abs(hy - 1) < 0.02 : hx < 0.02 && hy < 0.02) return "linear";
+  return Math.abs(hy - (side === "in" ? 1 : 0)) < 0.02 ? "ease" : "curve";
+}
+/**
+ * After Effects' keyframe icons, half per side: ◇ linear, ⧗ easy ease, ■ hold, ● bézier.
+ * The left half is how the value arrives, the right half how it leaves.
+ */
+function keyGlyph(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, left: Interp | null, right: Interp | null) {
+  const half = (kind: Interp | null, dir: -1 | 1) => {
+    const k = kind ?? "linear";
+    ctx.beginPath();
+    if (k === "linear") {
+      ctx.moveTo(x, y - s);
+      ctx.lineTo(x + dir * s, y);
+      ctx.lineTo(x, y + s);
+    } else if (k === "ease") {
+      ctx.moveTo(x, y - s * 0.25);
+      ctx.lineTo(x + dir * s * 0.8, y - s);
+      ctx.lineTo(x + dir * s * 0.8, y + s);
+      ctx.lineTo(x, y + s * 0.25);
+    } else if (k === "hold") {
+      ctx.rect(dir < 0 ? x - s * 0.8 : x, y - s * 0.8, s * 0.8, s * 1.6);
+    } else {
+      ctx.arc(x, y, s * 0.85, -Math.PI / 2, Math.PI / 2, dir < 0);
+    }
+    ctx.closePath();
+    ctx.fill();
+  };
+  half(left, -1);
+  half(right, 1);
+}
 function hexA(hex: string, a: number) {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
@@ -207,6 +247,7 @@ export function Timeline() {
   const sel = useStore((s) => s.selection);
   const expanded = useStore((s) => s.expanded);
   const keySel = useStore((s) => s.keySel);
+  const graphOpen = useStore((s) => s.graphOpen);
   const ai = useStore((s) => s.aiChanged);
   const pro = mode === "pro";
   const rows = useMemo(() => buildRows(doc, expanded, pro), [doc, expanded, pro]);
@@ -530,6 +571,18 @@ export function Timeline() {
   };
 
   const st = useStore.getState();
+  const toggleMB = () =>
+    st.commit(doc.comp.motionBlur ? [{ op: "del", path: "comp/motionBlur" }] : [{ op: "set", path: "comp/motionBlur", value: { angle: 180, samples: 12 } }], {
+      source: "you",
+      intent: doc.comp.motionBlur ? "Motion blur off" : "Motion blur on",
+    });
+  // graph editor target: the selected key's channel, else the selected layer's first keyed channel
+  const graphTarget = (() => {
+    if (!graphOpen) return null;
+    const L = keySel ? doc.layers.find((l) => l.id === keySel.layer) : doc.layers.find((l) => sel.includes(l.id) && Object.keys(l.keys ?? {}).length);
+    const ch = keySel && L?.id === keySel.layer ? keySel.channel : Object.keys(L?.keys ?? {})[0];
+    return L && ch && L.keys?.[ch] ? { L, ch, index: keySel && keySel.layer === L.id && keySel.channel === ch ? keySel.index : null } : null;
+  })();
   return (
     <section className="timeline" style={{ height, ["--names" as string]: `${namesW}px` }} aria-label="Timeline">
       <div className="tl-resize" onPointerDown={startResize} title="Drag to resize" />
@@ -556,6 +609,16 @@ export function Timeline() {
           </span>
         </div>
         <div className="spacer" />
+        {pro && (
+          <>
+            <button className={`chip-toggle${doc.comp.motionBlur ? " on" : ""}`} data-testid="mb-toggle" title="Motion blur for the whole comp (AE's comp switch). Per-layer switches live in the inspector." onClick={toggleMB}>
+              <span className="mb-glyph" aria-hidden="true" />Motion blur
+            </button>
+            <button className={`chip-toggle${graphOpen ? " on" : ""}`} data-testid="graph-toggle" title="Graph editor (⇧F3): shape the curve between keyframes" onClick={() => st.set("graphOpen", !graphOpen)}>
+              <Icon name="graph" sm />Graph
+            </button>
+          </>
+        )}
         <span className="faint" style={{ fontSize: 11.5 }}>
           {pro ? "Drag bars, clips and keys · edges trim · Alt = no snap" : "Drag bars to retime · Pro mode for keyframes"}
         </span>
@@ -612,7 +675,13 @@ export function Timeline() {
             }}
             onWheel={onWheel}
           >
-            <canvas ref={tracksCanvas} data-testid="tracks" onPointerDown={(e) => onTrackDown(e, "main")} onPointerMove={(e) => onTrackMove(e, "main")} onDoubleClick={onTrackDbl} />
+            <canvas ref={tracksCanvas} data-testid="tracks" style={{ display: graphOpen ? "none" : "block" }} onPointerDown={(e) => onTrackDown(e, "main")} onPointerMove={(e) => onTrackMove(e, "main")} onDoubleClick={onTrackDbl} />
+            {graphOpen &&
+              (graphTarget ? (
+                <GraphEditor L={graphTarget.L} ch={graphTarget.ch} keyIndex={graphTarget.index} width={width} height={Math.max(120, height - 140)} X={X} />
+              ) : (
+                <div className="faint" style={{ padding: "14px 16px" }}>Select a keyframe (or a layer with keyframes) to see its curve. F9 applies Easy Ease.</div>
+              ))}
             {!rows.length && <div className="faint" style={{ position: "absolute", top: 10, left: 14 }}>Add something from the toolbar or ask the AI.</div>}
           </div>
           <div ref={headRef} style={{ position: "absolute", top: 0, bottom: 0, left: namesW, width: 1.5, background: "#8c9bff", pointerEvents: "none", boxShadow: "0 0 0 .5px rgba(140,155,255,.4)" }} />

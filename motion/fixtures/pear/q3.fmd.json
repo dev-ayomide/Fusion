@@ -1,0 +1,499 @@
+{
+ "v": 1,
+ "name": "Pear Q3 — phone chat",
+ "comp": {
+  "w": 1920,
+  "h": 1080,
+  "fps": 30,
+  "dur": 3.83,
+  "bg": "#fafbf8",
+  "cam": "shot",
+  "env": "sky",
+  "motionBlur": {
+   "angle": 200,
+   "samples": 8
+  },
+  "post": {
+   "bloom": 0.25,
+   "bloomThreshold": 1.1,
+   "grain": 0.12,
+   "vignette": 0.1
+  }
+ },
+ "brand": {
+  "font": "Inter Variable",
+  "colors": {
+   "lime": "#c9f23a",
+   "pale": "#eaf8b8",
+   "ink": "#16241a",
+   "sky": "#2f86e0",
+   "white": "#ffffff"
+  }
+ },
+ "assets": {},
+ "markers": [],
+ "bindings": [],
+ "layers": [
+  {
+   "id": "shot",
+   "type": "camera",
+   "fov": 40,
+   "pos": [
+    0,
+    -260,
+    1150
+   ],
+   "target": [
+    0,
+    -40,
+    0
+   ],
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      180
+     ],
+     [
+      3.83,
+      -160,
+      "inOut"
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      -380
+     ],
+     [
+      1.9,
+      -300,
+      "inOut"
+     ],
+     [
+      3.83,
+      -340,
+      "inOut"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "sky",
+   "type": "sky",
+   "top": "#1a6fd6",
+   "horizon": "#8bc6f2",
+   "clouds": 0.5,
+   "cloudScale": 1.2,
+   "sun": 0.25,
+   "seed": 21
+  },
+  {
+   "id": "phone",
+   "type": "group",
+   "name": "Phone",
+   "pos": [
+    40,
+    260,
+    0
+   ],
+   "rot": [
+    -38,
+    8,
+    10
+   ],
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      78
+     ],
+     [
+      0.32,
+      6,
+      "out"
+     ],
+     [
+      3.45,
+      -8
+     ],
+     [
+      3.8,
+      -88,
+      "in"
+     ]
+    ],
+    "rot.z": [
+     [
+      0,
+      16
+     ],
+     [
+      0.32,
+      10,
+      "out"
+     ],
+     [
+      3.45,
+      6
+     ],
+     [
+      3.8,
+      -4,
+      "in"
+     ]
+    ],
+    "pos.y": [
+     [
+      0.3,
+      -40
+     ],
+     [
+      1.2,
+      40,
+      "inOut"
+     ],
+     [
+      2,
+      150,
+      "inOut"
+     ],
+     [
+      2.8,
+      260,
+      "inOut"
+     ]
+    ],
+    "pos.x": [
+     [
+      0,
+      160
+     ],
+     [
+      0.32,
+      40,
+      "out"
+     ],
+     [
+      3.83,
+      -40
+     ]
+    ]
+   }
+  },
+  {
+   "id": "body",
+   "type": "mesh",
+   "parent": "phone",
+   "geom": "slab",
+   "dims": [
+    860,
+    1760,
+    70
+   ],
+   "radius": 150,
+   "size": 1,
+   "material": "plastic",
+   "color": "#c6f025",
+   "roughness": 0.28
+  },
+  {
+   "id": "bezel",
+   "type": "mesh",
+   "parent": "phone",
+   "geom": "slab",
+   "dims": [
+    810,
+    1710,
+    72
+   ],
+   "radius": 128,
+   "size": 1,
+   "material": "plastic",
+   "color": "#101214",
+   "roughness": 0.4,
+   "pos": [
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "id": "screen",
+   "type": "html",
+   "parent": "phone",
+   "w": 780,
+   "h": 1680,
+   "radius": 112,
+   "pos": [
+    0,
+    0,
+    38
+   ],
+   "html": "<div style=\"width:100%;height:100%;background:linear-gradient(180deg,#b9c3e6 0%,#d8dcef 55%,#e4e5f1 100%);font-family:'Inter Variable'\"></div>"
+  },
+  {
+   "id": "clock",
+   "type": "text",
+   "parent": "phone",
+   "text": "Today 9:41 AM",
+   "size": 30,
+   "weight": 500,
+   "color": "#6b7188",
+   "pos": [
+    0,
+    330,
+    40
+   ]
+  },
+  {
+   "id": "input",
+   "type": "html",
+   "parent": "phone",
+   "w": 700,
+   "h": 100,
+   "pos": [
+    0,
+    -700,
+    40
+   ],
+   "html": "<div style=\"width:100%;height:100%;display:flex;align-items:center;gap:22px;font-family:'Inter Variable'\">\n<div style=\"width:92px;height:92px;border-radius:46px;background:#f4f5fa;display:flex;align-items:center;justify-content:center;font-size:60px;color:#23262c;font-weight:300\">+</div>\n<div style=\"flex:1;height:92px;border-radius:46px;background:#f7f8fc;border:2px solid #e3e5ee;display:flex;align-items:center;padding:0 34px;font-size:38px;color:#a4a9b8\">iMessage</div></div>"
+  },
+  {
+   "id": "b1",
+   "type": "html",
+   "parent": "phone",
+   "in": 0.28,
+   "w": 720,
+   "h": 170,
+   "pos": [
+    0,
+    230,
+    40
+   ],
+   "html": "<div style=\"width:100%;height:100%;display:flex;align-items:center;justify-content:flex-end\">\n<div style=\"background:#4a6076;color:#ffffff;border-radius:40px;padding:22px 36px;font-size:44px;font-weight:600;line-height:1.12;max-width:560px;letter-spacing:-0.5px\">\n<span style=\"font-family:Caveat;font-weight:700;font-size:54px;color:#c9f23a\">England</span> is sooo close to winning</div></div>",
+   "keys": {
+    "scale": [
+     [
+      0,
+      0.55
+     ],
+     [
+      0.32,
+      1,
+      "out"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.1,
+      1
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      140
+     ],
+     [
+      0.32,
+      230,
+      "out"
+     ]
+    ],
+    "pos.x": [
+     [
+      0,
+      120
+     ],
+     [
+      0.32,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "b2",
+   "type": "html",
+   "parent": "phone",
+   "in": 0.95,
+   "w": 720,
+   "h": 110,
+   "pos": [
+    0,
+    70,
+    40.1
+   ],
+   "html": "<div style=\"width:100%;height:100%;display:flex;align-items:center;justify-content:flex-start\">\n<div style=\"background:#4a6076;color:#ffffff;border-radius:40px;padding:22px 36px;font-size:44px;font-weight:600;line-height:1.12;max-width:640px;letter-spacing:-0.5px\">\n<span style=\"font-family:Caveat;font-weight:700;font-size:54px;color:#c9f23a\">Argentina</span> will fuck them up</div></div>",
+   "keys": {
+    "scale": [
+     [
+      0,
+      0.55
+     ],
+     [
+      0.32,
+      1,
+      "out"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.1,
+      1
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      -20
+     ],
+     [
+      0.32,
+      70,
+      "out"
+     ]
+    ],
+    "pos.x": [
+     [
+      0,
+      -120
+     ],
+     [
+      0.32,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "b3",
+   "type": "html",
+   "parent": "phone",
+   "in": 1.75,
+   "w": 720,
+   "h": 170,
+   "pos": [
+    0,
+    -110,
+    40.2
+   ],
+   "html": "<div style=\"width:100%;height:100%;display:flex;align-items:center;justify-content:flex-start\">\n<div style=\"background:#4a6076;color:#ffffff;border-radius:40px;padding:22px 36px;font-size:44px;font-weight:600;line-height:1.12;max-width:420px;letter-spacing:-0.5px\">\n<span style=\"font-family:Caveat;font-weight:700;font-size:54px;color:#c9f23a\"></span> you sure? haha, i bet on <span style=\"font-family:Caveat;font-weight:700;font-size:54px;color:#c9f23a\">Spain</span></div></div>",
+   "keys": {
+    "scale": [
+     [
+      0,
+      0.55
+     ],
+     [
+      0.32,
+      1,
+      "out"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.1,
+      1
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      -200
+     ],
+     [
+      0.32,
+      -110,
+      "out"
+     ]
+    ],
+    "pos.x": [
+     [
+      0,
+      -120
+     ],
+     [
+      0.32,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "b4",
+   "type": "html",
+   "parent": "phone",
+   "in": 2.55,
+   "w": 720,
+   "h": 110,
+   "pos": [
+    0,
+    -300,
+    40.3
+   ],
+   "html": "<div style=\"width:100%;height:100%;display:flex;align-items:center;justify-content:flex-start\">\n<div style=\"background:#4a6076;color:#ffffff;border-radius:40px;padding:22px 36px;font-size:44px;font-weight:600;line-height:1.12;max-width:400px;letter-spacing:-0.5px\">\n<span style=\"font-family:Caveat;font-weight:700;font-size:54px;color:#c9f23a\">France</span> will win</div></div>",
+   "keys": {
+    "scale": [
+     [
+      0,
+      0.55
+     ],
+     [
+      0.32,
+      1,
+      "out"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.1,
+      1
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      -390
+     ],
+     [
+      0.32,
+      -300,
+      "out"
+     ]
+    ],
+    "pos.x": [
+     [
+      0,
+      -120
+     ],
+     [
+      0.32,
+      0,
+      "out"
+     ]
+    ]
+   }
+  }
+ ]
+}

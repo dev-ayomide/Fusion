@@ -236,13 +236,17 @@ export const PathLayer = z.object({
   fill: Color.optional(),
 });
 
-export const MATERIALS = ["chrome", "metal", "gold", "glass", "plastic", "matte", "clay", "emissive"] as const;
+export const MATERIALS = ["chrome", "foil", "metal", "gold", "glass", "plastic", "matte", "clay", "emissive"] as const;
 /** A real 3D object under the scene's HDRI environment. */
 export const MeshLayer = z.object({
   ...base,
   type: z.literal("mesh"),
-  geom: z.enum(["sphere", "box", "torus", "cylinder", "capsule", "cone", "balloon", "pear", "coin", "ring"]),
+  geom: z.enum(["sphere", "box", "torus", "cylinder", "capsule", "cone", "balloon", "pear", "coin", "ring", "slab"]),
   size: z.number().positive(),
+  /** slab only: [width, height, depth] in px (a phone body, a card) */
+  dims: z.tuple([z.number().positive(), z.number().positive(), z.number().positive()]).optional(),
+  /** slab only: corner radius in px */
+  radius: z.number().min(0).optional(),
   material: z.enum(MATERIALS).default("plastic"),
   color: Color.optional(),
   roughness: z.number().min(0).max(1).optional(),
@@ -264,7 +268,11 @@ export const SkyLayer = z.object({
   hills: Color.optional(),
   hillHeight: z.number().min(0).max(1).optional(),
   mountains: z.boolean().optional(),
+  /** 0..1 relative peak height */
+  mountainHeight: z.number().min(0).max(2).optional(),
   grass: Color.optional(),
+  /** night skies: star brightness 0..1 */
+  stars: z.number().min(0).max(1).optional(),
   seed: z.number().optional(),
 });
 
@@ -280,6 +288,8 @@ export const AdjustLayer = z.object({
   /** fade everything below toward this colour by `fade` (0..1) — white-outs, dips to black */
   fadeColor: Color.optional(),
   fade: z.number().min(0).max(1).optional(),
+  /** 0 = uniform fade; >0 = the fade spreads through soft cloud shapes (fog/cloud dissolve) */
+  dissolve: z.number().min(0).max(1).optional(),
 });
 
 export const Layer = z.discriminatedUnion("type", [

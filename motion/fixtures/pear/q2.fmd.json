@@ -1,0 +1,550 @@
+{
+ "v": 1,
+ "name": "Pear Q2 — trade, insights, instincts",
+ "comp": {
+  "w": 1920,
+  "h": 1080,
+  "fps": 30,
+  "dur": 4.97,
+  "bg": "#fafbf8",
+  "cam": "shot",
+  "env": "sky",
+  "motionBlur": {
+   "angle": 200,
+   "samples": 8
+  },
+  "post": {
+   "bloom": 0.25,
+   "bloomThreshold": 1.1,
+   "grain": 0.12,
+   "vignette": 0.12
+  }
+ },
+ "brand": {
+  "font": "Inter Variable",
+  "colors": {
+   "lime": "#c9f23a",
+   "pale": "#eaf8b8",
+   "ink": "#16241a",
+   "sky": "#2f86e0",
+   "white": "#ffffff"
+  }
+ },
+ "assets": {},
+ "markers": [],
+ "bindings": [],
+ "layers": [
+  {
+   "id": "shot",
+   "type": "camera",
+   "fov": 35,
+   "pos": [
+    0,
+    0,
+    1713
+   ]
+  },
+  {
+   "id": "day",
+   "type": "sky",
+   "name": "Sky",
+   "top": "#0f5cc6",
+   "horizon": "#6fb2ec",
+   "clouds": 0.32,
+   "cloudScale": 1.4,
+   "sun": 0.3,
+   "seed": 11
+  },
+  {
+   "id": "insights",
+   "type": "html",
+   "name": "Insights card",
+   "in": 1.35,
+   "out": 2.75,
+   "w": 1200,
+   "h": 1000,
+   "radius": 48,
+   "pos": [
+    0,
+    -1200,
+    0
+   ],
+   "html": "<div style=\"width:100%;height:100%;padding:44px 52px;font-family:'Inter Variable';color:#ffffff\">\n<div style=\"display:flex;justify-content:space-between;align-items:center\"><div style=\"font-size:40px;font-weight:600\">Insights</div><div style=\"width:26px;height:30px;border:3px solid rgba(255,255,255,.85);border-radius:13px 13px 6px 6px\"></div></div>\n<div style=\"display:flex;align-items:baseline;gap:22px;margin-top:62px\"><div style=\"font-size:84px;font-weight:500;letter-spacing:-2px\">+$<span>{{v:2}}</span></div>\n<div style=\"font-size:28px;color:rgba(255,255,255,.8)\"><span style=\"color:#35d06a\">▲</span> {{p:1}}% today</div></div></div>",
+   "glass": {
+    "blur": 34,
+    "tint": "#5c9ae0",
+    "amount": 0.22,
+    "rim": 0.35
+   },
+   "vars": {
+    "v": 174.45,
+    "p": 0.9
+   },
+   "keys": {
+    "pos.y": [
+     [
+      0,
+      -1300
+     ],
+     [
+      0.45,
+      -90,
+      "out"
+     ],
+     [
+      1.3,
+      -60
+     ]
+    ],
+    "vars.v": [
+     [
+      0.2,
+      174.45
+     ],
+     [
+      1.2,
+      339.47,
+      "out"
+     ]
+    ],
+    "vars.p": [
+     [
+      0.2,
+      0.9
+     ],
+     [
+      1.2,
+      3,
+      "out"
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      22
+     ],
+     [
+      0.35,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "chart",
+   "type": "path",
+   "name": "Chart",
+   "in": 1.35,
+   "out": 2.75,
+   "parent": "insights",
+   "pos": [
+    0,
+    -260,
+    2
+   ],
+   "smooth": true,
+   "width": 6,
+   "stroke": "#6fe38a",
+   "glow": 0.5,
+   "fillTo": -150,
+   "fill": "#6fe38a",
+   "points": [
+    [
+     -560,
+     -120
+    ],
+    [
+     -420,
+     -90
+    ],
+    [
+     -300,
+     -100
+    ],
+    [
+     -180,
+     -60
+    ],
+    [
+     -60,
+     -70
+    ],
+    [
+     60,
+     -20
+    ],
+    [
+     150,
+     -40
+    ],
+    [
+     240,
+     30
+    ],
+    [
+     320,
+     -30
+    ],
+    [
+     420,
+     60
+    ],
+    [
+     520,
+     140
+    ]
+   ],
+   "keys": {
+    "trimEnd": [
+     [
+      0.4,
+      0
+     ],
+     [
+      1.25,
+      1,
+      "inOut"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "paper",
+   "type": "shape",
+   "name": "White page",
+   "shape": "rect",
+   "w": 1920,
+   "h": 1080,
+   "fill": "#fafbfc",
+   "out": 1.55,
+   "keys": {
+    "pos.y": [
+     [
+      1.2,
+      0
+     ],
+     [
+      1.48,
+      1500,
+      "in"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "trade",
+   "type": "html",
+   "name": "Trade panel",
+   "out": 1.55,
+   "w": 1100,
+   "h": 1060,
+   "radius": 36,
+   "pos": [
+    0,
+    -60,
+    0
+   ],
+   "html": "<div style=\"background:#ffffff;width:100%;height:100%;padding:34px 44px;font-family:'Inter Variable';color:#15181c\">\n<div style=\"width:70px;height:6px;border-radius:3px;background:#e4e6ea;margin:0 auto 34px\"></div>\n<div style=\"display:flex;justify-content:space-between;align-items:center\"><div style=\"font-size:44px;font-weight:600\">Place trade</div>\n<div style=\"font-size:21px;font-weight:600;color:#23a94f;background:#e9f9ee;padding:8px 16px;border-radius:12px\">Yes · $67,200 or above</div></div>\n<div style=\"display:flex;margin-top:26px;background:#f1f2f4;border-radius:16px;padding:6px;font-size:22px;font-weight:600;text-align:center\">\n<div style=\"flex:1;background:#fff;border-radius:12px;padding:10px;box-shadow:0 2px 6px rgba(0,0,0,.08)\">Market</div><div style=\"flex:1;padding:10px;color:#8a9099\">Limit</div></div>\n<div style=\"margin-top:22px;border:2px solid #e8eaee;border-radius:20px;padding:18px 24px\"><div style=\"font-size:20px;color:#9aa0a8\">Amount</div>\n<div style=\"font-size:64px;font-weight:500;margin-top:4px\"><span style=\"color:#9aa0a8;font-size:34px\">$ </span>{{amt}}<span style=\"display:inline-block;width:3px;height:52px;background:#15181c;margin-left:4px;opacity:{{caret}}\"></span></div></div>\n<div style=\"display:flex;gap:26px;margin-top:22px;font-size:23px;font-weight:600\"><span>$50</span><span>$100</span><span>Max</span><span style=\"margin-left:auto;font-weight:400;color:#8a9099\">Balance $240.00</span></div>\n<div style=\"margin-top:34px\"><div style=\"display:flex;justify-content:space-between;padding:11px 0;font-size:25px;color:#8a9099\"><span>Shares</span><span style=\"color:#1b1f24\">74.6</span></div><div style=\"display:flex;justify-content:space-between;padding:11px 0;font-size:25px;color:#8a9099\"><span>Avg price</span><span style=\"color:#1b1f24\">$0.67</span></div><div style=\"display:flex;justify-content:space-between;padding:11px 0;font-size:25px;color:#8a9099\"><span>Payout if Yes wins</span><span style=\"color:#23a94f\">$74.60</span></div><div style=\"display:flex;justify-content:space-between;padding:11px 0;font-size:25px;color:#8a9099\"><span>Max loss</span><span style=\"color:#1b1f24\">$50.00</span></div><div style=\"display:flex;justify-content:space-between;padding:11px 0;font-size:25px;color:#8a9099\"><span>Cashback rewards (0.5%)</span><span style=\"color:#1b1f24\">$2.50</span></div></div>\n<div style=\"margin-top:34px;background:#9df0a8;border-radius:22px;padding:30px;text-align:center;font-size:32px;font-weight:600;color:#118a3a\">Confirm · $50 on Yes</div></div>",
+   "vars": {
+    "amt": 0,
+    "caret": 1
+   },
+   "shadow": {
+    "x": 0,
+    "y": -10,
+    "blur": 60,
+    "color": "#1a2a40",
+    "opacity": 0.08
+   },
+   "keys": {
+    "pos.y": [
+     [
+      0,
+      -800
+     ],
+     [
+      0.22,
+      -60,
+      "out"
+     ],
+     [
+      0.72,
+      -60
+     ],
+     [
+      0.9,
+      420,
+      "inOut"
+     ],
+     [
+      1.2,
+      440
+     ],
+     [
+      1.48,
+      2000,
+      "in"
+     ]
+    ],
+    "vars.amt": [
+     [
+      0.3,
+      0,
+      "hold"
+     ],
+     [
+      0.42,
+      5,
+      "hold"
+     ],
+     [
+      0.56,
+      50,
+      "hold"
+     ]
+    ],
+    "vars.caret": [
+     [
+      0,
+      1,
+      "hold"
+     ],
+     [
+      0.62,
+      0,
+      "hold"
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      16
+     ],
+     [
+      0.2,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "press",
+   "type": "shape",
+   "name": "Confirm press",
+   "parent": "trade",
+   "shape": "rect",
+   "w": 1012,
+   "h": 104,
+   "radius": 22,
+   "fill": "#ffffff",
+   "out": 1.5,
+   "pos": [
+    0,
+    -440,
+    1
+   ],
+   "opacity": 0,
+   "keys": {
+    "opacity": [
+     [
+      0.98,
+      0
+     ],
+     [
+      1.03,
+      0.4
+     ],
+     [
+      1.25,
+      0
+     ]
+    ]
+   }
+  },
+  {
+   "id": "flash",
+   "type": "adjust",
+   "name": "White flash",
+   "fadeColor": "#ffffff",
+   "in": 2.45,
+   "out": 3.1,
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.2,
+      1,
+      "in"
+     ],
+     [
+      0.3,
+      1
+     ],
+     [
+      0.6,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "mtn",
+   "type": "sky",
+   "name": "Mountains",
+   "in": 2.7,
+   "top": "#1560c4",
+   "horizon": "#5aa3e4",
+   "clouds": 0.18,
+   "cloudScale": 1.6,
+   "mountains": true,
+   "mountainHeight": 1.25,
+   "sun": 0.25,
+   "seed": 5
+  },
+  {
+   "id": "mtnlift",
+   "type": "adjust",
+   "name": "Mountain lift",
+   "in": 2.7,
+   "exposure": 0.1
+  },
+  {
+   "id": "instincts",
+   "type": "group",
+   "name": "Back your instincts",
+   "in": 2.7,
+   "pos": [
+    0,
+    90,
+    0
+   ],
+   "keys": {
+    "scale": [
+     [
+      0,
+      1.08
+     ],
+     [
+      2.27,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "back",
+   "type": "text",
+   "parent": "instincts",
+   "in": 2.7,
+   "text": "Back",
+   "size": 150,
+   "font": "Caveat",
+   "weight": 700,
+   "color": "$lime",
+   "align": "right",
+   "pos": [
+    -190,
+    -6,
+    0
+   ],
+   "anim": [
+    {
+     "id": "write",
+     "sel": {
+      "by": "char",
+      "shape": "smooth",
+      "start": 0,
+      "end": 0.3,
+      "offset": [
+       [
+        0.05,
+        -0.3
+       ],
+       [
+        0.45,
+        1,
+        "linear"
+       ]
+      ]
+     },
+     "add": {
+      "wipe": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "yours",
+   "type": "text",
+   "parent": "instincts",
+   "in": 2.7,
+   "text": "your instincts",
+   "size": 112,
+   "weight": 500,
+   "color": "#ffffff",
+   "align": "left",
+   "pos": [
+    -120,
+    0,
+    0
+   ],
+   "anim": [
+    {
+     "id": "in",
+     "sel": {
+      "by": "word",
+      "shape": "smooth",
+      "start": 0,
+      "end": 0.5,
+      "offset": [
+       [
+        0.3,
+        -0.5
+       ],
+       [
+        0.8,
+        1,
+        "out"
+       ]
+      ]
+     },
+     "add": {
+      "opacity": -1,
+      "pos": [
+       30,
+       0,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "loopflash",
+   "type": "adjust",
+   "name": "Loop flash",
+   "fadeColor": "#fafbfc",
+   "in": 4.72,
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.25,
+      1,
+      "in"
+     ]
+    ]
+   }
+  }
+ ]
+}

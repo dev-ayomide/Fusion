@@ -8,7 +8,7 @@ import { Inspector } from "./components/Inspector";
 import { Assistant } from "./components/Assistant";
 import { LayersPanel, JsonPanel, HistoryPanel } from "./components/Panels";
 import { createLayerOps } from "./create";
-import { deleteOps, duplicateOps, findLayer } from "./edit";
+import { deleteOps, duplicateOps, easeKeyOps, findLayer } from "./edit";
 import type { Tab } from "./store";
 
 function RightPanel() {
@@ -69,7 +69,43 @@ function useShortcuts() {
         const { ops, id } = createLayerOps(st.doc, kind, t);
         if (st.commit(ops, { source: "you", intent: `Added ${id}` }).ok) st.select([id]);
       };
+      // After Effects keyframe assistants and navigation
+      if (e.key === "F9") {
+        e.preventDefault();
+        const k = st.keySel;
+        if (!k) return st.toast("Select a keyframe first (Pro mode, expand a layer)");
+        const mode = mod && e.shiftKey ? "out" : e.shiftKey ? "in" : "easy";
+        const ops = easeKeyOps(st.doc, k, mode);
+        if (ops.length) st.commit(ops, { source: "you", intent: mode === "easy" ? "Easy Ease" : mode === "in" ? "Easy Ease In" : "Easy Ease Out" });
+        return;
+      }
+      if (e.key === "F3" && e.shiftKey) {
+        e.preventDefault();
+        st.set("graphOpen", !st.graphOpen);
+        return;
+      }
       switch (true) {
+        case (e.key === "j" || e.key === "k") && !mod: {
+          // previous / next keyframe of the selection (or of everything)
+          const ids = st.selection.length ? st.selection : st.doc.layers.map((l) => l.id);
+          const times = new Set<number>();
+          for (const L of st.doc.layers) if (ids.includes(L.id)) for (const tr of Object.values(L.keys ?? {})) for (const kf of tr) times.add(Math.round(((L.in ?? 0) + kf[0]) * fps) / fps);
+          const sorted = [...times].sort((x, y) => x - y);
+          const target = e.key === "k" ? sorted.find((x) => x > t + 1e-4) : [...sorted].reverse().find((x) => x < t - 1e-4);
+          if (target !== undefined) {
+            playhead.pause();
+            playhead.set(target);
+          }
+          break;
+        }
+        case e.key === "u" && !mod: {
+          // reveal animated properties of the selection (AE: U)
+          if (st.mode !== "pro") st.setMode("pro");
+          const keyed = st.doc.layers.filter((l) => st.selection.includes(l.id) && Object.keys(l.keys ?? {}).length);
+          const open = keyed.some((l) => !st.expanded[l.id]);
+          for (const l of keyed) if (!!st.expanded[l.id] !== open) st.toggleExpanded(l.id);
+          break;
+        }
         case e.code === "Space":
           e.preventDefault();
           playhead.toggle();

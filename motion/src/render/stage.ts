@@ -224,6 +224,7 @@ export class Stage {
 
   /* --------------------------- pass planning -------------------------- */
   private draw(doc: Doc, frame: Frame) {
+    for (const v of this.views.values()) if (v.prerender && v.root.visible) v.prerender(this.renderer, this.comp.w, this.comp.h);
     const comp = this.comp;
     const r = this.renderer;
     comp.beginMain(new THREE.Color(resolveColor(doc, doc.comp.bg, "#000000")));
@@ -283,6 +284,8 @@ export class Stage {
           fade: f.props.fade,
           fadeColor: new THREE.Color(resolveColor(doc, A.fadeColor, "#ffffff")),
           opacity: op,
+          dissolve: A.dissolve ?? 0,
+          seed: L.id.length,
         });
         continue;
       }

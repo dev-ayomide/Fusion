@@ -74,6 +74,9 @@ export function meshGeometry(geom: MeshLayer["geom"]): THREE.BufferGeometry {
     case "cone":
       g = new THREE.ConeGeometry(0.45, 1, 96, 1);
       break;
+    case "slab":
+      g = slabGeometry([1, 1, 0.1], 0.1);
+      break;
     case "coin": {
       g = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 96, 1);
       g.rotateX(Math.PI / 2);
@@ -89,7 +92,7 @@ export function meshGeometry(geom: MeshLayer["geom"]): THREE.BufferGeometry {
         [0.0, 0], [0.16, 0.012], [0.3, 0.06], [0.4, 0.16], [0.435, 0.28], [0.415, 0.4], [0.35, 0.51],
         [0.27, 0.6], [0.225, 0.69], [0.21, 0.78], [0.18, 0.87], [0.115, 0.945], [0.04, 0.99], [0.0, 1],
       ];
-      const curve = new THREE.SplineCurve(prof.map(([r, y]) => new THREE.Vector2(r, y)));
+      const curve = new THREE.SplineCurve(prof.map(([r, y]) => new THREE.Vector2(r * 0.86, y)));
       const body = latheFromPoints(curve.getSpacedPoints(160), 128, 0.006);
       const stem = new THREE.CylinderGeometry(0.014, 0.026, 0.14, 16);
       stem.rotateZ(-0.3);
@@ -140,6 +143,16 @@ export function applyMaterial(m: THREE.MeshPhysicalMaterial, preset: MeshLayer["
       m.clearcoat = 1;
       m.clearcoatRoughness = 0.05;
       break;
+    case "foil":
+      // mylar balloon: bright metallic with a lacquer coat, keeps its own colour in dark reflections
+      m.metalness = 0.75;
+      m.roughness = 0.16;
+      m.envMapIntensity = 1.7;
+      m.clearcoat = 1;
+      m.clearcoatRoughness = 0.08;
+      m.emissive.set(color);
+      m.emissiveIntensity = 0.12;
+      break;
     case "metal":
       m.metalness = 1;
       m.roughness = 0.32;
@@ -179,4 +192,30 @@ export function applyMaterial(m: THREE.MeshPhysicalMaterial, preset: MeshLayer["
   }
   if (roughness !== undefined) m.roughness = roughness;
   if (metalness !== undefined) m.metalness = metalness;
+}
+
+const slabs = new Map<string, THREE.BufferGeometry>();
+/** A rounded-rectangle slab in px (phones, cards, tablets): extruded with a soft bevel, centred. */
+export function slabGeometry(dims: number[], radius: number): THREE.BufferGeometry {
+  const [w, h, d] = dims;
+  const key = `${w},${h},${d},${radius}`;
+  const hit = slabs.get(key);
+  if (hit) return hit;
+  const bevel = Math.min(d * 0.45, radius * 0.5, 14);
+  const W = w - bevel * 2, H = h - bevel * 2, r = Math.max(0.5, Math.min(radius - bevel, W / 2, H / 2));
+  const s = new THREE.Shape();
+  s.moveTo(-W / 2 + r, -H / 2);
+  s.lineTo(W / 2 - r, -H / 2);
+  s.quadraticCurveTo(W / 2, -H / 2, W / 2, -H / 2 + r);
+  s.lineTo(W / 2, H / 2 - r);
+  s.quadraticCurveTo(W / 2, H / 2, W / 2 - r, H / 2);
+  s.lineTo(-W / 2 + r, H / 2);
+  s.quadraticCurveTo(-W / 2, H / 2, -W / 2, H / 2 - r);
+  s.lineTo(-W / 2, -H / 2 + r);
+  s.quadraticCurveTo(-W / 2, -H / 2, -W / 2 + r, -H / 2);
+  const g = new THREE.ExtrudeGeometry(s, { depth: Math.max(0.1, d - bevel * 2), bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 6, curveSegments: 24 });
+  g.translate(0, 0, -(d - bevel * 2) / 2);
+  g.computeVertexNormals();
+  slabs.set(key, g);
+  return g;
 }

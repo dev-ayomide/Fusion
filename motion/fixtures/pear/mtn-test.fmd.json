@@ -1,0 +1,3 @@
+{ "v": 1, "comp": { "w": 1920, "h": 1080, "fps": 30, "dur": 4, "bg": "#000000" },
+  "brand": { "font": "Inter Variable", "colors": {} },
+  "layers": [ { "id": "sky", "type": "sky", "top": "#1466c8", "horizon": "#5aa6e6", "clouds": 0.25, "mountains": true, "mountainHeight": 1.4, "sun": 0.3 } ] }

@@ -51,7 +51,7 @@ const TUPLE: Record<string, [string, number]> = {
   "pos.x": ["pos", 0], "pos.y": ["pos", 1], "pos.z": ["pos", 2],
   "rot.x": ["rot", 0], "rot.y": ["rot", 1], "rot.z": ["rot", 2],
 };
-const DEFAULTS: Record<string, number> = { scale: 1, opacity: 1, fov: 35, noise: 0, angle: 90, tracking: 0, radius: 0, spin: 0, gap: 0, blur: 0, trimStart: 0, trimEnd: 1, width: 6, glow: 0, clouds: 0.5, drift: 1, sun: 0.6, hillHeight: 0.25, exposure: 0, contrast: 0, saturation: 0, fade: 0, value: 0, size: 200 };
+const DEFAULTS: Record<string, number> = { scale: 1, opacity: 1, fov: 35, noise: 0, angle: 90, tracking: 0, radius: 0, spin: 0, gap: 0, blur: 0, trimStart: 0, trimEnd: 1, width: 6, glow: 0, clouds: 0.5, drift: 1, sun: 0.6, hillHeight: 0.25, stars: 0, exposure: 0, contrast: 0, saturation: 0, fade: 0, value: 0, size: 200 };
 const NESTED_DEFAULTS: Record<string, number> = { "shadow.opacity": 0.35, "shadow.blur": 40, "glass.blur": 28, "glass.amount": 0.18, "clip.radius": 0 };
 
 export function staticValue(doc: Doc, L: Layer, ch: string): number {
@@ -352,7 +352,7 @@ const PROPS: Partial<Record<Layer["type"], string[]>> = {
   camera: ["fov"],
   group: ["clip.w", "clip.h", "clip.radius", "blur"],
   gradient: ["angle", "noise", "blur"],
-  sky: ["clouds", "drift", "sun", "hillHeight", "blur"],
+  sky: ["clouds", "drift", "sun", "hillHeight", "stars", "blur"],
   adjust: ["blur", "exposure", "contrast", "saturation", "fade"],
 };
 const NO_XF = new Set(["gradient", "sky", "adjust"]);
@@ -383,12 +383,15 @@ export function activeCamera(doc: Doc): CameraLayer | undefined {
   return (doc.comp.cam && cams.find((c) => c.id === doc.comp.cam)) || cams[0];
 }
 
+/** Backgrounds don't smear by default (and cost a lot to resample); everything else does. */
+const blurs = (L: Layer) => L.motionBlur ?? !(L.type === "sky" || L.type === "gradient" || L.type === "adjust");
+
 /**
  * Evaluate the whole document at time t. `shutter` offsets time for motion-blur subframes:
  * layers with motionBlur !== false (and the camera) are sampled at t + shutter, the rest at t.
  */
 export function evaluate(doc: Doc, t: number, shutter = 0): Frame {
-  const layers = doc.layers.map((L) => evalLayer(doc, L, shutter && L.motionBlur !== false ? t + shutter : t));
+  const layers = doc.layers.map((L) => evalLayer(doc, L, shutter && blurs(L) ? t + shutter : t));
   const byId = new Map(layers.map((l) => [l.id, l]));
   const cam = activeCamera(doc);
   let camera: CameraFrame;

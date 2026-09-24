@@ -7,7 +7,7 @@ import { buildDevice, disposeDevice, placeholderScreen, deviceSize, type DeviceP
 import { assetTexture } from "../assets/assets";
 import { htmlTexture, fillVars } from "./html";
 import { skyMaterial } from "./sky";
-import { meshGeometry, applyMaterial } from "./mesh3d";
+import { meshGeometry, applyMaterial, slabGeometry } from "./mesh3d";
 import { samplePath, trim, strokeGeometry, fillGeometry, strokeMaterial } from "./pathgeo";
 
 export const DEG = Math.PI / 180;
@@ -37,6 +37,8 @@ export interface View {
   dispose(): void;
   /** quad materials that sample the backdrop (frosted glass) */
   glassMats?(): QuadMat[];
+  /** expensive layers render into their own cache before the frame is drawn */
+  prerender?(r: THREE.WebGLRenderer, w: number, h: number): void;
   /** the stencil-writing mask mesh of a clip group */
   clipMesh?: THREE.Mesh;
 }
@@ -408,16 +410,34 @@ class GradientView implements View {
 class SkyView implements View {
   type = "sky" as const;
   root = new THREE.Group();
+  /** what the main pass draws: a cheap copy of the cached sky */
   mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
+  /** the expensive procedural shader, only run into `cache` when its inputs change */
+  private sky = skyMaterial();
+  private cache = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+  private scene = new THREE.Scene();
+  private cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  private sig = "";
   constructor(id: string) {
-    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), skyMaterial());
+    const copy = new THREE.ShaderMaterial({
+      vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+      fragmentShader: `uniform sampler2D tSky; uniform float uOpacity; varying vec2 vUv; void main(){ gl_FragColor = vec4(texture2D(tSky, vUv).rgb, uOpacity); }`,
+      uniforms: { tSky: { value: this.cache.texture }, uOpacity: { value: 1 } },
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), copy);
     this.mesh.frustumCulled = false;
     tag(this.mesh, id);
     this.root.add(this.mesh);
+    const q = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.sky);
+    q.frustumCulled = false;
+    this.scene.add(q);
   }
   update(Lx: Layer, f: LayerFrame, ctx: Ctx) {
     const L = Lx as SkyLayer;
-    const u = this.mesh.material.uniforms;
+    const u = this.sky.uniforms;
     u.uTop.value.set(resolveColor(ctx.doc, L.top, "#2f7fe0"));
     u.uHorizon.value.set(resolveColor(ctx.doc, L.horizon, "#bcdcf5"));
     u.uHills.value.set(resolveColor(ctx.doc, L.hills, "#4f8a3c"));
@@ -428,10 +448,30 @@ class SkyView implements View {
     u.uCloudScale.value = L.cloudScale ?? 1;
     u.uTime.value = f.local * f.props.drift;
     u.uSun.value = f.props.sun;
-    u.uHill.value = L.hills || L.mountains ? f.props.hillHeight : -1;
+    u.uHill.value = L.hills ? f.props.hillHeight : -1;
     u.uSeed.value = L.seed ?? 0;
+    u.uStars.value = f.props.stars ?? L.stars ?? 0;
+    u.uMountainHeight.value = L.mountainHeight ?? 1;
     u.uAspect.value.set(ctx.doc.comp.w / ctx.doc.comp.h, 1);
     u.uCam.value.copy(ctx.camOffset);
+  }
+  /**
+   * Render the procedural sky into its cache at ~0.6× resolution, only when an input changed.
+   * Motion-blur subframes and paused frames then cost one texture fetch per pixel.
+   */
+  prerender(r: THREE.WebGLRenderer, w: number, h: number) {
+    const cw = Math.max(2, Math.round(w * 0.6)), ch = Math.max(2, Math.round(h * 0.6));
+    const u = this.sky.uniforms;
+    const sig = [cw, ch, u.uTop.value.getHex(), u.uHorizon.value.getHex(), u.uHills.value.getHex(), u.uGrass.value.getHex(), u.uGrassOn.value, u.uMountains.value,
+      u.uClouds.value, u.uCloudScale.value, u.uTime.value.toFixed(4), u.uSun.value, u.uHill.value, u.uSeed.value, u.uStars.value, u.uMountainHeight.value,
+      u.uAspect.value.x, u.uCam.value.x.toFixed(4), u.uCam.value.y.toFixed(4), u.uCam.value.z.toFixed(4)].join("|");
+    if (sig === this.sig) return;
+    this.sig = sig;
+    if (this.cache.width !== cw || this.cache.height !== ch) this.cache.setSize(cw, ch);
+    const prev = r.getRenderTarget();
+    r.setRenderTarget(this.cache);
+    r.render(this.scene, this.cam);
+    r.setRenderTarget(prev);
   }
   setOrder(order: number) {
     this.mesh.renderOrder = order;
@@ -441,6 +481,8 @@ class SkyView implements View {
     this.mesh.visible = o > 0.001;
   }
   dispose() {
+    this.cache.dispose();
+    this.sky.dispose();
     this.mesh.geometry.dispose();
     this.mesh.material.dispose();
   }
@@ -514,22 +556,25 @@ class MeshView implements View {
   }
   update(Lx: Layer, f: LayerFrame, ctx: Ctx) {
     const L = Lx as MeshLayer;
-    if (this.geomKey !== L.geom) {
-      this.geomKey = L.geom;
-      this.mesh.geometry = meshGeometry(L.geom);
+    const key = L.geom === "slab" ? `slab:${(L.dims ?? [300, 600, 30]).join(",")}:${L.radius ?? 40}` : L.geom;
+    if (this.geomKey !== key) {
+      this.geomKey = key;
+      this.mesh.geometry = L.geom === "slab" ? slabGeometry(L.dims ?? [300, 600, 30], L.radius ?? 40) : meshGeometry(L.geom);
     }
     applyMaterial(this.mesh.material, L.material ?? "plastic", resolveColor(ctx.doc, L.color, "#dddddd"), L.roughness, L.metalness);
     const t = L.map ? assetTexture(L.map) : null;
     this.mesh.material.map = t?.tex ?? null;
     this.mesh.material.needsUpdate = this.mesh.material.userData.hadMap !== !!t;
     this.mesh.material.userData.hadMap = !!t;
-    const s = f.props.size;
+    const s = L.geom === "slab" ? 1 : f.props.size; // slab dims are already px
     this.mesh.scale.set(s, s, s);
   }
-  setOrder(order: number, depth: boolean) {
+  setOrder(order: number) {
+    // a solid needs its own depth test to hide back faces of concave shapes; flat layers
+    // never write depth, so this only orders meshes among themselves
     this.mesh.renderOrder = order;
-    this.mesh.material.depthTest = depth;
-    this.mesh.material.depthWrite = depth;
+    this.mesh.material.depthTest = true;
+    this.mesh.material.depthWrite = true;
   }
   setOpacity(o: number) {
     this.mesh.material.opacity = o;

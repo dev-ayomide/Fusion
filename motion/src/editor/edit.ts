@@ -1,3 +1,4 @@
+import { withHandles } from "../runtime/ease";
 import type { Op } from "../fmd/ops";
 import type { Doc, Layer, Track } from "../fmd/schema";
 import { channel, layerSpan } from "../runtime/evaluate";
@@ -17,10 +18,10 @@ export function localTime(doc: Doc, L: Layer, t: number): number {
   return t - layerSpan(doc, L)[0];
 }
 
-/** Path of a channel's static value: pos.y → phone/pos/y, size → title/size. */
+/** Path of a channel's static value: pos.y → phone/pos/y, size → title/size, shadow.blur → card/shadow/blur. */
 export function staticPath(id: string, ch: string): string {
   const t = TUPLE[ch];
-  return t ? `${id}/${t[0]}/${"xyz"[t[1]]}` : `${id}/${ch}`;
+  return t ? `${id}/${t[0]}/${"xyz"[t[1]]}` : `${id}/${ch.replace(/\./g, "/")}`;
 }
 
 export function keyIndexAt(track: Track | undefined, local: number, fps: number): number {
@@ -114,4 +115,22 @@ export function deleteOps(doc: Doc, ids: string[]): Op[] {
 export const BEH_COLORS: Record<string, string> = { Enter: "#47c78e", Exit: "#e2688a", Loop: "#5aa9ff", Text: "#b38cff", Camera: "#ff9f43" };
 export function behColor(use: string): string {
   return BEH_COLORS[CATALOG[use]?.group ?? "Enter"] ?? "#8b919c";
+}
+
+/**
+ * After Effects' keyframe assistants on one key. Eases live on the segment *arriving* at a key,
+ * so "ease in" edits this key's segment (incoming handle) and "ease out" edits the next key's
+ * segment (outgoing handle). F9 = both, ⇧F9 = in, ⌘⇧F9 = out; "linear" resets both sides.
+ */
+export function easeKeyOps(doc: Doc, k: { layer: string; channel: string; index: number }, mode: "easy" | "in" | "out" | "linear"): Op[] {
+  const L = findLayer(doc, k.layer);
+  const tr = L?.keys?.[k.channel];
+  if (!L || !tr || !tr[k.index]) return [];
+  const next = tr.map((key) => [...key] as [number, number, string?]);
+  const j = k.index;
+  const lin = mode === "linear";
+  if (j > 0 && mode !== "out") next[j][2] = withHandles(next[j][2], { in: lin ? [1, 1] : [0.667, 1] });
+  if (j < next.length - 1 && mode !== "in") next[j + 1][2] = withHandles(next[j + 1][2], { out: lin ? [0, 0] : [0.333, 0] });
+  for (const key of next) if (key[2] === "linear") key.length = 2;
+  return [{ op: "key", path: `${L.id}/keys/${k.channel}`, keys: next }];
 }

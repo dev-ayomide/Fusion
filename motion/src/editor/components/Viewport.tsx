@@ -8,8 +8,8 @@ import { playhead } from "../playhead";
 import { onFontsChanged } from "../../render/glyphs";
 import { onEnvReady } from "../../render/env";
 import { onHtmlReady } from "../../render/html";
-import { onAssetsChanged, importAsset } from "../../assets/assets";
-import { setChannelOps, findLayer, localTime } from "../edit";
+import { onAssetsChanged, importAsset, LIBRARY, libraryUrl } from "../../assets/assets";
+import { setChannelOps, findLayer, localTime, uniqueId } from "../edit";
 import { createLayerOps, type NewKind } from "../create";
 import { Icon } from "./ui";
 
@@ -42,7 +42,7 @@ export function Viewport() {
   const preview = useStore((s) => s.preview);
   const mode = useStore((s) => s.mode);
   const [dropping, setDropping] = useState(false);
-  const [menu, setMenu] = useState<null | "shape" | "device" | "cloner">(null);
+  const [menu, setMenu] = useState<null | "shape" | "device" | "cloner" | "fx" | "lib">(null);
 
   const requestRender = () => {
     if (raf.current) return;
@@ -264,6 +264,21 @@ export function Viewport() {
     } else st.toast(r.errors[0], "error");
   };
 
+  const addLibrary = (pack: string, name: string) => {
+    setMenu(null);
+    const st = useStore.getState();
+    const id = st.doc.assets[name] ? name : uniqueId(st.doc, name);
+    const entry = { src: `lib://${pack}/${name}`, mime: "image/webp", name };
+    const doc1 = { ...st.doc, assets: { ...st.doc.assets, [id]: entry } };
+    const c = createLayerOps(doc1, "image", playhead.get(), { asset: id });
+    const layer = (c.ops[0] as { layer: Record<string, unknown> }).layer;
+    layer.w = 260;
+    delete layer.radius;
+    const r = st.commit([{ op: "set", path: `assets/${id}`, value: entry }, ...c.ops], { source: "you", intent: `Added ${name}` });
+    if (r.ok) st.select([c.id]);
+    else st.toast(r.errors[0], "error");
+  };
+
   const importFiles = async (files: FileList | File[], at?: { x: number; y: number }) => {
     const st = useStore.getState();
     const imgs = [...files].filter((f) => f.type.startsWith("image/"));
@@ -385,6 +400,35 @@ export function Viewport() {
             <div className="menu">
               <button onClick={() => add("cloner")}><Icon name="ellipse" sm /> Ring <span className="hint">radial</span></button>
               <button onClick={() => add("grid")}><Icon name="cloner" sm /> Grid <span className="hint">wave</span></button>
+            </div>
+          )}
+        </div>
+        <div style={{ position: "relative" }}>
+          <button className="iconbtn" title="Effects, UI and 3D" aria-label="Add effect layer" onClick={() => setMenu(menu === "fx" ? null : "fx")}>
+            <Icon name="sparkle" />
+          </button>
+          {menu === "fx" && (
+            <div className="menu">
+              <button onClick={() => add("card")}><Icon name="rect" sm /> Glass UI card <span className="hint">counter</span></button>
+              <button onClick={() => add("chart")}><Icon name="graph" sm /> Line chart <span className="hint">trim</span></button>
+              <button onClick={() => add("object")}><Icon name="ellipse" sm /> 3D object <span className="hint">chrome</span></button>
+              <button onClick={() => add("sky")}><Icon name="gradient" sm /> Sky &amp; landscape</button>
+              <button onClick={() => add("fade")}><Icon name="frame" sm /> Fade / white-out <span className="hint">adjust</span></button>
+            </div>
+          )}
+        </div>
+        <div style={{ position: "relative" }}>
+          <button className="iconbtn" title="Asset library: 3D emoji" aria-label="Asset library" onClick={() => setMenu(menu === "lib" ? null : "lib")}>
+            <Icon name="wand" />
+          </button>
+          {menu === "lib" && (
+            <div className="menu lib-grid" data-testid="asset-library">
+              <div className="hint" style={{ gridColumn: "1 / -1", padding: "2px 4px 6px" }}>3D objects · Fluent Emoji (MIT)</div>
+              {LIBRARY.emoji3d.names.map((n) => (
+                <button key={n} title={n} aria-label={`Add ${n}`} onClick={() => addLibrary("emoji3d", n)}>
+                  <img src={libraryUrl(`lib://emoji3d/${n}`) ?? ""} alt="" width={40} height={40} />
+                </button>
+              ))}
             </div>
           )}
         </div>

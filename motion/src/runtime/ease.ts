@@ -62,13 +62,24 @@ export function springEase(bounce: number): EaseFn {
   };
 }
 
+/** Named béziers (x1,y1,x2,y2). `easy` is After Effects' Easy Ease (33% influence, 0 speed). */
+export const BEZIER: Record<string, [number, number, number, number]> = {
+  linear: [0, 0, 1, 1],
+  in: [0.55, 0, 1, 0.45],
+  out: [0.22, 1, 0.36, 1],
+  inOut: [0.65, 0, 0.35, 1],
+  easy: [0.333, 0, 0.667, 1],
+  easyIn: [0, 0, 0.667, 1],
+  easyOut: [0.333, 0, 1, 1],
+  expoOut: [0.16, 1, 0.3, 1],
+  expoIn: [0.7, 0, 0.84, 0],
+  expoInOut: [0.87, 0, 0.13, 1],
+  back: [0.34, 1.56, 0.64, 1],
+  anticipate: [0.36, 0, 0.66, -0.56],
+};
+
 const NAMED: Record<string, EaseFn> = {
-  linear: (u) => u,
-  in: cubicBezier(0.55, 0, 1, 0.45),
-  out: cubicBezier(0.22, 1, 0.36, 1),
-  inOut: cubicBezier(0.65, 0, 0.35, 1),
-  back: cubicBezier(0.34, 1.56, 0.64, 1),
-  anticipate: cubicBezier(0.36, 0, 0.66, -0.56),
+  ...Object.fromEntries(Object.entries(BEZIER).map(([k, v]) => [k, k === "linear" ? (u: number) => u : cubicBezier(...v)])),
   hold: (u) => (u >= 1 ? 1 : 0),
   elastic: (u) => (u <= 0 ? 0 : u >= 1 ? 1 : Math.pow(2, -10 * u) * Math.sin((u * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1),
   bounce: (u) => {
@@ -105,6 +116,30 @@ export function easeFn(spec: string | undefined): EaseFn {
 export function isValidEase(spec: string): boolean {
   if (NAMED[spec]) return true;
   return /^cubic\(\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\)$/.test(spec) || /^spring\(\s*[\d.]+\s*,\s*[\d.]+\s*\)$/.test(spec);
+}
+
+/** The bézier handles of an ease, or null when it isn't a bézier (spring, bounce, hold…). */
+export function cubicOf(spec: string | undefined): [number, number, number, number] | null {
+  const s = (spec ?? "linear").replace(/\s+/g, "");
+  if (BEZIER[s]) return [...BEZIER[s]];
+  const m = /^cubic\(([^)]*)\)$/.exec(s);
+  if (!m) return null;
+  const n = m[1].split(",").map(Number);
+  return n.length === 4 && n.every(Number.isFinite) ? (n as [number, number, number, number]) : null;
+}
+
+const r3 = (v: number) => Math.round(v * 1000) / 1000;
+/**
+ * Rewrite one or both handles of a segment's ease (the segment arriving at a key).
+ * `out` = the handle leaving the previous key, `in` = the handle arriving at this key — AE's
+ * outgoing / incoming velocity. Non-bézier eases are replaced by linear first.
+ */
+export function withHandles(spec: string | undefined, h: { out?: [number, number]; in?: [number, number] }): string {
+  const c = cubicOf(spec) ?? [0, 0, 1, 1];
+  if (h.out) [c[0], c[1]] = [Math.min(1, Math.max(0, h.out[0])), h.out[1]];
+  if (h.in) [c[2], c[3]] = [Math.min(1, Math.max(0, h.in[0])), h.in[1]];
+  const named = Object.entries(BEZIER).find(([, v]) => v.every((x, i) => Math.abs(x - c[i]) < 1e-3));
+  return named ? named[0] : `cubic(${c.map(r3).join(",")})`;
 }
 
 export { clamp01 };

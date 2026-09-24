@@ -37,6 +37,7 @@ const P: Record<string, ReactNode> = {
   zoomout: <><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3M8 11h6" /></>,
   fit: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />,
   loop: <path d="M17 2l4 4-4 4M3 11V9a3 3 0 013-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 01-3 3H3" />,
+  graph: <path d="M3 20h18M4 17c4 0 5-10 8-10s4 10 8 10" />,
   wand: <path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8L19 13M17.8 6.2L19 5M3 21l9-9M12.2 6.2L11 5" />,
 };
 export function Icon({ name, sm, className }: { name: keyof typeof P | string; sm?: boolean; className?: string }) {

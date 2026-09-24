@@ -49,6 +49,8 @@ interface State {
   notice: { text: string; kind?: "info" | "error"; id: number } | null;
   exportOpen: boolean;
   helpOpen: boolean;
+  /** timeline shows the value graph of the selected channel instead of the dopesheet (AE ⇧F3) */
+  graphOpen: boolean;
   version: number;
 }
 
@@ -126,6 +128,7 @@ export const useStore = create<Store>((set, get) => ({
   notice: null,
   exportOpen: false,
   helpOpen: false,
+  graphOpen: false,
   version: 0,
 
   loadDoc(doc, opts) {

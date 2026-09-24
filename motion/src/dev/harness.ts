@@ -31,6 +31,8 @@ const canvas = document.getElementById("c") as HTMLCanvasElement;
 const stage = new Stage(canvas, { preserveDrawingBuffer: true });
 stage.setSize(w, h, 1);
 stage.textResolution = Math.max(1, h / doc.comp.h) * 1.5;
+(window as unknown as { stage: Stage; doc: Doc }).stage = stage;
+(window as unknown as { stage: Stage; doc: Doc }).doc = doc;
 let at = time;
 const draw = () => stage.renderFrame(doc, at, { samples });
 for (const L of doc.layers) if (L.type === "text") ensureFont(L.font ?? doc.brand.font, L.weight ?? 600);
