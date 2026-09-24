@@ -420,7 +420,7 @@ export function Timeline() {
           break;
         }
         case "clip": {
-          const at = r3(snap(a + bh!.at + d, cands, base.comp.fps, free) - a);
+          const at = r3(Math.max(free ? -Infinity : 0, snap(a + bh!.at + d, cands, base.comp.fps, free) - a));
           ops = [{ op: "set", path: `${L.id}/beh/${bh!.id}/at`, value: at }];
           label = `${CATALOG[bh!.use]?.label ?? bh!.use} at ${(a + at).toFixed(2)}s`;
           break;
@@ -569,7 +569,7 @@ export function Timeline() {
           <canvas ref={ruler} onPointerDown={startScrub} style={{ cursor: "col-resize", display: "block", borderBottom: "1px solid var(--line)" }} data-testid="ruler" />
         </div>
         <div className="tl-body" style={{ gridTemplateColumns: `${namesW}px minmax(0,1fr)` }}>
-          <div className="tl-names" ref={namesRef}>
+          <div className="tl-names" ref={namesRef} onScroll={(e) => { if (tracksWrap.current && tracksWrap.current.scrollTop !== (e.target as HTMLElement).scrollTop) tracksWrap.current.scrollTop = (e.target as HTMLElement).scrollTop; }}>
             {rows.map((row) =>
               row.kind === "layer" ? (
                 <div
@@ -608,7 +608,7 @@ export function Timeline() {
             className="tl-tracks"
             ref={tracksWrap}
             onScroll={(e) => {
-              if (namesRef.current) namesRef.current.scrollTop = (e.target as HTMLElement).scrollTop;
+              if (namesRef.current && namesRef.current.scrollTop !== (e.target as HTMLElement).scrollTop) namesRef.current.scrollTop = (e.target as HTMLElement).scrollTop;
             }}
             onWheel={onWheel}
           >

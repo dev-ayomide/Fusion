@@ -337,8 +337,18 @@ const pretty = (path: string) => path.split("/").join(" › ");
 
 export function describeOp(op: Op): string {
   switch (op.op) {
-    case "set":
-      return op.delta !== undefined ? `Shift ${pretty(op.path)} by ${op.delta > 0 ? "+" : ""}${r3(op.delta)}` : `Set ${pretty(op.path)} to ${fmtV(op.value)}`;
+    case "set": {
+      if (op.delta !== undefined) return `Shift ${pretty(op.path)} by ${op.delta > 0 ? "+" : ""}${r3(op.delta)}`;
+      const v = op.value as Record<string, unknown> | undefined;
+      const segs = op.path.split("/");
+      if (op.path === "bindings" && Array.isArray(v)) return `Wire vibe sliders (${v.length} binding${v.length === 1 ? "" : "s"})`;
+      if (op.path === "style" && v && typeof v === "object") return `Vibe: ${Object.entries(v).map(([k, x]) => `${k} ${Math.round(Number(x) * 100)}`).join(" · ")}`;
+      if (op.path === "brand/colors" && v && typeof v === "object") return `Brand palette: ${Object.keys(v).map((k) => "$" + k).join(" ")}`;
+      if (segs.length === 1 && v && typeof v === "object" && "type" in v) return `Replace ${op.path} (${String(v.type)})`;
+      if (segs.length === 3 && segs[1] === "beh" && v && typeof v === "object" && "use" in v) return `${segs[0]}: ${CATALOG[String(v.use)]?.label ?? String(v.use)} animation`;
+      if (segs.length === 3 && segs[1] === "keys" && Array.isArray(v)) return `Animate ${segs[0]} ${segs[2]} with ${v.length} keys`;
+      return `Set ${pretty(op.path)} to ${fmtV(op.value)}`;
+    }
     case "del":
       return `Remove ${pretty(op.path)}`;
     case "ord":

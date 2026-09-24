@@ -150,9 +150,10 @@ void main() {
     u = dot(p, dir) / (2.0 * ext) + 0.5;
   }
   vec3 c = ramp(u);
-  c += (hash(gl_FragCoord.xy) - 0.5) * uNoise * 0.25;
   gl_FragColor = vec4(c, uOpacity);
   #include <colorspace_fragment>
+  // grain in display space so it reads the same in darks and lights
+  gl_FragColor.rgb += (hash(gl_FragCoord.xy) - 0.5) * uNoise * 0.35;
 }`;
 
 export function gradientMaterial() {

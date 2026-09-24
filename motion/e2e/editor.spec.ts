@@ -114,6 +114,16 @@ test.describe("viewport", () => {
     await expect.poll(() => page.evaluate(() => (window as any).__store.getState().selection)).toEqual([]);
   });
 
+  test("regression: no selection box for a layer that isn't on screen yet", async ({ page }) => {
+    await openTemplate(page, "launch");
+    await page.getByTestId("layer-sub").click();
+    await setTime(page, 1);
+    await page.waitForTimeout(300);
+    await expect(page.locator(".selbox")).toHaveCount(0);
+    await setTime(page, 4);
+    await expect(page.locator(".selbox")).toHaveCount(1);
+  });
+
   test("split view shows the scene camera next to the shot", async ({ page }) => {
     await openTemplate(page, "launch");
     await page.keyboard.press("s");
@@ -167,6 +177,23 @@ test.describe("timeline", () => {
     expect(keys[1][0]).toBeCloseTo(3.1, 1);
     await page.keyboard.press("Delete");
     expect((await layer(page, "phone")).keys["rot.y"]).toHaveLength(2);
+  });
+
+  test("regression: clips can't be dragged before their layer starts", async ({ page }) => {
+    await openTemplate(page, "launch");
+    const c = await tl(page, "sub", 3);
+    const pps = await page.evaluate(() => (window as any).__timeline.pps);
+    await drag(page, c, { x: c.x - pps * 2, y: c.y });
+    expect((await layer(page, "sub")).beh[0].at).toBe(0);
+  });
+
+  test("regression: layer names and tracks scroll together", async ({ page }) => {
+    await openTemplate(page, "launch");
+    await page.getByLabel("Show keyframes of phone").click();
+    await page.locator(".tl-names").evaluate((el) => (el.scrollTop = 40));
+    await expect.poll(() => page.locator(".tl-tracks").evaluate((el) => el.scrollTop)).toBe(40);
+    await page.locator(".tl-tracks").evaluate((el) => (el.scrollTop = 10));
+    await expect.poll(() => page.locator(".tl-names").evaluate((el) => el.scrollTop)).toBe(10);
   });
 
   test("ruler scrubs the playhead and the timecode follows", async ({ page }) => {

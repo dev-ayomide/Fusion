@@ -543,6 +543,7 @@ export class Stage {
   bounds(id: string): { x: number; y: number; w: number; h: number } | null {
     const v = this.views.get(id);
     if (!v || v.type === "gradient") return null;
+    for (let o: THREE.Object3D | null = v.root; o; o = o.parent) if (!o.visible) return null;
     const box = new THREE.Box3();
     let any = false;
     v.root.updateWorldMatrix(true, true);

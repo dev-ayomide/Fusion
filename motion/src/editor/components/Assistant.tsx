@@ -236,6 +236,7 @@ export function Assistant() {
   const turns = useStore((s) => s.turns);
   const agent = useStore((s) => s.agent);
   const selection = useStore((s) => s.selection);
+  const mode = useStore((s) => s.mode);
   const [text, setText] = useState("");
   const msgs = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -323,7 +324,7 @@ export function Assistant() {
           </button>
         </div>
       </form>
-      <PasteOps />
+      {mode === "pro" && <PasteOps />}
     </div>
   );
 }
