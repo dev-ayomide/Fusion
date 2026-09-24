@@ -1,4 +1,4 @@
-import { Output, BufferTarget, CanvasSource, Mp4OutputFormat, WebMOutputFormat, QUALITY_HIGH, QUALITY_MEDIUM, getFirstEncodableVideoCodec, type VideoCodec } from "mediabunny";
+import { Output, BufferTarget, CanvasSource, Mp4OutputFormat, WebMOutputFormat, getFirstEncodableVideoCodec, type VideoCodec } from "mediabunny";
 import type { Doc } from "../fmd/schema";
 import { evaluate } from "../runtime/evaluate";
 import { Stage } from "../render/stage";
@@ -28,8 +28,9 @@ export async function exportVideo(doc: Doc, opts: ExportOptions): Promise<Export
   const fps = opts.fps ?? doc.comp.fps;
   const height = Math.round(opts.height / 2) * 2;
   const width = Math.round((height * doc.comp.w) / doc.comp.h / 2) * 2;
-  const quality = opts.quality === "high" ? QUALITY_HIGH : QUALITY_MEDIUM;
-  const codec = await getFirstEncodableVideoCodec(opts.format === "mp4" ? MP4_CODECS : WEBM_CODECS, { width, height, quality });
+  // explicit bits-per-pixel: motion graphics have hard edges and gradients that starve at preset bitrates
+  const bitrate = Math.round(width * height * fps * (opts.quality === "high" ? 0.12 : 0.06));
+  const codec = await getFirstEncodableVideoCodec(opts.format === "mp4" ? MP4_CODECS : WEBM_CODECS, { width, height, bitrate });
   if (!codec) throw new Error(`This browser can't encode ${opts.format.toUpperCase()} at ${width}×${height}. Try WebM or a smaller size.`);
 
   for (const L of doc.layers) if (L.type === "text") ensureFont(L.font ?? doc.brand.font, L.weight ?? 600);
@@ -44,7 +45,7 @@ export async function exportVideo(doc: Doc, opts: ExportOptions): Promise<Export
   stage.setSize(width, height, 1);
 
   const output = new Output({ format: opts.format === "mp4" ? new Mp4OutputFormat({ fastStart: "in-memory" }) : new WebMOutputFormat(), target: new BufferTarget() });
-  const source = new CanvasSource(canvas, { codec, quality, keyFrameInterval: 1 });
+  const source = new CanvasSource(canvas, { codec, bitrate, keyFrameInterval: 1, latencyMode: "quality" } as ConstructorParameters<typeof CanvasSource>[1]);
   output.addVideoTrack(source, { frameRate: fps });
   await output.start();
 

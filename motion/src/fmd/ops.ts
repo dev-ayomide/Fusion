@@ -61,8 +61,16 @@ export function expand(doc: Doc, op: Op, source: Source): Prim[] {
       if (op.value === undefined) throw new PathError(op.path, "set needs value or delta");
       return [{ op: "set", path: op.path, value: op.value }];
     }
-    case "del":
+    case "del": {
+      // deleting a layer also unparents its children and clears it as the active camera
+      if (!op.path.includes("/") && layerIds(doc).includes(op.path)) {
+        const prims: Prim[] = doc.layers.filter((l) => l.parent === op.path).map((l) => ({ op: "del", path: `${l.id}/parent` }));
+        if (doc.comp.cam === op.path) prims.push({ op: "del", path: "comp/cam" });
+        prims.push({ op: "del", path: op.path });
+        return prims;
+      }
       return [{ op: "del", path: op.path }];
+    }
     case "ord":
       return [{ op: "ord", id: op.id, after: op.after }];
     case "key": {
@@ -349,6 +357,7 @@ export function describeOp(op: Op): string {
 }
 
 export function describeOps(ops: Op[]): string {
+  if (!ops.length) return "No changes";
   if (ops.length === 1) return describeOp(ops[0]);
   return `${describeOp(ops[0])} + ${ops.length - 1} more`;
 }

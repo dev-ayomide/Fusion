@@ -88,6 +88,15 @@ describe("transactions", () => {
     expect((getPath(r.doc, "sub/keys/pos.y") as unknown[]).length).toBeGreaterThan(4);
     expect(applyPrims(r.doc, r.txn!.inverse)).toEqual(d);
   });
+  it("deleting a parent layer unparents its children in the same undo step", () => {
+    const d = launchTemplate();
+    const r = ok(d, [{ op: "del", path: "cta" }]);
+    expect(getPath(r.doc, "cta-label/parent")).toBeUndefined();
+    expect(applyPrims(r.doc, r.txn!.inverse)).toEqual(d);
+  });
+  it("describes an empty transaction", () => {
+    expect(applyTxn(launchTemplate(), [], { source: "ai" }).txn!.intent).toBe("No changes");
+  });
   it("bake refuses loops", () => {
     const r = applyTxn(launchTemplate(), [{ op: "bake", path: "phone/beh/bob" }], { source: "you" });
     expect(r.ok).toBe(false);

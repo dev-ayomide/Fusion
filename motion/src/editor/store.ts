@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { applyTxn, applyPrims, type Op, type Source, type Txn } from "../fmd/ops";
+import { applyTxn, applyPrims, validate, type Op, type Source, type Txn } from "../fmd/ops";
 import type { Doc } from "../fmd/schema";
 import { blankTemplate } from "../templates";
 import { playhead } from "./playhead";
@@ -85,11 +85,23 @@ const now = () => Date.now();
 export function buildPreview(doc: Doc, ops: Op[], accepted: boolean[]): { doc: Doc; opErrors: (string | null)[]; valid: string[] } {
   let cur = doc;
   const opErrors: (string | null)[] = ops.map(() => null);
+  let known = new Set(validate(cur));
   ops.forEach((op, i) => {
     if (!accepted[i]) return;
     const r = applyTxn(cur, [op], { source: "ai", validate: false });
-    if (r.ok) cur = r.doc;
-    else opErrors[i] = r.errors[0]?.replace(/^op 1 \(\w+\): /, "") ?? "failed";
+    if (!r.ok) {
+      opErrors[i] = r.errors[0]?.replace(/^op 1 \(\w+\): /, "") ?? "failed";
+      return;
+    }
+    // an op is rejected only for problems it introduces, so one bad op can't sink the rest
+    const after = validate(r.doc);
+    const introduced = after.filter((e) => !known.has(e));
+    if (introduced.length) {
+      opErrors[i] = introduced[0];
+      return;
+    }
+    cur = r.doc;
+    known = new Set(after);
   });
   const final = applyTxn(doc, ops.filter((_, i) => accepted[i] && !opErrors[i]), { source: "ai" });
   return { doc: final.ok ? final.doc : cur, opErrors, valid: final.ok ? [] : final.errors };
