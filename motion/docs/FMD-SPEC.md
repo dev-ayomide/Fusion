@@ -36,18 +36,34 @@ Source of truth for the schema: `src/fmd/schema.ts` (Zod 4). Behaviour catalog: 
 
 Common fields: `id` (immutable, `[a-zA-Z][\w-]*`), `name`, `in`, `out`, `parent` (transform only, cycles rejected),
 `hidden`, `locked`, `pos [x,y,z]`, `rot [x,y,z]` (degrees), `scale`, `opacity`, `depth` (3D depth-sort switch),
-`keys`, `beh`, `expr`.
+`keys`, `beh`, `expr`, `blur` (Gaussian blur radius in comp px, keyable), `motionBlur` (per-layer switch; default on,
+off for `sky`/`gradient`/`adjust`).
 
 | type | fields |
 |---|---|
 | `gradient` | `colors` (2–4), `kind` linear/radial, `angle`, `noise` (film grain) — screen-space background |
-| `text` | `text` (`\n` for lines), `size`, `font`, `weight`, `color`, `align`, `tracking`, `lineHeight`, `anim` (selectors) |
-| `shape` | `shape` rect/ellipse, `w`, `h`, `radius`, `fill`, `stroke`, `strokeWidth` |
-| `image` | `src` (asset id), `w`, `h?`, `radius` |
-| `device` | `model` iphone/browser, `screen` (asset id; built-in demo if absent), `w`, `color` |
+| `text` | `text` (`\n` for lines), `size`, `font`, `weight`, `color`, `align`, `tracking`, `lineHeight`, `anim` (selectors), `spans [{text, all?, font?, weight?, color?, size?}]` (styled runs), `value` + `format {decimals, thousands}` (rolling number shown where the text says `{value}`) |
+| `shape` | `shape` rect/ellipse, `w`, `h`, `radius`, `fill`, `stroke`, `strokeWidth`, `shadow?`, `glass?` |
+| `image` | `src` (asset id), `w`, `h?`, `radius`, `shadow?`, `glass?` |
+| `device` | `model` iphone/browser, `screen` (asset id; built-in demo if absent), `w`, `color`, `shadow?` |
+| `html` | `html` (HTML/CSS, ≤ 20k chars), `w`, `h`, `radius`, `vars {name: number}` (keyable as `vars.name`, shown via `{{name}}` / `{{name:2}}`), `shadow?`, `glass?` |
+| `path` | `points [[x,y]…]`, `smooth`, `closed`, `stroke`, `width`, `trimStart`, `trimEnd` (AE Trim Paths), `glow`, `fillTo` + `fill` (area under a chart line) |
+| `mesh` | `geom` sphere/box/torus/ring/cylinder/capsule/cone/coin/balloon/pear/slab, `size` (px), `dims [w,h,d]` + `radius` (slab), `material` chrome/foil/metal/gold/glass/plastic/matte/clay/emissive, `color`, `roughness?`, `metalness?`, `map?` — lit by `comp.env` |
+| `sky` | procedural background: `top`, `horizon`, `clouds`, `cloudScale`, `drift`, `sun`, `hills` + `hillHeight`, `mountains` + `mountainHeight`, `grass`, `stars`, `seed` |
+| `adjust` | adjustment layer (affects everything below): `exposure` (stops), `contrast`/`saturation` (offsets −1..1), `fade` + `fadeColor` (white-outs, dips), `dissolve` (fade spreads through cloud shapes) |
 | `cloner` | `mode` radial/grid/linear, `n`, `r`, `cols`, `gap`, `spin`, `billboard`, `orient`, `child {kind, shape, w, h, radius, fill, colors, src, text}`, `reveal {dur, bounce, at}`, `fx` effectors |
 | `camera` | `fov`, `target?`; `comp.cam` picks the active one |
-| `group` | transform-only parent |
+| `group` | transform parent; `clip {w, h, radius}` masks children to a rounded rect (keyable `clip.w` `clip.h` `clip.radius`) |
+
+Surface effects: `shadow {x, y, blur, color, opacity}` and `glass {blur, tint, amount, rim}` (backdrop blur) —
+nested channels are keyable as `shadow.opacity`, `glass.blur`, ….
+
+Composition finishing: `comp.motionBlur {angle, samples}` (AE comp switch: 180° = half a frame), `comp.post {bloom,
+bloomThreshold, exposure, contrast, saturation, vignette, grain}`, `comp.env` (HDRI for 3D: studio, city, sky,
+sunset, dawn, night, park, warehouse, lobby, forest).
+
+Assets: `src` is `asset://sha256/…` (uploaded, IndexedDB) or `lib://<pack>/<name>` (bundled library, e.g.
+`lib://emoji3d/trophy` — 24 Fluent 3D emoji, MIT).
 
 Cloner effectors (`fx`): `delay {step}` staggers the reveal by index; `noise {amp:[x,y,z], freq, seed}` seeded drift;
 `wave {amp, freq, phase}` travelling sine.
@@ -71,14 +87,16 @@ result = expr({ t, value: result, base: track, … })   if an expression exists
   - `add` behaviours stack on the track and are identity outside their window (loops default to `dur: 999`).
   - `text` behaviours (`typeUp`, `bounceIn`, `cascade`, `typewriter`) drive per-glyph channels with `by` char/word/line and `stagger`.
   - An owner plus keys on the same channel is rejected — the validator suggests `bake`.
-- **Selectors** (`text.anim`): `{ id, sel: {by, shape: ramp|smooth|full, start, end, offset}, add: {pos, rot, scale, opacity} }`.
+- **Selectors** (`text.anim`): `{ id, sel: {by, shape: ramp|smooth|full, start, end, offset}, add: {pos, rot, scale, opacity, wipe} }`
+  (`wipe` 0..1 hides each glyph from its right edge — a write-on).
   Weight per unit `w = shape(clamp((u − start − offset) / (end − start)))`, `u` = unit index / (count − 1); `add` is applied × `w`.
   Animating `offset` from `-(end−start)` to `1` reveals left-to-right.
 - **Expressions:** a small AST language (no `eval`): arithmetic, comparisons, `&& || ! ?:`, `sin cos tan abs min max floor ceil round sqrt pow clamp lerp noise(seed,x) step smooth`, names `t value base i n w h fps pi`. Bad expressions fall back to the value; the frame still renders.
 
 ### Easing
 
-`linear in out inOut back anticipate hold elastic bounce`, `cubic(x1,y1,x2,y2)`, and **`spring(dur, bounce)`** — a damped
+`linear in out inOut easy easyIn easyOut expoIn expoOut expoInOut back anticipate hold elastic bounce` (`easy` = After
+Effects' Easy Ease, `cubic(0.333,0,0.667,1)`), `cubic(x1,y1,x2,y2)`, and **`spring(dur, bounce)`** — a damped
 oscillator normalised so `ease(0)=0`, `ease(1)=1` exactly (bounce 0 = critical, → 1 = springier). A behaviour with `bounce`
 and no `ease` uses `spring(dur, bounce)`, so `bounce` is a real parameter that sliders can bind to.
 

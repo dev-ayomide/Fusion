@@ -42,7 +42,8 @@ def read_frames(path, fps):
 
 
 def grid_lab(frames, n=6):
-    g = frames.reshape(len(frames), n, H // n, n, W // n, 3).mean(axis=(2, 4))
+    f = frames[:, : H - H % n, : W - W % n]
+    g = f.reshape(len(f), n, f.shape[1] // n, n, f.shape[2] // n, 3).mean(axis=(2, 4))
     return rgb2lab(g)
 
 
@@ -59,7 +60,7 @@ def metrics(ref, rep):
     mr, mp = motion(ref), motion(rep)
     k = np.ones(3) / 3  # light smoothing: accents within ±1 frame count as on time
     mr_s, mp_s = np.convolve(mr, k, "same"), np.convolve(mp, k, "same")
-    timing = float(np.corrcoef(mr_s, mp_s)[0, 1])
+    timing = float(np.corrcoef(mr_s, mp_s)[0, 1]) if mp_s.std() > 1e-9 and mr_s.std() > 1e-9 else 0.0
     energy = float(mp.mean() / max(mr.mean(), 1e-6))
     return {"frames": n, "ssim": round(ssim, 3), "dE": round(dE, 1), "timing": round(timing, 3), "energy": round(energy, 2)}
 
@@ -72,8 +73,14 @@ if __name__ == "__main__":
     ap.add_argument("--period", type=float, required=True)
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--label", default="")
+    ap.add_argument("--baselines", action="store_true", help="also score two naive replicas for calibration")
     a = ap.parse_args()
     ref = read_video(a.reference, a.crop, 0, a.period, a.fps)
+    if a.baselines:
+        static = np.repeat(ref.mean(axis=0, keepdims=True), len(ref), axis=0)
+        shifted = np.roll(ref, len(ref) // 2, axis=0)
+        print(json.dumps({**metrics(ref, static), "label": f"{a.label} baseline: static mean frame"}))
+        print(json.dumps({**metrics(ref, shifted), "label": f"{a.label} baseline: reference shifted half a loop"}))
     rep = read_frames(a.replica, a.fps)
     m = metrics(ref, rep)
     m["label"] = a.label

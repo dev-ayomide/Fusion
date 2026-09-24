@@ -59,8 +59,8 @@
    "id": "insights",
    "type": "html",
    "name": "Insights card",
-   "in": 1.35,
-   "out": 2.75,
+   "in": 1.98,
+   "out": 3.85,
    "w": 1200,
    "h": 1000,
    "radius": 48,
@@ -135,8 +135,8 @@
    "id": "chart",
    "type": "path",
    "name": "Chart",
-   "in": 1.35,
-   "out": 2.75,
+   "in": 1.98,
+   "out": 3.85,
    "parent": "insights",
    "pos": [
     0,
@@ -217,15 +217,15 @@
    "w": 1920,
    "h": 1080,
    "fill": "#fafbfc",
-   "out": 1.55,
+   "out": 2.2,
    "keys": {
     "pos.y": [
      [
-      1.2,
+      1.84,
       0
      ],
      [
-      1.48,
+      2.12,
       1500,
       "in"
      ]
@@ -236,7 +236,7 @@
    "id": "trade",
    "type": "html",
    "name": "Trade panel",
-   "out": 1.55,
+   "out": 2.2,
    "w": 1100,
    "h": 1060,
    "radius": 36,
@@ -269,37 +269,37 @@
       "out"
      ],
      [
-      0.72,
+      1,
       -60
      ],
      [
-      0.9,
+      1.2,
       420,
       "inOut"
      ],
      [
-      1.2,
+      1.8,
       440
      ],
      [
-      1.48,
+      2.12,
       2000,
       "in"
      ]
     ],
     "vars.amt": [
      [
-      0.3,
+      0.4,
       0,
       "hold"
      ],
      [
-      0.42,
+      0.55,
       5,
       "hold"
      ],
      [
-      0.56,
+      0.72,
       50,
       "hold"
      ]
@@ -311,7 +311,7 @@
       "hold"
      ],
      [
-      0.62,
+      0.8,
       0,
       "hold"
      ]
@@ -339,7 +339,7 @@
    "h": 104,
    "radius": 22,
    "fill": "#ffffff",
-   "out": 1.5,
+   "out": 2.2,
    "pos": [
     0,
     -440,
@@ -349,15 +349,15 @@
    "keys": {
     "opacity": [
      [
-      0.98,
+      1.55,
       0
      ],
      [
-      1.03,
+      1.6,
       0.4
      ],
      [
-      1.25,
+      1.8,
       0
      ]
     ]
@@ -368,8 +368,8 @@
    "type": "adjust",
    "name": "White flash",
    "fadeColor": "#ffffff",
-   "in": 2.45,
-   "out": 3.1,
+   "in": 3.5,
+   "out": 4.15,
    "keys": {
     "fade": [
      [
@@ -378,12 +378,12 @@
      ],
      [
       0.2,
-      1,
+      0.65,
       "in"
      ],
      [
       0.3,
-      1
+      0.65
      ],
      [
       0.6,
@@ -397,28 +397,21 @@
    "id": "mtn",
    "type": "sky",
    "name": "Mountains",
-   "in": 2.7,
-   "top": "#1560c4",
-   "horizon": "#5aa3e4",
+   "in": 3.72,
+   "top": "#0c4aa8",
+   "horizon": "#3d8ad8",
    "clouds": 0.18,
    "cloudScale": 1.6,
    "mountains": true,
-   "mountainHeight": 1.25,
-   "sun": 0.25,
+   "mountainHeight": 0.62,
+   "sun": 0.2,
    "seed": 5
-  },
-  {
-   "id": "mtnlift",
-   "type": "adjust",
-   "name": "Mountain lift",
-   "in": 2.7,
-   "exposure": 0.1
   },
   {
    "id": "instincts",
    "type": "group",
    "name": "Back your instincts",
-   "in": 2.7,
+   "in": 3.72,
    "pos": [
     0,
     90,
@@ -431,7 +424,7 @@
       1.08
      ],
      [
-      2.27,
+      1.25,
       1,
       "out"
      ]
@@ -442,7 +435,7 @@
    "id": "back",
    "type": "text",
    "parent": "instincts",
-   "in": 2.7,
+   "in": 3.72,
    "text": "Back",
    "size": 150,
    "font": "Caveat",
@@ -484,7 +477,7 @@
    "id": "yours",
    "type": "text",
    "parent": "instincts",
-   "in": 2.7,
+   "in": 3.72,
    "text": "your instincts",
    "size": 112,
    "weight": 500,

@@ -116,20 +116,30 @@ void main() {
     if (below > -0.03) {
       float dz = 1.0 / (max(below, 0.0) + 0.012);
       float d = clamp(below / gy, 0.0, 1.0);                         // 0 horizon → 1 bottom
-      vec2 gp = vec2(p.x * dz * 0.5 - uCam.x * dz * 0.08, dz * 0.4);
-      float patches = fbm(gp * 0.08 + 1.3);                           // light/dark meadow patches
-      float streak = noise(vec2(gp.x * 6.0, gp.y * 0.6)) * 0.55 + noise(vec2(gp.x * 22.0, gp.y * 2.0)) * 0.45;
-      vec3 gc = uGrass * (0.62 + 0.5 * patches) * (0.7 + 0.5 * streak);
-      gc = mix(gc, gc * vec3(1.15, 1.1, 0.8), smoothstep(0.4, 0.8, patches) * 0.5); // sunlit, yellower tips
-      gc = mix(gc, uHorizon, 0.45 * (1.0 - smoothstep(0.0, 0.18, d)));   // haze near horizon
-      // near-camera blades: tall thin strokes rising from the bottom edge
-      float bx = uv.x * uAspect.x * 90.0 - uCam.x * 30.0;
-      float bid = floor(bx);
-      float bh = 0.10 + 0.22 * hash(vec2(bid, 7.0));
-      float lean = (hash(vec2(bid, 3.0)) - 0.5) * 0.6 + 0.08 * sin(uTime * 1.3 + bid);
-      float fx = fract(bx + lean * (uv.y / bh) * 3.0) - 0.5;
-      float blade = step(uv.y, bh) * (1.0 - smoothstep(0.06, 0.14 * (1.0 - uv.y / bh) + 0.06, abs(fx)));
-      gc = mix(gc, uGrass * (0.45 + 0.6 * hash(vec2(bid, 1.0))), blade * 0.8 * step(0.35, hash(vec2(bid, 9.0))));
+      // ground-plane coordinates (isotropic, so the texture recedes instead of converging in stripes)
+      vec2 gp = vec2(p.x * dz - uCam.x * dz * 0.08, dz) * 0.35;
+      float patches = fbm(gp * 0.12 + 1.3);                           // light/dark meadow patches
+      float tuft = fbm(gp * 1.7 + 4.0);                               // clumps
+      float streak = noise(vec2(gp.x * 9.0, gp.y * 2.5)) * 0.5 + noise(gp * 26.0) * 0.5;
+      // wind: bright sheen bands rolling across the field
+      float wind = 0.5 + 0.5 * sin(gp.x * 0.9 + gp.y * 0.35 - uTime * 1.6 + fbm(gp * 0.3) * 4.0);
+      vec3 gc = uGrass * (0.3 + 1.0 * patches) * (0.6 + 0.6 * tuft) * (0.8 + 0.4 * streak);
+      gc = mix(gc, gc * vec3(1.18, 1.14, 0.78), wind * 0.35 * smoothstep(0.3, 0.8, patches + 0.2));
+      gc = mix(gc, mix(uHills, uHorizon, 0.5), 0.35 * (1.0 - smoothstep(0.0, 0.07, d)));   // haze near horizon
+      // near-camera blades: tapered, leaning, varied, only in the lowest part of frame
+      for (int b = 0; b < 2; b++) {
+        float fb = float(b);
+        float bx = uv.x * uAspect.x * (70.0 + fb * 55.0) - uCam.x * 30.0 + fb * 0.37;
+        float bid = floor(bx);
+        float bh = (0.07 + 0.2 * hash(vec2(bid, 7.0 + fb))) * (1.0 - fb * 0.35);
+        float lean = (hash(vec2(bid, 3.0 + fb)) - 0.5) * 0.7 + 0.1 * sin(uTime * 1.4 + bid * 0.7);
+        float yy = uv.y / bh;
+        float fx = fract(bx + lean * yy * yy) - 0.5;
+        float wdt = 0.34 * (1.0 - yy) + 0.03;
+        float blade = step(uv.y, bh) * (1.0 - smoothstep(wdt * 0.6, wdt, abs(fx)));
+        vec3 bc = uGrass * (0.4 + 0.7 * hash(vec2(bid, 1.0 + fb))) * (0.7 + 0.5 * yy);
+        gc = mix(gc, bc, blade * step(0.45, hash(vec2(bid, 9.0 + fb))) * (0.9 - fb * 0.2));
+      }
       float edge = smoothstep(-0.002, 0.004 + 0.015 * streak, below);
       col = mix(col, gc, edge);
     }

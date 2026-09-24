@@ -5,7 +5,7 @@ import { fitDistance } from "../fmd/schema";
 import { evaluate, shutterOffsets, type Frame } from "../runtime/evaluate";
 import { Compositor } from "./post";
 import { envEquirect, loadEnv } from "./env";
-import { ensureLibraryAssets } from "../assets/assets";
+import { ensureLibraryAssets, preloadTextures } from "../assets/assets";
 import { htmlIdle } from "./html";
 import { makeView, resolveColor, FULLSCREEN, DEG, type View, type Ctx } from "./views";
 
@@ -318,6 +318,9 @@ export class Stage {
   /** Resolve async resources (HDRI, html rasters) a frame at `t` needs, so offline renders are exact. */
   async prepare(doc: Doc, t: number) {
     await loadEnv(doc.comp.env ?? "studio");
+    // never capture a placeholder: every referenced image must be decoded first
+    ensureLibraryAssets(doc.assets ?? {});
+    await preloadTextures(Object.keys(doc.assets ?? {}));
     this.envName = "";
     const offs = doc.comp.motionBlur ? shutterOffsets(doc) : [0];
     for (let pass = 0; pass < 2; pass++) {

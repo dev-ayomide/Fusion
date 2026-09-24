@@ -93,7 +93,7 @@ export function meshGeometry(geom: MeshLayer["geom"]): THREE.BufferGeometry {
         [0.27, 0.6], [0.225, 0.69], [0.21, 0.78], [0.18, 0.87], [0.115, 0.945], [0.04, 0.99], [0.0, 1],
       ];
       const curve = new THREE.SplineCurve(prof.map(([r, y]) => new THREE.Vector2(r * 0.86, y)));
-      const body = latheFromPoints(curve.getSpacedPoints(160), 128, 0.006);
+      const body = latheFromPoints(curve.getSpacedPoints(160), 128, 0.014); // foil crinkles
       const stem = new THREE.CylinderGeometry(0.014, 0.026, 0.14, 16);
       stem.rotateZ(-0.3);
       stem.translate(0.02, 0.55, 0);

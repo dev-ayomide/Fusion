@@ -66,17 +66,17 @@ The goal is that an AE user recognises every control.
 |---|---|
 | Composition settings (size, fps, duration, bg) | Composition inspector (nothing selected) |
 | Layers: solid, text, shape, footage, null, camera, light, adjustment, precomp | `shape`, `text`, `image`, `group` (null), `camera`, `adjust` (adjustment layer), `mesh`/`device` (3D), `html` (UI card), `path` (shape stroke), `sky` |
-| Transform: Anchor, Position (P), Scale (S), Rotation (R), Opacity (T) | Transform section; timeline reveal shortcuts **P S R T**, **U** (animated only) |
-| Stopwatch, keyframes, Keyframe Interpolation (linear/bezier/hold) | ◆ stopwatch on every property; per-key ease incl. `hold` |
+| Transform: Anchor, Position (P), Scale (S), Rotation (R), Opacity (T) | Transform section; **U** reveals animated properties. P/S/R/T are *not* mapped: those keys already add layers / toggle views in Fusion |
+| Stopwatch, keyframes, Keyframe Interpolation (linear/bezier/hold) | ◆ stopwatch on every property; per-key ease incl. `hold`; AE keyframe glyphs (◇ linear, ⧗ ease, ■ hold, ● bézier, per side) |
 | Easy Ease (F9), Ease In (⇧F9), Ease Out (⌘⇧F9) | Same shortcuts on the selected key |
-| Graph editor: value graph, speed graph, influence handles | Graph editor panel with draggable bezier handles → `cubic(x1,y1,x2,y2)` |
+| Graph editor: value graph, speed graph, influence handles | Graph editor (⇧F3): value graph with draggable bézier handles → `cubic(x1,y1,x2,y2)`. *No speed graph yet* |
 | Motion blur layer switch + comp motion-blur button, shutter angle/phase/samples | Layer `motionBlur` switch + comp `motionBlur { angle, samples }` |
-| 3D layer switch, camera, depth of field | `depth` switch, camera with dolly/orbit/truck; blur on background layers |
-| Effects & Presets: Gaussian Blur, Glow, Drop Shadow, Fill, Tint, Brightness/Contrast, Hue/Saturation, Vignette, Noise | Effect channels on layers (`blur`, `shadow`, `glow`) and adjustment/post (`exposure`, `contrast`, `saturation`, `vignette`, `grain`, `bloom`) |
+| 3D layer switch, camera, depth of field | `depth` switch, camera with dolly/orbit/truck and `target`; no true depth of field (animate `blur` instead) |
+| Effects & Presets: Gaussian Blur, Glow, Drop Shadow, Fill, Tint, Brightness/Contrast, Hue/Saturation, Vignette, Noise | Effect Controls section: `blur`, per-layer motion blur, `shadow`, `glass`; `glow` on path strokes; adjustment layers and comp post (`exposure`, `contrast`, `saturation`, `fade` + cloud `dissolve`, `vignette`, `grain`, `bloom`) |
 | Masks and track mattes | `clip` on groups: children are cut to the group's rounded rectangle |
 | Trim Paths | `path` layer with `trimStart`/`trimEnd` channels |
 | Text animators with range selectors | `anim` selectors + text behaviours (`typeUp`, `cascade`, …) |
-| Source Text numbers (expressions) | `counter` on text layers (keyable `value`) |
+| Source Text numbers (expressions) | text `value` channel shown through `{value}` with `format` (decimals, thousands); html cards use `{{name:2}}` bound to keyable `vars.name` |
 | Expressions: `wiggle()`, `loopOut()`, `time` | wiggle/float behaviours, expression language with `t`, `noise()` |
 | Parenting / pick-whip | `parent` field, parent dropdown |
 | Precomps | *not yet* (clip groups cover most uses) |
@@ -91,17 +91,19 @@ The goal is that an AE user recognises every control.
 | Gaussian blur / rack focus per layer, animated | missing | `blur` channel on every layer (multi-pass compositor) |
 | Frosted glass cards over imagery | missing | `glass` on shapes/html: backdrop blur + rim |
 | Soft drop shadows | missing | `shadow` on quads (SDF shadow, keyable) |
-| Glow / bloom, light burst | missing | Comp bloom + `glow` shape preset |
+| Glow / bloom, light burst | missing | Comp bloom; path `glow`; the light burst is a blurred shape |
 | Grade, vignette, grain on the whole frame | grain only (on the bg) | Post stage: exposure, contrast, saturation, vignette, grain |
 | Card that grows with content clipped inside | missing | `clip` groups (stencil masks) |
-| Real UI states (trade form, chat bubbles, insights card) | canvas-drawn placeholder only | `html` layer: HTML/CSS snippets rasterised to crisp textures, with `{{value}}` bindings |
-| Rolling number counters | missing | `counter` on text (keyable `value`, prefix, decimals) |
+| Real UI states (trade form, chat bubbles, insights card) | canvas-drawn placeholder only | `html` layer: HTML/CSS rasterised through SVG foreignObject with embedded fonts, `{{name}}` bindings |
+| White-outs, fog / cloud dissolves | missing | adjustment layer `fade` + `fadeColor`, `dissolve` for cloud-shaped fog |
+| 3D phone with UI on screen | flat device mockup | `slab` mesh body + html screen and bubbles parented in 3D |
+| Rolling number counters | missing | keyable text `value` via `{value}` + `format`; keyable html `vars` |
 | Chart line that draws on | missing | `path` layer with trim |
-| Mixed-font words (script accent) | one font per layer | Rich runs: `[word]{font,color}` spans |
+| Mixed-font words (script accent) | one font per layer | `spans: [{ text, font, weight, color, size }]` on text layers |
 | Write-on script reveal | missing | per-glyph `wipe` in selectors |
-| Chrome 3D hero object | device only | `mesh` layer: primitives + lathe/balloon, PBR presets (chrome, glass, plastic, gold) under an HDRI |
-| 3D sports props around it | shapes only | 3D-rendered Fluent emoji sprites in cloners, and 3D primitives |
-| Photographic sky / field / mountains | gradient only | `sky` layer (procedural clouds, sun, haze, hills) and full-frame `image` with `fit: cover` |
-| Graph editor, Easy Ease, speed graph | named eases only | Graph editor + F9 family |
+| Chrome 3D hero object | device only | `mesh` layer: primitives, spline-lathed pear/balloon with foil crinkles, `slab` (phone bodies), PBR presets (chrome, foil, metal, gold, glass, plastic, matte, clay, emissive) under @pmndrs HDRIs |
+| 3D sports props around it | shapes only | 24 bundled 3D-rendered Fluent emoji (`lib://emoji3d/…`, asset library menu) as images or cloner children, plus 3D primitives |
+| Photographic sky / field / mountains | gradient only | `sky` layer: perspective cumulus, sun, heightfield-lit mountains, meadow, stars. Procedural: it reads as a place but not as a photo (see QUALITY.md). Bring-your-own photos work as `image` layers |
+| Graph editor, Easy Ease, speed graph | named eases only | Value-graph editor + F9 family (no speed graph) |
 
 Remaining gaps after this round are tracked in `docs/QUALITY.md`.

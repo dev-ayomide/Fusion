@@ -1,6 +1,8 @@
 import { Output, BufferTarget, CanvasSource, Mp4OutputFormat, WebMOutputFormat, getFirstEncodableVideoCodec, type VideoCodec } from "mediabunny";
 import type { Doc } from "../fmd/schema";
 import { Stage } from "../render/stage";
+import { evaluate } from "../runtime/evaluate";
+import { htmlIdle } from "../render/html";
 import { preloadTextures } from "../assets/assets";
 import { ensureFont, fontsReady } from "../render/glyphs";
 
@@ -53,11 +55,16 @@ export async function exportVideo(doc: Doc, opts: ExportOptions): Promise<Export
     // warm-up render so glyph and screen textures exist before frame 0 is captured
     await stage.prepare(doc, 0);
     stage.renderFrame(doc, 0);
+    // after the warm-up only html cards can change asynchronously (counters re-rasterise)
+    const hasHtml = doc.layers.some((l) => l.type === "html");
     await new Promise((r) => setTimeout(r, 50));
     for (let i = 0; i < total; i++) {
       if (opts.signal?.aborted) throw new DOMException("Export cancelled", "AbortError");
       const t = i / fps;
-      await stage.prepare(doc, t);
+      if (hasHtml) {
+        stage.sync(doc, evaluate(doc, t));
+        await htmlIdle();
+      }
       stage.renderFrame(doc, t);
       await source.add(t, 1 / fps);
       opts.onProgress?.(i + 1, total);

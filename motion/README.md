@@ -8,10 +8,12 @@ Standalone: no Remotion, not part of the root workspaces.
 cd motion
 npm install
 npm run dev        # http://localhost:5180
-npm test           # 62 unit + property tests (schema, ops/inverses, evaluator)
-npm run e2e        # Playwright: 30 end-to-end tests (editor, AI bridge, export)
+npm test           # unit + property tests (schema, ops/inverses, evaluator, eases)
+npm run e2e        # Playwright end-to-end tests (editor, AI bridge, export, AE-style controls)
 npm run bench      # token benchmark → docs/TOKENS.md
 npx tsx e2e/record-session.ts out/   # records the full user lifecycle to out/session.webm
+npx tsx e2e/record-pear.ts out/      # walkthrough of the Pear replica + AE-style tools
+python bench/quality.py …            # replica-vs-reference metrics (docs/QUALITY.md)
 ```
 
 ## What's in the box
@@ -28,6 +30,13 @@ npx tsx e2e/record-session.ts out/   # records the full user lifecycle to out/se
 - **Assistant** — prompts become pending turns carrying only the outline + scoped layers. Any agent answers through
   `window.fusion.bridge`; ops stream into a live preview with a per-op accept/reject diff card; one undo per turn.
   Paste ops from any AI in Pro mode.
+- **After Effects muscle memory** — F9 / ⇧F9 / ⌘⇧F9 Easy Ease, ⇧F3 graph editor with bézier handles, AE keyframe
+  icons, J/K keyframe navigation, U reveal, comp motion-blur switch, Effect Controls (blur, drop shadow, glass).
+- **Premium finish** — temporal motion blur, bloom, grade, vignette, grain; layer blur, frosted glass, soft shadows,
+  clip masks, adjustment layers with white-outs and cloud dissolves.
+- **Rich layers** — HTML/CSS UI cards with keyable counters, chart lines with trim paths, PBR 3D meshes under HDRIs
+  (chrome, foil, glass…), procedural skies/mountains/meadows, styled text runs with script accents and write-ons.
+- **Asset library** — 24 bundled 3D objects (Fluent 3D emoji), 10 HDRI environments, 12 font families.
 - **Export** — MP4/WebM at 720p/1080p/4K, rendered frame-by-frame in the browser by the preview renderer
   (mediabunny + WebCodecs; picks H.264 where the browser has it, else AV1/VP9).
 - **History / undo** — every change (you, AI, slider, JSON edit) is one transaction; jump back from the History tab.
@@ -42,7 +51,9 @@ src/render/    Stage: SDF quad material, per-glyph text, PBR device mockups, clo
 src/editor/    store (op log, preview, transient drags), playhead, bridge, components (Viewport, Timeline, Inspector, Assistant, …)
 src/export/    mediabunny exporter
 e2e/           Playwright suites, session recorder, fixtures
-docs/          PLAN-v2 (verbatim), PLAN-DELTA, FMD-SPEC, TOKENS
+docs/          PLAN-v2 (verbatim), PLAN-DELTA, FMD-SPEC, TOKENS, ARCHITECTURE, MOTION-DESIGN, QUALITY
+fixtures/pear/ the Pear breakdown replicated as four FMD docs (+ generator)
+bench/         token benchmark, quality metrics, frame renderer
 ```
 
 Keyboard: Space play · ←/→ frame · ⌘Z/⇧⌘Z · ⌫ delete · ⌘D duplicate · T/R/E add text/rect/ellipse ·
@@ -50,5 +61,5 @@ Keyboard: Space play · ←/→ frame · ⌘Z/⇧⌘Z · ⌫ delete · ⌘D dupl
 
 ## Not yet (next slices)
 
-In-app model provider + MCP endpoint (the bridge API is the contract), graph editor with bezier handles,
-audio lane, Figma import, Lottie export, WebGPU. See `docs/PLAN-DELTA.md`.
+In-app model provider + MCP endpoint (the bridge API is the contract), speed graph, audio lane, precomps,
+photographic backgrounds from a stock-photo provider, Figma import, Lottie export, WebGPU. See `docs/PLAN-DELTA.md`.

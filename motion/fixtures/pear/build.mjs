@@ -44,7 +44,9 @@ const cam = { id: "shot", type: "camera", fov: 35, pos: [0, 0, 1713] };
         scale: [[t0, 0.2], [t0 + 0.26, 1, "out"], [1.4, 1.05], [1.66, 0.4, "in"]],
         opacity: [[t0, 0], [t0 + 0.08, 1]],
         "rot.z": [[t0, (i % 2 ? 1 : -1) * 90], [t0 + 0.35, 0, "out"], [1.66, (i % 2 ? -1 : 1) * 40, "in"]],
-      } });
+      },
+      // keep orbiting while on screen, like the reference: a slow drift plus a gentle tumble
+      beh: [{ id: "drift", use: "float", at: t0 + 0.2, amp: 26 + (i % 3) * 8, period: 1.3 + (i % 4) * 0.2 }, { id: "tumble", use: "sway", at: t0 + 0.2, deg: 14, period: 1.1 + (i % 3) * 0.25 }] });
   });
   // --- kinetic type
   d.layers.push(
@@ -88,32 +90,32 @@ const cam = { id: "shot", type: "camera", fov: 35, pos: [0, 0, 1713] };
   d.layers.push(cam,
     // --- A: trade panel on white, types an amount, scrolls to Confirm, then whips up
     { id: "day", type: "sky", name: "Sky", top: "#0f5cc6", horizon: "#6fb2ec", clouds: 0.32, cloudScale: 1.4, sun: 0.3, seed: 11 },
-    { id: "insights", type: "html", name: "Insights card", in: 1.35, out: 2.75, w: 1200, h: 1000, radius: 48, pos: [0, -1200, 0], html: insights,
+    { id: "insights", type: "html", name: "Insights card", in: 1.98, out: 3.85, w: 1200, h: 1000, radius: 48, pos: [0, -1200, 0], html: insights,
       glass: { blur: 34, tint: "#5c9ae0", amount: 0.22, rim: 0.35 }, vars: { v: 174.45, p: 0.9 },
       keys: { "pos.y": [[0, -1300], [0.45, -90, "out"], [1.3, -60]], "vars.v": [[0.2, 174.45], [1.2, 339.47, "out"]], "vars.p": [[0.2, 0.9], [1.2, 3.0, "out"]], blur: [[0, 22], [0.35, 0, "out"]] } },
-    { id: "chart", type: "path", name: "Chart", in: 1.35, out: 2.75, parent: "insights", pos: [0, -260, 2], smooth: true, width: 6, stroke: "#6fe38a", glow: 0.5, fillTo: -150, fill: "#6fe38a",
+    { id: "chart", type: "path", name: "Chart", in: 1.98, out: 3.85, parent: "insights", pos: [0, -260, 2], smooth: true, width: 6, stroke: "#6fe38a", glow: 0.5, fillTo: -150, fill: "#6fe38a",
       points: [[-560, -120], [-420, -90], [-300, -100], [-180, -60], [-60, -70], [60, -20], [150, -40], [240, 30], [320, -30], [420, 60], [520, 140]],
       keys: { trimEnd: [[0.4, 0], [1.25, 1, "inOut"]] } },
-    { id: "paper", type: "shape", name: "White page", shape: "rect", w: 1920, h: 1080, fill: "#fafbfc", out: 1.55,
-      keys: { "pos.y": [[1.2, 0], [1.48, 1500, "in"]] } },
-    { id: "trade", type: "html", name: "Trade panel", out: 1.55, w: 1100, h: 1060, radius: 36, pos: [0, -60, 0], html: trade, vars: { amt: 0, caret: 1 },
+    { id: "paper", type: "shape", name: "White page", shape: "rect", w: 1920, h: 1080, fill: "#fafbfc", out: 2.2,
+      keys: { "pos.y": [[1.84, 0], [2.12, 1500, "in"]] } },
+    { id: "trade", type: "html", name: "Trade panel", out: 2.2, w: 1100, h: 1060, radius: 36, pos: [0, -60, 0], html: trade, vars: { amt: 0, caret: 1 },
       shadow: { x: 0, y: -10, blur: 60, color: "#1a2a40", opacity: 0.08 },
       keys: {
-        "pos.y": [[0, -800], [0.22, -60, "out"], [0.72, -60], [0.9, 420, "inOut"], [1.2, 440], [1.48, 2000, "in"]],
-        "vars.amt": [[0.3, 0, "hold"], [0.42, 5, "hold"], [0.56, 50, "hold"]],
-        "vars.caret": [[0, 1, "hold"], [0.62, 0, "hold"]],
+        "pos.y": [[0, -800], [0.22, -60, "out"], [1.0, -60], [1.2, 420, "inOut"], [1.8, 440], [2.12, 2000, "in"]],
+        "vars.amt": [[0.4, 0, "hold"], [0.55, 5, "hold"], [0.72, 50, "hold"]],
+        "vars.caret": [[0, 1, "hold"], [0.8, 0, "hold"]],
         blur: [[0, 16], [0.2, 0, "out"]],
       } },
-    { id: "press", type: "shape", name: "Confirm press", parent: "trade", shape: "rect", w: 1012, h: 104, radius: 22, fill: "#ffffff", out: 1.5, pos: [0, -440, 1], opacity: 0,
-      keys: { opacity: [[0.98, 0], [1.03, 0.4], [1.25, 0]] } },
+    { id: "press", type: "shape", name: "Confirm press", parent: "trade", shape: "rect", w: 1012, h: 104, radius: 22, fill: "#ffffff", out: 2.2, pos: [0, -440, 1], opacity: 0,
+      keys: { opacity: [[1.55, 0], [1.6, 0.4], [1.8, 0]] } },
     // --- white flash into the mountains
-    { id: "flash", type: "adjust", name: "White flash", fadeColor: "#ffffff", in: 2.45, out: 3.1, keys: { fade: [[0, 0], [0.2, 1, "in"], [0.3, 1], [0.6, 0, "out"]] } },
-    { id: "mtn", type: "sky", name: "Mountains", in: 2.7, top: "#1560c4", horizon: "#5aa3e4", clouds: 0.18, cloudScale: 1.6, mountains: true, mountainHeight: 1.25, sun: 0.25, seed: 5 },
-    { id: "mtnlift", type: "adjust", name: "Mountain lift", in: 2.7, exposure: 0.1 },
-    { id: "instincts", type: "group", name: "Back your instincts", in: 2.7, pos: [0, 90, 0], keys: { scale: [[0, 1.08], [2.27, 1, "out"]] } },
-    { id: "back", type: "text", parent: "instincts", in: 2.7, text: "Back", size: 150, font: "Caveat", weight: 700, color: "$lime", align: "right", pos: [-190, -6, 0],
+    { id: "flash", type: "adjust", name: "White flash", fadeColor: "#ffffff", in: 3.5, out: 4.15, keys: { fade: [[0, 0], [0.2, 0.65, "in"], [0.3, 0.65], [0.6, 0, "out"]] } },
+    { id: "mtn", type: "sky", name: "Mountains", in: 3.72, top: "#0c4aa8", horizon: "#3d8ad8", clouds: 0.18, cloudScale: 1.6, mountains: true, mountainHeight: 0.62, sun: 0.2, seed: 5 },
+    
+    { id: "instincts", type: "group", name: "Back your instincts", in: 3.72, pos: [0, 90, 0], keys: { scale: [[0, 1.08], [1.25, 1, "out"]] } },
+    { id: "back", type: "text", parent: "instincts", in: 3.72, text: "Back", size: 150, font: "Caveat", weight: 700, color: "$lime", align: "right", pos: [-190, -6, 0],
       anim: [{ id: "write", sel: { by: "char", shape: "smooth", start: 0, end: 0.3, offset: [[0.05, -0.3], [0.45, 1, "linear"]] }, add: { wipe: 1 } }] },
-    { id: "yours", type: "text", parent: "instincts", in: 2.7, text: "your instincts", size: 112, weight: 500, color: "#ffffff", align: "left", pos: [-120, 0, 0],
+    { id: "yours", type: "text", parent: "instincts", in: 3.72, text: "your instincts", size: 112, weight: 500, color: "#ffffff", align: "left", pos: [-120, 0, 0],
       anim: [{ id: "in", sel: { by: "word", shape: "smooth", start: 0, end: 0.5, offset: [[0.3, -0.5], [0.8, 1, "out"]] }, add: { opacity: -1, pos: [30, 0, 0] } }] },
     { id: "loopflash", type: "adjust", name: "Loop flash", fadeColor: "#fafbfc", in: 4.72, keys: { fade: [[0, 0], [0.25, 1, "in"]] } },
   );
@@ -132,15 +134,16 @@ const cam = { id: "shot", type: "camera", fov: 35, pos: [0, 0, 1713] };
 <div style="width:92px;height:92px;border-radius:46px;background:#f4f5fa;display:flex;align-items:center;justify-content:center;font-size:60px;color:#23262c;font-weight:300">+</div>
 <div style="flex:1;height:92px;border-radius:46px;background:#f7f8fc;border:2px solid #e3e5ee;display:flex;align-items:center;padding:0 34px;font-size:38px;color:#a4a9b8">iMessage</div></div>`;
   d.layers.push(
-    { id: "shot", type: "camera", fov: 40, pos: [0, -260, 1150], target: [0, -40, 0],
+    { id: "shot", type: "camera", fov: 40, pos: [0, -160, 1900], target: [0, 60, 0],
       keys: { "pos.x": [[0, 180], [3.83, -160, "inOut"]], "pos.y": [[0, -380], [1.9, -300, "inOut"], [3.83, -340, "inOut"]] } },
-    { id: "sky", type: "sky", top: "#1a6fd6", horizon: "#8bc6f2", clouds: 0.5, cloudScale: 1.2, sun: 0.25, seed: 21 },
-    { id: "phone", type: "group", name: "Phone", pos: [40, 260, 0], rot: [-38, 8, 10],
+    { id: "sky", type: "sky", top: "#1f6fd2", horizon: "#4f9ae6", clouds: 0.36, cloudScale: 1.6, sun: 0.15, seed: 21 },
+    { id: "phone", type: "group", name: "Phone", pos: [40, 200, 0], rot: [-32, 8, 10],
       keys: {
         "rot.y": [[0, 78], [0.32, 6, "out"], [3.45, -8], [3.8, -88, "in"]],
-        "rot.z": [[0, 16], [0.32, 10, "out"], [3.45, 6], [3.8, -4, "in"]],
+        "rot.z": [[0, 18], [0.32, 12, "out"], [1.1, 4, "inOut"], [1.9, -6, "inOut"], [2.7, 8, "inOut"], [3.45, 4, "inOut"], [3.8, -4, "in"]],
+        "rot.x": [[0, -30], [0.32, -34, "out"], [1.5, -26, "inOut"], [2.6, -36, "inOut"], [3.8, -30, "inOut"]],
         "pos.y": [[0.3, -40], [1.2, 40, "inOut"], [2.0, 150, "inOut"], [2.8, 260, "inOut"]],
-        "pos.x": [[0, 160], [0.32, 40, "out"], [3.83, -40]],
+        "pos.x": [[0, 260], [0.32, 60, "out"], [1.3, -120, "inOut"], [2.3, 80, "inOut"], [3.3, -60, "inOut"], [3.83, 40, "inOut"]],
       } },
     { id: "body", type: "mesh", parent: "phone", geom: "slab", dims: [860, 1760, 70], radius: 150, size: 1, material: "plastic", color: "#c6f025", roughness: 0.28 },
     { id: "bezel", type: "mesh", parent: "phone", geom: "slab", dims: [810, 1710, 72], radius: 128, size: 1, material: "plastic", color: "#101214", roughness: 0.4, pos: [0, 0, 1] },
@@ -178,10 +181,10 @@ const cam = { id: "shot", type: "camera", fov: 35, pos: [0, 0, 1713] };
 </div>`;
   const rowY = [70, -48, -166]; // centres of the three rows inside the card (card-local)
   d.layers.push(cam,
-    { id: "day", type: "sky", name: "Day", top: "#1c6ed2", horizon: "#a7d4f3", clouds: 0.62, cloudScale: 1.1, hills: "#3d7a35", hillHeight: 0.55, grass: "#4c9a2c", sun: 0.35, seed: 8 },
-    { id: "night", type: "sky", name: "Night", out: 0.95, top: "#040a1e", horizon: "#1b3264", clouds: 0.45, cloudScale: 1.1, hills: "#0b1d14", hillHeight: 0.55, grass: "#0f2a14", stars: 0.8, sun: 0, seed: 8,
+    { id: "day", type: "sky", name: "Day", top: "#1a5fc6", horizon: "#9fcdf0", clouds: 0.42, cloudScale: 1.4, hills: "#3d7a35", hillHeight: 0.55, grass: "#4c9a2c", sun: 0.35, seed: 8 },
+    { id: "night", type: "sky", name: "Night", out: 0.95, top: "#040a1e", horizon: "#1b3264", clouds: 0.42, cloudScale: 1.4, hills: "#0b1d14", hillHeight: 0.55, grass: "#0f2a14", stars: 0.8, sun: 0, seed: 8,
       keys: { opacity: [[0.58, 1], [0.9, 0, "inOut"]] } },
-    { id: "title", type: "text", name: "Trade and Share", text: "Trade and Share", size: 104, weight: 500, color: "#ffffff", out: 1.0, pos: [0, 40, 0],
+    { id: "title", type: "text", name: "Trade and Share", text: "Trade and Share", size: 168, weight: 500, color: "#ffffff", out: 1.0, pos: [0, 40, 0],
       spans: [{ text: "and", color: "$lime" }], keys: { blur: [[0.55, 0], [0.9, 30, "in"]], opacity: [[0.62, 1], [0.95, 0]], scale: [[0, 1], [0.95, 1.06]] } },
     { id: "mcard", type: "html", name: "Odds card", in: 0.62, out: 3.15, w: 860, h: 900, radius: 44, pos: [0, -120, 0], html: card,
       glass: { blur: 30, tint: "#e8f1ff", amount: 0.22, rim: 0.4 },

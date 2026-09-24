@@ -2,6 +2,7 @@ import { useStore, type Chip } from "./store";
 import { outline, inspect, catalog } from "../fmd/outline";
 import type { Op } from "../fmd/ops";
 import { validate } from "../fmd/ops";
+import { Doc } from "../fmd/schema";
 import { playhead } from "./playhead";
 import { TEMPLATES } from "../templates";
 import { importAsset } from "../assets/assets";
@@ -86,6 +87,15 @@ export function installBridge() {
       if (!t) throw new Error("no template " + id);
       useStore.getState().loadDoc(t.make());
       useStore.getState().set("screen", "editor");
+    },
+    /** Open any FMD document (object or URL). It is schema-checked; invalid docs throw with the reasons. */
+    loadDoc: async (src: unknown) => {
+      const raw = typeof src === "string" ? await (await fetch(src)).json() : src;
+      const r = Doc.safeParse(raw);
+      if (!r.success) throw new Error(r.error.issues.slice(0, 5).map((i) => `${i.path.join("/")}: ${i.message}`).join("; "));
+      useStore.getState().loadDoc(r.data);
+      useStore.getState().set("screen", "editor");
+      return validate(r.data);
     },
     importAssetFromUrl: async (url: string, name: string) => {
       const blob = await (await fetch(url)).blob();

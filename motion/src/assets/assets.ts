@@ -151,7 +151,7 @@ export function assetTexture(id: string | undefined): { tex: THREE.Texture; w: n
 
 /** Wait until the given assets have textures (used before export so no frame shows a placeholder). */
 export async function preloadTextures(ids: string[]): Promise<void> {
-  const pending = ids.filter((id) => urls.has(id));
+  const pending = ids.filter((id) => urls.has(id) && textures.get(id) !== "error");
   for (let i = 0; i < 100; i++) {
     const missing = pending.filter((id) => !assetTexture(id) && textures.get(id) !== "error");
     if (!missing.length) return;
