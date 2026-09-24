@@ -98,6 +98,30 @@ export function registerAssetUrl(id: string, url: string) {
   notify();
 }
 
+/**
+ * Built-in library assets need no upload: a doc asset whose src is `lib://<pack>/<name>` resolves
+ * to a file bundled under /assets/<pack>/. Packs: emoji3d (Fluent 3D, MIT).
+ */
+export const LIBRARY: Record<string, { ext: string; names: string[] }> = {
+  emoji3d: {
+    ext: "webp",
+    names: ["pear", "soccer", "football", "basketball", "tennis", "baseball", "rugby", "trophy", "moneybag", "money", "coin", "chart", "rocket", "star", "glow", "sparkles", "fire", "party", "gem", "target", "phone", "heart", "crown", "bulb"],
+  },
+};
+export function libraryUrl(src: string): string | null {
+  const m = /^lib:\/\/([a-z0-9]+)\/([a-z0-9-]+)$/.exec(src);
+  if (!m || !LIBRARY[m[1]]?.names.includes(m[2])) return null;
+  return `${import.meta.env.BASE_URL}assets/${m[1]}/${m[2]}.${LIBRARY[m[1]].ext}`;
+}
+/** Register URLs for every library asset a doc references (cheap; called on each sync). */
+export function ensureLibraryAssets(assets: Record<string, { src: string }>) {
+  for (const [id, a] of Object.entries(assets)) {
+    if (urls.has(id)) continue;
+    const u = libraryUrl(a.src);
+    if (u) urls.set(id, u);
+  }
+}
+
 export function assetUrl(id: string): string | undefined {
   return urls.get(id);
 }

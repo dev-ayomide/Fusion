@@ -1,5 +1,5 @@
 import { Doc as DocSchema, type Doc, type Layer } from "./schema";
-import { CATALOG, suggestBeh, channelsFor } from "./catalog";
+import { CATALOG, suggestBeh, channelsFor, isChannelOf } from "./catalog";
 import { delPath, getPath, itemIndex, locate, setPath, PathError } from "./paths";
 
 /* ------------------------------------------------------------------ *
@@ -292,14 +292,18 @@ function validateLayer(doc: Doc, l: Layer, ids: Set<string>): string[] {
       if (l.keys?.[w]) errs.push(`${l.id}/beh/${b.id}: ${w} has keys and an owner behavior — bake "${b.id}" or delete the keys`);
     }
   }
-  for (const ch of Object.keys(l.keys ?? {})) if (!channelsFor(l.type).includes(ch)) errs.push(`${l.id}/keys/${ch}: not a channel of ${l.type} (use ${channelsFor(l.type).join(", ")})`);
-  for (const ch of Object.keys(l.expr ?? {})) if (!channelsFor(l.type).includes(ch)) errs.push(`${l.id}/expr/${ch}: not a channel of ${l.type}`);
+  for (const ch of Object.keys(l.keys ?? {})) if (!isChannelOf(l.type, ch)) errs.push(`${l.id}/keys/${ch}: not a channel of ${l.type} (use ${channelsFor(l.type).join(", ")})`);
+  for (const ch of Object.keys(l.expr ?? {})) if (!isChannelOf(l.type, ch)) errs.push(`${l.id}/expr/${ch}: not a channel of ${l.type}`);
   const asset = (src: string | undefined, where: string) => {
     if (src && !(src in doc.assets)) errs.push(`${l.id}/${where}: unknown asset "${src}" (have ${Object.keys(doc.assets).join(", ") || "none"})`);
   };
   switch (l.type) {
     case "text":
       colorRef(l.color, "color");
+      l.spans?.forEach((sp, i) => {
+        colorRef(sp.color, `spans/${i}/color`);
+        if (!l.text.includes(sp.text)) errs.push(`${l.id}/spans/${i}: "${sp.text}" is not in the text`);
+      });
       break;
     case "shape":
       colorRef(l.fill, "fill");
@@ -315,10 +319,27 @@ function validateLayer(doc: Doc, l: Layer, ids: Set<string>): string[] {
       asset(l.screen, "screen");
       colorRef(l.color, "color");
       break;
+    case "path":
+      colorRef(l.stroke, "stroke");
+      colorRef(l.fill, "fill");
+      break;
+    case "mesh":
+      colorRef(l.color, "color");
+      if (l.map) asset(l.map, "map");
+      break;
+    case "sky":
+      colorRef(l.top, "top");
+      colorRef(l.horizon, "horizon");
+      colorRef(l.hills, "hills");
+      colorRef(l.grass, "grass");
+      break;
+    case "adjust":
+      colorRef(l.fadeColor, "fadeColor");
+      break;
     case "cloner":
       colorRef(l.child.fill, "child/fill");
       l.child.colors?.forEach((c, i) => colorRef(c, `child/colors/${i}`));
-      if (l.child.kind === "image") asset(l.child.src, "child/src");
+      if (l.child.kind === "image") l.child.src?.split(",").forEach((s) => asset(s.trim(), "child/src"));
       break;
   }
   return errs;

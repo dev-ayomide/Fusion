@@ -13,7 +13,7 @@ export interface Xform {
   rx: number; ry: number; rz: number; // degrees
   s: number; o: number;
 }
-export interface GlyphState { dx: number; dy: number; s: number; rz: number; o: number }
+export interface GlyphState { dx: number; dy: number; s: number; rz: number; o: number; wipe: number }
 export interface CloneState { x: number; y: number; z: number; s: number; o: number; rz: number; i: number }
 export interface LayerFrame {
   id: string;
@@ -51,7 +51,8 @@ const TUPLE: Record<string, [string, number]> = {
   "pos.x": ["pos", 0], "pos.y": ["pos", 1], "pos.z": ["pos", 2],
   "rot.x": ["rot", 0], "rot.y": ["rot", 1], "rot.z": ["rot", 2],
 };
-const DEFAULTS: Record<string, number> = { scale: 1, opacity: 1, fov: 35, noise: 0, angle: 90, tracking: 0, radius: 0, spin: 0, gap: 0 };
+const DEFAULTS: Record<string, number> = { scale: 1, opacity: 1, fov: 35, noise: 0, angle: 90, tracking: 0, radius: 0, spin: 0, gap: 0, blur: 0, trimStart: 0, trimEnd: 1, width: 6, glow: 0, clouds: 0.5, drift: 1, sun: 0.6, hillHeight: 0.25, exposure: 0, contrast: 0, saturation: 0, fade: 0, value: 0, size: 200 };
+const NESTED_DEFAULTS: Record<string, number> = { "shadow.opacity": 0.35, "shadow.blur": 40, "glass.blur": 28, "glass.amount": 0.18, "clip.radius": 0 };
 
 export function staticValue(doc: Doc, L: Layer, ch: string): number {
   const t = TUPLE[ch];
@@ -64,6 +65,14 @@ export function staticValue(doc: Doc, L: Layer, ch: string): number {
   }
   const v = rec[ch];
   if (typeof v === "number") return v;
+  if (ch.includes(".")) {
+    // nested fields: shadow.opacity, glass.blur, clip.w, vars.amount …
+    const [head, tail] = ch.split(".", 2);
+    const obj = rec[head] as Record<string, unknown> | undefined;
+    const nv = obj?.[tail];
+    if (typeof nv === "number") return nv;
+    return NESTED_DEFAULTS[ch] ?? 0;
+  }
   if (ch === "r" && L.type === "cloner") return 300;
   if (ch === "w" && L.type === "device") return (L as { model: string }).model === "browser" ? 900 : 390;
   if (ch === "gap" && L.type === "cloner") return (L as ClonerLayer).child.w * 1.4;
@@ -219,7 +228,7 @@ function unitOf(u: TextUnits, i: number, by: string): number {
 
 function evalGlyphs(L: TextLayer, local: number): GlyphState[] {
   const u = textUnits(L.text);
-  const out: GlyphState[] = u.chars.map(() => ({ dx: 0, dy: 0, s: 1, rz: 0, o: 1 }));
+  const out: GlyphState[] = u.chars.map(() => ({ dx: 0, dy: 0, s: 1, rz: 0, o: 1, wipe: 0 }));
   for (const b of L.beh ?? []) {
     const spec = CATALOG[b.use];
     if (!spec || spec.mode !== "text") continue;
@@ -273,6 +282,7 @@ function evalGlyphs(L: TextLayer, local: number): GlyphState[] {
       if (a.add.scale !== undefined) g.s += a.add.scale * w;
       if (a.add.rot !== undefined) g.rz += a.add.rot * w;
       if (a.add.opacity !== undefined) g.o = clamp01(g.o + a.add.opacity * w);
+      if (a.add.wipe !== undefined) g.wipe = clamp01(g.wipe + a.add.wipe * w);
     }
   }
   return out;
@@ -331,14 +341,21 @@ function evalClones(L: ClonerLayer, local: number, props: Record<string, number>
 
 /* ------------------------------ layers ----------------------------- */
 const PROPS: Partial<Record<Layer["type"], string[]>> = {
-  text: ["size", "tracking"],
-  shape: ["w", "h", "radius"],
-  image: ["w", "radius"],
-  device: ["w"],
-  cloner: ["r", "spin", "gap"],
+  text: ["size", "tracking", "value", "blur"],
+  shape: ["w", "h", "radius", "blur", "shadow.opacity", "shadow.blur", "glass.blur", "glass.amount"],
+  image: ["w", "radius", "blur", "shadow.opacity", "shadow.blur"],
+  html: ["w", "h", "radius", "blur", "shadow.opacity", "shadow.blur", "glass.blur", "glass.amount"],
+  path: ["trimStart", "trimEnd", "width", "glow", "blur"],
+  device: ["w", "blur", "shadow.opacity"],
+  mesh: ["size", "blur"],
+  cloner: ["r", "spin", "gap", "blur"],
   camera: ["fov"],
-  gradient: ["angle", "noise"],
+  group: ["clip.w", "clip.h", "clip.radius", "blur"],
+  gradient: ["angle", "noise", "blur"],
+  sky: ["clouds", "drift", "sun", "hillHeight", "blur"],
+  adjust: ["blur", "exposure", "contrast", "saturation", "fade"],
 };
+const NO_XF = new Set(["gradient", "sky", "adjust"]);
 
 export function layerSpan(doc: Doc, L: Layer): [number, number] {
   return [L.in ?? 0, L.out ?? doc.comp.dur];
@@ -349,13 +366,14 @@ export function evalLayer(doc: Doc, L: Layer, t: number): LayerFrame {
   const local = t - a;
   const visible = !L.hidden && t >= a && t < b + 1e-9;
   const ch = (c: string) => channel(doc, L, c, local);
-  const xf: Xform = L.type === "gradient"
+  const xf: Xform = NO_XF.has(L.type)
     ? { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, s: 1, o: ch("opacity") }
     : { x: ch("pos.x"), y: ch("pos.y"), z: ch("pos.z"), rx: ch("rot.x"), ry: ch("rot.y"), rz: ch("rot.z"), s: ch("scale"), o: ch("opacity") };
   const props: Record<string, number> = {};
   for (const p of PROPS[L.type] ?? []) props[p] = ch(p);
+  if (L.type === "html") for (const k of Object.keys(L.vars ?? {})) props["vars." + k] = ch("vars." + k);
   const f: LayerFrame = { id: L.id, type: L.type, visible, local, xf, props };
-  if (L.type === "text") f.glyphs = evalGlyphs(L, local);
+  if (L.type === "text") f.glyphs = evalGlyphs({ ...L, text: displayText(L, props.value) }, local);
   if (L.type === "cloner") f.clones = evalClones(L, local, props);
   return f;
 }
@@ -365,8 +383,12 @@ export function activeCamera(doc: Doc): CameraLayer | undefined {
   return (doc.comp.cam && cams.find((c) => c.id === doc.comp.cam)) || cams[0];
 }
 
-export function evaluate(doc: Doc, t: number): Frame {
-  const layers = doc.layers.map((L) => evalLayer(doc, L, t));
+/**
+ * Evaluate the whole document at time t. `shutter` offsets time for motion-blur subframes:
+ * layers with motionBlur !== false (and the camera) are sampled at t + shutter, the rest at t.
+ */
+export function evaluate(doc: Doc, t: number, shutter = 0): Frame {
+  const layers = doc.layers.map((L) => evalLayer(doc, L, shutter && L.motionBlur !== false ? t + shutter : t));
   const byId = new Map(layers.map((l) => [l.id, l]));
   const cam = activeCamera(doc);
   let camera: CameraFrame;
@@ -375,6 +397,25 @@ export function evaluate(doc: Doc, t: number): Frame {
     camera = { x: f.xf.x, y: f.xf.y, z: f.xf.z, rx: f.xf.rx, ry: f.xf.ry, rz: f.xf.rz, fov: f.props.fov, target: cam.target };
   } else camera = { x: 0, y: 0, z: fitDistance(doc.comp.h, 35), rx: 0, ry: 0, rz: 0, fov: 35 };
   return { t, layers, camera, byId };
+}
+
+/** Subframe time offsets for a motion-blurred frame (AE: shutter angle, phase = -angle/2, samples). */
+export function shutterOffsets(doc: Doc, samples?: number): number[] {
+  const mb = doc.comp.motionBlur;
+  if (!mb) return [0];
+  const n = Math.max(1, samples ?? mb.samples);
+  if (n === 1) return [0];
+  const open = (mb.angle / 360) / doc.comp.fps;
+  return Array.from({ length: n }, (_, i) => -open / 2 + (open * (i + 0.5)) / n);
+}
+
+/** Text with `{value}` replaced by the counter channel, formatted. */
+export function displayText(L: TextLayer, value: number): string {
+  if (!L.text.includes("{value}")) return L.text;
+  const d = L.format?.decimals ?? 0;
+  const thousands = L.format?.thousands ?? true;
+  const s = Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: thousands });
+  return L.text.replace("{value}", (value < 0 ? "-" : "") + s);
 }
 
 /* ------------------------------- bake ------------------------------ */

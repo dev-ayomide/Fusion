@@ -10,6 +10,11 @@ export const FONT_STACK: Record<string, string> = {
   "Bricolage Grotesque Variable": `"Bricolage Grotesque Variable", system-ui, sans-serif`,
   "Instrument Serif": `"Instrument Serif", Georgia, serif`,
   "JetBrains Mono Variable": `"JetBrains Mono Variable", ui-monospace, monospace`,
+  "Permanent Marker": `"Permanent Marker", "Comic Sans MS", cursive`,
+  "Caveat": `"Caveat", cursive`,
+  "Yellowtail": `"Yellowtail", cursive`,
+  "Inter Tight Variable": `"Inter Tight Variable", "Inter Variable", system-ui, sans-serif`,
+  "Playfair Display Variable": `"Playfair Display Variable", Georgia, serif`,
 };
 export const FONT_NAMES = Object.keys(FONT_STACK);
 export function fontCss(font: string | undefined, weight: number, px: number): string {
@@ -91,36 +96,83 @@ export function glyphTexture(ch: string, font: string | undefined, weight: numbe
   return glyph;
 }
 
-export interface LayoutGlyph { ch: string; x: number; y: number }
+export interface GlyphStyle { font: string | undefined; weight: number; size: number; color?: string }
+export interface LayoutGlyph { ch: string; x: number; y: number; style: GlyphStyle }
 export interface TextLayout { glyphs: LayoutGlyph[]; width: number; height: number; lineWidths: number[] }
+export interface SpanStyle { text: string; all?: boolean; font?: string; weight?: number; color?: string; size?: number }
 const layoutCache = new Map<string, TextLayout>();
 
-/** Positions (centre of each glyph) in layer space: block centred vertically, aligned horizontally. */
-export function layoutText(text: string, font: string | undefined, weight: number, size: number, align: "left" | "center" | "right", tracking = 0, lineHeight = 1.08): TextLayout {
-  const key = `${text}|${font}|${weight}|${size}|${align}|${tracking}|${lineHeight}|${fontsVersion}`;
+/** Style of every character (by code-point index), applying spans over the base style. */
+function charStyles(text: string, base: GlyphStyle, spans: SpanStyle[] | undefined): GlyphStyle[] {
+  const chars = Array.from(text);
+  const out = chars.map(() => base);
+  for (const sp of spans ?? []) {
+    const st: GlyphStyle = { font: sp.font ?? base.font, weight: sp.weight ?? (sp.font ? 400 : base.weight), size: sp.size ?? base.size, color: sp.color ?? base.color };
+    let from = 0;
+    for (;;) {
+      const idx = text.indexOf(sp.text, from);
+      if (idx < 0) break;
+      // convert UTF-16 index to code-point index
+      const cp = Array.from(text.slice(0, idx)).length;
+      const len = Array.from(sp.text).length;
+      for (let i = cp; i < cp + len; i++) out[i] = st;
+      if (!sp.all) break;
+      from = idx + sp.text.length;
+    }
+  }
+  return out;
+}
+
+/**
+ * Positions (centre of each glyph) in layer space: block centred vertically, aligned horizontally.
+ * Runs of the same style are measured together so kerning inside a run is kept.
+ */
+export function layoutText(text: string, font: string | undefined, weight: number, size: number, align: "left" | "center" | "right", tracking = 0, lineHeight = 1.08, spans?: SpanStyle[]): TextLayout {
+  const key = `${text}|${font}|${weight}|${size}|${align}|${tracking}|${lineHeight}|${fontsVersion}|${spans ? JSON.stringify(spans) : ""}`;
   const hit = layoutCache.get(key);
   if (hit) return hit;
   const ctx = mctx();
-  ctx.font = fontCss(font, weight, size);
+  const base: GlyphStyle = { font, weight, size };
+  const styles = charStyles(text, base, spans);
   const lines = text.split("\n");
-  const lh = size * lineHeight;
   const glyphs: LayoutGlyph[] = [];
   const lineWidths: number[] = [];
+  let ci = 0;
+  const lineHeights = lines.map((line, li) => {
+    const off = lines.slice(0, li).reduce((a, l) => a + Array.from(l).length + 1, 0);
+    return Math.max(size, ...Array.from(line).map((_, i) => styles[off + i]?.size ?? size)) * lineHeight;
+  });
+  const totalH = lineHeights.reduce((a, b) => a + b, 0);
+  let yTop = totalH / 2;
   lines.forEach((line, li) => {
     const chars = Array.from(line);
-    const total = ctx.measureText(line).width + tracking * Math.max(0, chars.length - 1);
+    const placed: { ch: string; x: number; st: GlyphStyle }[] = [];
+    let x = 0;
+    let i = 0;
+    while (i < chars.length) {
+      const st = styles[ci + i];
+      let j = i;
+      while (j < chars.length && styles[ci + j] === st) j++;
+      ctx.font = fontCss(st.font, st.weight, st.size);
+      let prefix = "";
+      for (let k = i; k < j; k++) {
+        const before = ctx.measureText(prefix).width;
+        const adv = ctx.measureText(prefix + chars[k]).width - before;
+        placed.push({ ch: chars[k], x: x + before + adv / 2 + k * tracking, st });
+        prefix += chars[k];
+      }
+      x += ctx.measureText(prefix).width;
+      i = j;
+    }
+    const total = x + tracking * Math.max(0, chars.length - 1);
     lineWidths.push(total);
     const x0 = align === "left" ? 0 : align === "center" ? -total / 2 : -total;
-    const y = ((lines.length - 1) / 2 - li) * lh;
-    let prefix = "";
-    chars.forEach((ch, i) => {
-      const before = ctx.measureText(prefix).width;
-      const adv = ctx.measureText(prefix + ch).width - before;
-      glyphs.push({ ch, x: x0 + before + i * tracking + adv / 2, y });
-      prefix += ch;
-    });
+    const y = yTop - lineHeights[li] / 2;
+    yTop -= lineHeights[li];
+    for (const p of placed) glyphs.push({ ch: p.ch, x: x0 + p.x, y, style: p.st });
+    ci += chars.length + 1;
   });
-  const layout = { glyphs, width: Math.max(0, ...lineWidths), height: lines.length * lh, lineWidths };
+  const layout = { glyphs, width: Math.max(0, ...lineWidths), height: totalH, lineWidths };
   if (layoutCache.size > 400) layoutCache.clear();
   layoutCache.set(key, layout);
   return layout;

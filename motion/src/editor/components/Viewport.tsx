@@ -6,6 +6,8 @@ import { applyTxn, type Op } from "../../fmd/ops";
 import { useStore, displayDoc, useDisplayDoc } from "../store";
 import { playhead } from "../playhead";
 import { onFontsChanged } from "../../render/glyphs";
+import { onEnvReady } from "../../render/env";
+import { onHtmlReady } from "../../render/html";
 import { onAssetsChanged, importAsset } from "../../assets/assets";
 import { setChannelOps, findLayer, localTime } from "../edit";
 import { createLayerOps, type NewKind } from "../create";
@@ -67,7 +69,8 @@ export function Viewport() {
     const area: Rect = split ? { x: W / 2 + 6, y: pad.t, w: W / 2 - pad.s - 6, h: H - pad.t - pad.b } : { x: pad.s, y: pad.t, w: W - pad.s * 2, h: H - pad.t - pad.b };
     const shot = fit(area, aspect);
     shotRect.current = shot;
-    stage.sync(d, evaluate(d, playhead.get()));
+    const t = playhead.get();
+    stage.sync(d, evaluate(d, t));
     const r = stage.renderer;
     r.setScissorTest(false);
     r.setClearColor(0x0d0e12, 1);
@@ -84,7 +87,7 @@ export function Viewport() {
       cam.updateProjectionMatrix();
       stage.renderSceneView(cam, toGL(sr));
     } else sceneRect.current = null;
-    stage.render(toGL(shot));
+    stage.renderFrame(d, t, { rect: toGL(shot), samples: playhead.isPlaying() ? 4 : undefined });
     drawOverlay(stage, shot, st.selection, st.preview !== null);
   }
 
@@ -123,7 +126,7 @@ export function Viewport() {
         return { x: r.left + s.x + (b.x + b.w / 2) * s.w, y: r.top + s.y + (b.y + b.h / 2) * s.h };
       },
     };
-    const offs = [playhead.subscribe(requestRender), onFontsChanged(requestRender), onAssetsChanged(requestRender)];
+    const offs = [playhead.subscribe(requestRender), onFontsChanged(requestRender), onAssetsChanged(requestRender), onEnvReady(requestRender), onHtmlReady(requestRender)];
     const ro = new ResizeObserver(requestRender);
     ro.observe(wrap.current!);
     requestRender();

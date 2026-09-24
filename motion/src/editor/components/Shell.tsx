@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useStore } from "../store";
 import { playhead } from "../playhead";
 import { TEMPLATES } from "../../templates";
-import { evaluate } from "../../runtime/evaluate";
 import { Stage } from "../../render/stage";
 import { fontsReady, ensureFont } from "../../render/glyphs";
 import { importAsset } from "../../assets/assets";
@@ -65,10 +64,8 @@ function useThumbnails(): Record<string, string> {
       TEMPLATES.forEach((t, i) => {
         const d = docs[i];
         const at = t.id === "blank" ? 0 : Math.min(d.comp.dur - 0.2, 3.6);
-        stage.sync(d, evaluate(d, at));
-        stage.render();
-        stage.sync(d, evaluate(d, at));
-        stage.render();
+        stage.renderFrame(d, at, { samples: 1 });
+        stage.renderFrame(d, at, { samples: 1 });
         out[t.id] = canvas.toDataURL("image/jpeg", 0.85);
       });
       stage.dispose();

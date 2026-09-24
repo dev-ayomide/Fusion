@@ -42,6 +42,8 @@ export const Anim = z.object({
     rot: z.number().optional(),
     scale: z.number().optional(),
     opacity: z.number().optional(),
+    /** 0..1 of each glyph hidden from the right edge — a write-on wipe */
+    wipe: z.number().optional(),
   }),
 });
 
@@ -68,7 +70,29 @@ const base = {
   keys: z.record(z.string(), Track).optional(),
   beh: z.array(Beh).optional(),
   expr: z.record(z.string(), z.string()).optional(),
+  /** Gaussian blur radius in comp px (AE: Gaussian Blur › Blurriness). Keyable as `blur`. */
+  blur: z.number().min(0).optional(),
+  /** Per-layer motion-blur switch; only used when comp.motionBlur is on. Default true. */
+  motionBlur: z.boolean().optional(),
 };
+
+export const Shadow = z.object({
+  x: z.number().default(0),
+  y: z.number().default(-24),
+  blur: z.number().min(0).default(40),
+  color: z.string().default("#000000"),
+  opacity: z.number().min(0).max(1).default(0.35),
+});
+export const Glass = z.object({
+  /** backdrop blur radius (px) */
+  blur: z.number().min(0).default(28),
+  tint: z.string().default("#ffffff"),
+  /** how much tint covers the blurred backdrop */
+  amount: z.number().min(0).max(1).default(0.18),
+  /** brightness of the thin rim light */
+  rim: z.number().min(0).max(1).default(0.5),
+});
+const surface = { shadow: Shadow.optional(), glass: Glass.optional() };
 
 export const GradientLayer = z.object({
   ...base,
@@ -79,9 +103,24 @@ export const GradientLayer = z.object({
   noise: z.number().min(0).max(1).optional(),
 });
 
+export const Span = z.object({
+  /** the substring to style (first occurrence, or every one with all: true) */
+  text: z.string().min(1),
+  all: z.boolean().optional(),
+  font: z.string().optional(),
+  weight: z.number().optional(),
+  color: Color.optional(),
+  size: z.number().positive().optional(),
+});
+
 export const TextLayer = z.object({
   ...base,
   type: z.literal("text"),
+  /** styled runs inside the text: a script accent word, a coloured keyword */
+  spans: z.array(Span).optional(),
+  /** rolling number: `{value}` in text is replaced by the keyable `value` channel */
+  value: z.number().optional(),
+  format: z.object({ decimals: z.number().int().min(0).max(6).default(0), thousands: z.boolean().default(true) }).optional(),
   text: z.string(),
   size: z.number().positive(),
   font: z.string().optional(),
@@ -96,6 +135,7 @@ export const TextLayer = z.object({
 export const ShapeLayer = z.object({
   ...base,
   type: z.literal("shape"),
+  ...surface,
   shape: z.enum(["rect", "ellipse"]),
   w: z.number().positive(),
   h: z.number().positive(),
@@ -108,6 +148,7 @@ export const ShapeLayer = z.object({
 export const ImageLayer = z.object({
   ...base,
   type: z.literal("image"),
+  ...surface,
   src: z.string(),
   w: z.number().positive(),
   h: z.number().positive().optional(),
@@ -117,6 +158,7 @@ export const ImageLayer = z.object({
 export const DeviceLayer = z.object({
   ...base,
   type: z.literal("device"),
+  shadow: Shadow.optional(),
   model: z.enum(["iphone", "browser"]),
   screen: z.string().optional(),
   w: z.number().positive().optional(),
@@ -157,10 +199,92 @@ export const CameraLayer = z.object({
   target: Vec3.optional(),
 });
 
-export const GroupLayer = z.object({ ...base, type: z.literal("group") });
+export const GroupLayer = z.object({
+  ...base,
+  type: z.literal("group"),
+  /** mask children to a rounded rectangle centred on the group (AE: mask / track matte). Keyable: clip.w clip.h clip.radius */
+  clip: z.object({ w: z.number().positive(), h: z.number().positive(), radius: z.number().min(0).default(0) }).optional(),
+});
+
+/** A UI card written in HTML/CSS and rasterised crisply. `{{name}}` / `{{name:2}}` pull from `vars` (keyable as vars.name). */
+export const HtmlLayer = z.object({
+  ...base,
+  type: z.literal("html"),
+  ...surface,
+  html: z.string().max(20000),
+  w: z.number().positive(),
+  h: z.number().positive(),
+  radius: z.number().min(0).optional(),
+  vars: z.record(z.string(), z.number()).optional(),
+});
+
+/** A stroked line (AE shape layer + Trim Paths). Points are layer-local px. */
+export const PathLayer = z.object({
+  ...base,
+  type: z.literal("path"),
+  points: z.array(z.tuple([z.number(), z.number()])).min(2),
+  smooth: z.boolean().optional(),
+  closed: z.boolean().optional(),
+  stroke: Color.optional(),
+  width: z.number().positive().optional(),
+  trimStart: z.number().min(0).max(1).optional(),
+  trimEnd: z.number().min(0).max(1).optional(),
+  /** soft glow around the stroke */
+  glow: z.number().min(0).max(1).optional(),
+  /** fill the area under the line down to this y (charts) */
+  fillTo: z.number().optional(),
+  fill: Color.optional(),
+});
+
+export const MATERIALS = ["chrome", "metal", "gold", "glass", "plastic", "matte", "clay", "emissive"] as const;
+/** A real 3D object under the scene's HDRI environment. */
+export const MeshLayer = z.object({
+  ...base,
+  type: z.literal("mesh"),
+  geom: z.enum(["sphere", "box", "torus", "cylinder", "capsule", "cone", "balloon", "pear", "coin", "ring"]),
+  size: z.number().positive(),
+  material: z.enum(MATERIALS).default("plastic"),
+  color: Color.optional(),
+  roughness: z.number().min(0).max(1).optional(),
+  metalness: z.number().min(0).max(1).optional(),
+  /** texture mapped onto the object (asset id) */
+  map: z.string().optional(),
+});
+
+/** Procedural photographic-style background: sky gradient, drifting clouds, sun, haze and hills. */
+export const SkyLayer = z.object({
+  ...base,
+  type: z.literal("sky"),
+  top: Color.optional(),
+  horizon: Color.optional(),
+  clouds: z.number().min(0).max(1).optional(),
+  cloudScale: z.number().positive().optional(),
+  drift: z.number().optional(),
+  sun: z.number().min(0).max(1).optional(),
+  hills: Color.optional(),
+  hillHeight: z.number().min(0).max(1).optional(),
+  mountains: z.boolean().optional(),
+  grass: Color.optional(),
+  seed: z.number().optional(),
+});
+
+/** Adjustment layer: affects every layer below it while visible (AE adjustment layer). */
+export const AdjustLayer = z.object({
+  ...base,
+  type: z.literal("adjust"),
+  /** stops; 0 = unchanged */
+  exposure: z.number().min(-4).max(4).optional(),
+  /** offsets; 0 = unchanged, -1..1 */
+  contrast: z.number().min(-1).max(1).optional(),
+  saturation: z.number().min(-1).max(1).optional(),
+  /** fade everything below toward this colour by `fade` (0..1) — white-outs, dips to black */
+  fadeColor: Color.optional(),
+  fade: z.number().min(0).max(1).optional(),
+});
 
 export const Layer = z.discriminatedUnion("type", [
   GradientLayer, TextLayer, ShapeLayer, ImageLayer, DeviceLayer, ClonerLayer, CameraLayer, GroupLayer,
+  HtmlLayer, PathLayer, MeshLayer, SkyLayer, AdjustLayer,
 ]);
 
 export const Asset = z.object({
@@ -188,6 +312,24 @@ export const Doc = z.object({
     dur: z.number().positive().max(600),
     bg: Color,
     cam: z.string().optional(),
+    /** AE comp motion blur: 180° shutter = half a frame; samples = subframes averaged */
+    motionBlur: z.object({ angle: z.number().min(0).max(720).default(180), samples: z.number().int().min(2).max(32).default(12) }).optional(),
+    /** whole-frame finishing */
+    post: z
+      .object({
+        bloom: z.number().min(0).max(3).optional(),
+        bloomThreshold: z.number().min(0).max(4).optional(),
+        /** stops; 0 = unchanged */
+        exposure: z.number().min(-4).max(4).optional(),
+        /** offsets; 0 = unchanged, -1..1 (AE Brightness & Contrast / Hue-Saturation style) */
+        contrast: z.number().min(-1).max(1).optional(),
+        saturation: z.number().min(-1).max(1).optional(),
+        vignette: z.number().min(0).max(1).optional(),
+        grain: z.number().min(0).max(1).optional(),
+      })
+      .optional(),
+    /** image-based lighting for 3D: studio | city | sky | sunset | dawn | night | park | warehouse */
+    env: z.string().optional(),
   }),
   brand: z.object({
     font: z.string(),
@@ -218,8 +360,16 @@ export type ClonerLayer = z.infer<typeof ClonerLayer>;
 export type CameraLayer = z.infer<typeof CameraLayer>;
 export type GradientLayer = z.infer<typeof GradientLayer>;
 export type Binding = z.infer<typeof Binding>;
+export type HtmlLayer = z.infer<typeof HtmlLayer>;
+export type PathLayer = z.infer<typeof PathLayer>;
+export type MeshLayer = z.infer<typeof MeshLayer>;
+export type SkyLayer = z.infer<typeof SkyLayer>;
+export type AdjustLayer = z.infer<typeof AdjustLayer>;
+export type GroupLayer = z.infer<typeof GroupLayer>;
+export type ShadowT = z.infer<typeof Shadow>;
+export type GlassT = z.infer<typeof Glass>;
 
-export const LAYER_TYPES: LayerType[] = ["gradient", "text", "shape", "image", "device", "cloner", "camera", "group"];
+export const LAYER_TYPES: LayerType[] = ["gradient", "sky", "text", "shape", "image", "html", "path", "device", "mesh", "cloner", "camera", "group", "adjust"];
 
 /** Distance at which a camera with vertical `fov` frames a comp of height `h` exactly. */
 export function fitDistance(h: number, fov = 35): number {

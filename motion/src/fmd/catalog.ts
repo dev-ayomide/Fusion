@@ -34,7 +34,7 @@ export interface BehSpec {
   desc: string;
 }
 
-const VISUAL: LayerType[] = ["text", "shape", "image", "device", "cloner", "group"];
+const VISUAL: LayerType[] = ["text", "shape", "image", "device", "cloner", "group", "html", "path", "mesh"];
 
 export const CATALOG: Record<string, BehSpec> = {
   fadeIn: { use: "fadeIn", label: "Fade in", group: "Enter", mode: "own", writes: ["opacity"], dur: 0.5, ease: "out", bake: "exact", types: VISUAL, params: {}, desc: "Opacity 0 → its value." },
@@ -159,17 +159,30 @@ function editDistance(a: string, b: string): number {
 }
 
 /** Channels a layer can key (numbers). Type-specific ones listed per type. */
-export const COMMON_CHANNELS = ["pos.x", "pos.y", "pos.z", "rot.x", "rot.y", "rot.z", "scale", "opacity"];
+export const COMMON_CHANNELS = ["pos.x", "pos.y", "pos.z", "rot.x", "rot.y", "rot.z", "scale", "opacity", "blur"];
 export const TYPE_CHANNELS: Partial<Record<LayerType, string[]>> = {
-  text: ["size", "tracking"],
-  shape: ["w", "h", "radius"],
-  image: ["w", "radius"],
-  device: ["w"],
+  text: ["size", "tracking", "value"],
+  shape: ["w", "h", "radius", "shadow.opacity", "shadow.blur", "glass.blur", "glass.amount"],
+  image: ["w", "radius", "shadow.opacity", "shadow.blur"],
+  html: ["w", "h", "radius", "shadow.opacity", "shadow.blur", "glass.blur", "glass.amount"],
+  path: ["trimStart", "trimEnd", "width", "glow"],
+  device: ["w", "shadow.opacity"],
+  mesh: ["size"],
   cloner: ["r", "spin", "gap"],
   camera: ["fov"],
+  group: ["clip.w", "clip.h", "clip.radius"],
   gradient: ["angle", "noise"],
+  sky: ["clouds", "drift", "sun", "hillHeight"],
+  adjust: ["blur", "exposure", "contrast", "saturation", "fade"],
 };
+/** Types that are backgrounds or pure effects: no transform channels. */
+const NO_TRANSFORM: LayerType[] = ["gradient", "sky", "adjust"];
 export function channelsFor(type: LayerType): string[] {
-  if (type === "gradient") return TYPE_CHANNELS.gradient!;
+  if (NO_TRANSFORM.includes(type)) return ["opacity", ...(TYPE_CHANNELS[type] ?? [])];
   return [...COMMON_CHANNELS, ...(TYPE_CHANNELS[type] ?? [])];
+}
+/** html layers also accept any vars.<name> channel. */
+export function isChannelOf(type: LayerType, ch: string): boolean {
+  if (type === "html" && /^vars\.[A-Za-z_]\w*$/.test(ch)) return true;
+  return channelsFor(type).includes(ch);
 }
