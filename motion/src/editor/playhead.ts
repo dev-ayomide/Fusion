@@ -14,7 +14,8 @@ const playSubs = new Set<Fn>();
 
 function tick(now: number) {
   if (!playing) return;
-  const dt = Math.min(0.1, (now - last) / 1000);
+  // real time, like an NLE: slow frames drop, they don't slow the clock (clamped for tab switches)
+  const dt = Math.min(0.25, (now - last) / 1000);
   last = now;
   t += dt;
   if (t >= duration) {

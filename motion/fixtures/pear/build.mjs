@@ -135,8 +135,8 @@ const cam = { id: "shot", type: "camera", fov: 35, pos: [0, 0, 1713] };
 <div style="flex:1;height:92px;border-radius:46px;background:#f7f8fc;border:2px solid #e3e5ee;display:flex;align-items:center;padding:0 34px;font-size:38px;color:#a4a9b8">iMessage</div></div>`;
   d.layers.push(
     { id: "shot", type: "camera", fov: 40, pos: [0, -160, 1900], target: [0, 60, 0],
-      keys: { "pos.x": [[0, 180], [3.83, -160, "inOut"]], "pos.y": [[0, -380], [1.9, -300, "inOut"], [3.83, -340, "inOut"]] } },
-    { id: "sky", type: "sky", top: "#1f6fd2", horizon: "#4f9ae6", clouds: 0.36, cloudScale: 1.6, sun: 0.15, seed: 21 },
+      keys: { "pos.x": [[0, 420], [1.3, -200, "inOut"], [2.5, 260, "inOut"], [3.83, -380, "inOut"]], "pos.y": [[0, -380], [1.9, -220, "inOut"], [3.83, -340, "inOut"]] } },
+    { id: "sky", type: "sky", top: "#3a88dc", horizon: "#a2d2f2", clouds: 0.5, cloudScale: 1.5, sun: 0.2, seed: 21 },
     { id: "phone", type: "group", name: "Phone", pos: [40, 200, 0], rot: [-32, 8, 10],
       keys: {
         "rot.y": [[0, 78], [0.32, 6, "out"], [3.45, -8], [3.8, -88, "in"]],
@@ -180,8 +180,9 @@ const cam = { id: "shot", type: "camera", fov: 35, pos: [0, 0, 1713] };
 <div style="text-align:center;margin-top:12px"><span style="background:#d4f76a;color:#2c3a06;font-size:19px;font-weight:600;padding:7px 18px;border-radius:14px">Best odds found</span></div>
 </div>`;
   const rowY = [70, -48, -166]; // centres of the three rows inside the card (card-local)
-  d.layers.push(cam,
-    { id: "day", type: "sky", name: "Day", top: "#1a5fc6", horizon: "#9fcdf0", clouds: 0.42, cloudScale: 1.4, hills: "#3d7a35", hillHeight: 0.55, grass: "#4c9a2c", sun: 0.35, seed: 8 },
+  const q4cam = { ...cam, keys: { "pos.z": [[0, 1713], [4.57, 1540, "inOut"]], "pos.x": [[0, -90], [4.57, 90, "inOut"]], "pos.y": [[0, 30], [4.57, -30, "inOut"]] } };
+  d.layers.push(q4cam,
+    { id: "day", type: "sky", name: "Day", top: "#1a5fc6", horizon: "#9fcdf0", clouds: 0.36, cloudScale: 1.4, hills: "#2f6a2a", hillHeight: 0.55, grass: "#2c6a18", sun: 0.35, seed: 8 },
     { id: "night", type: "sky", name: "Night", out: 0.95, top: "#040a1e", horizon: "#1b3264", clouds: 0.42, cloudScale: 1.4, hills: "#0b1d14", hillHeight: 0.55, grass: "#0f2a14", stars: 0.8, sun: 0, seed: 8,
       keys: { opacity: [[0.58, 1], [0.9, 0, "inOut"]] } },
     { id: "title", type: "text", name: "Trade and Share", text: "Trade and Share", size: 168, weight: 500, color: "#ffffff", out: 1.0, pos: [0, 40, 0],

@@ -13,6 +13,8 @@ Source of truth for the schema: `src/fmd/schema.ts` (Zod 4). Behaviour catalog: 
   (1713 for 1080p), so 1 unit = 1 px at z = 0. Importers of Y-down sources (SVG, Figma, Lottie) flip Y once.
 - **Time:** `in` / `out` are comp seconds. **Everything inside a layer is layer-local** (zero at `in`):
   behaviour `at`, key times, expression `t`. Moving a layer is one `set` on `in`; duplicates keep their choreography.
+  Parenting is transform-only: a child keeps its **own** `in`/`out` and local clock — it does not inherit the
+  parent's in-point (give children the same `in` if they should start with the parent).
 
 ## 2. Document
 

@@ -42,7 +42,42 @@
     0,
     0,
     1713
-   ]
+   ],
+   "keys": {
+    "pos.z": [
+     [
+      0,
+      1713
+     ],
+     [
+      4.57,
+      1540,
+      "inOut"
+     ]
+    ],
+    "pos.x": [
+     [
+      0,
+      -90
+     ],
+     [
+      4.57,
+      90,
+      "inOut"
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      30
+     ],
+     [
+      4.57,
+      -30,
+      "inOut"
+     ]
+    ]
+   }
   },
   {
    "id": "day",
@@ -50,11 +85,11 @@
    "name": "Day",
    "top": "#1a5fc6",
    "horizon": "#9fcdf0",
-   "clouds": 0.42,
+   "clouds": 0.36,
    "cloudScale": 1.4,
-   "hills": "#3d7a35",
+   "hills": "#2f6a2a",
    "hillHeight": 0.55,
-   "grass": "#4c9a2c",
+   "grass": "#2c6a18",
    "sun": 0.35,
    "seed": 8
   },

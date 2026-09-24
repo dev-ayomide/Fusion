@@ -44,6 +44,12 @@ export function Viewport() {
   const [dropping, setDropping] = useState(false);
   const [menu, setMenu] = useState<null | "shape" | "device" | "cloner" | "fx" | "lib">(null);
 
+  /**
+   * Dynamic resolution while playing: time between drawn frames drives a render-scale in
+   * 0.4…1 (in 0.1 steps, so render targets aren't reallocated every frame). Paused frames
+   * always render at full quality, so what you stop on is exactly what exports.
+   */
+  const perf = useRef({ scale: 1, last: 0, ema: 16 });
   const requestRender = () => {
     if (raf.current) return;
     raf.current = requestAnimationFrame(() => {
@@ -58,10 +64,20 @@ export function Viewport() {
     if (!stage || !el) return;
     const d = displayDoc();
     const W = el.clientWidth, H = el.clientHeight;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const playing = playhead.isPlaying();
+    const now = performance.now();
+    const pf = perf.current;
+    if (playing && pf.last) {
+      pf.ema = pf.ema * 0.8 + Math.min(500, now - pf.last) * 0.2;
+      if (pf.ema > 40 && pf.scale > 0.4) pf.scale = Math.round((pf.scale - 0.1) * 10) / 10;
+      else if (pf.ema < 24 && pf.scale < 1) pf.scale = Math.round((pf.scale + 0.1) * 10) / 10;
+    }
+    pf.last = playing ? now : 0;
+    const baseDpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = baseDpr * (playing ? pf.scale : 1);
     const size = stage.renderer.getSize(new THREE.Vector2());
     if (size.x !== W || size.y !== H || stage.renderer.getPixelRatio() !== dpr) stage.setSize(W, H, dpr);
-    stage.textResolution = Math.max(1.5, dpr * 1.2);
+    stage.textResolution = Math.max(1.5, baseDpr * 1.2); // glyphs don't re-rasterise when the scale moves
     const aspect = d.comp.w / d.comp.h;
     const st = useStore.getState();
     const split = st.view === "split" && W > 700;
@@ -87,7 +103,7 @@ export function Viewport() {
       cam.updateProjectionMatrix();
       stage.renderSceneView(cam, toGL(sr));
     } else sceneRect.current = null;
-    stage.renderFrame(d, t, { rect: toGL(shot), samples: playhead.isPlaying() ? 4 : undefined });
+    stage.renderFrame(d, t, { rect: toGL(shot), samples: playing ? (perf.current.scale < 0.8 ? 1 : 4) : undefined });
     drawOverlay(stage, shot, st.selection, st.preview !== null);
   }
 
@@ -126,7 +142,7 @@ export function Viewport() {
         return { x: r.left + s.x + (b.x + b.w / 2) * s.w, y: r.top + s.y + (b.y + b.h / 2) * s.h };
       },
     };
-    const offs = [playhead.subscribe(requestRender), onFontsChanged(requestRender), onAssetsChanged(requestRender), onEnvReady(requestRender), onHtmlReady(requestRender)];
+    const offs = [playhead.subscribe(requestRender), playhead.subscribePlaying(requestRender), onFontsChanged(requestRender), onAssetsChanged(requestRender), onEnvReady(requestRender), onHtmlReady(requestRender)];
     const ro = new ResizeObserver(requestRender);
     ro.observe(wrap.current!);
     requestRender();
