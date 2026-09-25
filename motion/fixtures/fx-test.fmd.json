@@ -1,0 +1,354 @@
+{
+ "v": 1,
+ "name": "FX test",
+ "comp": {
+  "w": 1920,
+  "h": 1080,
+  "fps": 30,
+  "dur": 6,
+  "bg": "#0b0d12",
+  "cam": "shot",
+  "env": "sky",
+  "motionBlur": {
+   "angle": 180,
+   "samples": 8
+  },
+  "post": {
+   "bloom": 0.6,
+   "bloomThreshold": 0.9,
+   "vignette": 0.25,
+   "grain": 0.25,
+   "contrast": 0.05
+  }
+ },
+ "brand": {
+  "font": "Inter Variable",
+  "colors": {
+   "lime": "#c8f53c",
+   "ink": "#101418"
+  }
+ },
+ "assets": {
+  "soccer": {
+   "src": "lib://emoji3d/soccer",
+   "mime": "image/webp"
+  },
+  "trophy": {
+   "src": "lib://emoji3d/trophy",
+   "mime": "image/webp"
+  }
+ },
+ "layers": [
+  {
+   "id": "sky",
+   "type": "sky",
+   "clouds": 0.55,
+   "mountains": true,
+   "hillHeight": 0.3
+  },
+  {
+   "id": "shot",
+   "type": "camera",
+   "fov": 35,
+   "pos": [
+    0,
+    0,
+    1713
+   ],
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      -60
+     ],
+     [
+      6,
+      60,
+      "inOut"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "card",
+   "type": "group",
+   "clip": {
+    "w": 700,
+    "h": 820,
+    "radius": 64
+   },
+   "pos": [
+    -480,
+    0,
+    0
+   ],
+   "keys": {
+    "clip.h": [
+     [
+      0,
+      200
+     ],
+     [
+      1.2,
+      820,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "cardbg",
+   "type": "shape",
+   "parent": "card",
+   "shape": "rect",
+   "w": 700,
+   "h": 820,
+   "fill": "$lime"
+  },
+  {
+   "id": "pear",
+   "type": "mesh",
+   "parent": "card",
+   "geom": "pear",
+   "size": 520,
+   "material": "chrome",
+   "color": "#d8ff5a",
+   "pos": [
+    0,
+    -20,
+    120
+   ],
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      -40
+     ],
+     [
+      6,
+      80
+     ]
+    ]
+   }
+  },
+  {
+   "id": "ball",
+   "type": "image",
+   "src": "soccer",
+   "w": 180,
+   "pos": [
+    -60,
+    330,
+    200
+   ],
+   "blur": 0,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      -800
+     ],
+     [
+      0.8,
+      -60,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "glass",
+   "type": "html",
+   "w": 560,
+   "h": 360,
+   "radius": 36,
+   "pos": [
+    420,
+    150,
+    0
+   ],
+   "glass": {
+    "blur": 30,
+    "tint": "#ffffff",
+    "amount": 0.16,
+    "rim": 0.6
+   },
+   "shadow": {
+    "x": 0,
+    "y": -30,
+    "blur": 60,
+    "color": "#000000",
+    "opacity": 0.35
+   },
+   "vars": {
+    "amt": 180
+   },
+   "keys": {
+    "vars.amt": [
+     [
+      0.5,
+      180
+     ],
+     [
+      2.5,
+      357,
+      "out"
+     ]
+    ]
+   },
+   "html": "<div style='padding:36px;color:#fff;font-family:Inter Variable'><div style='font-size:22px;opacity:.8'>Insights</div><div style='font-size:84px;font-weight:700;letter-spacing:-2px'>${{amt}}</div><div style='font-size:20px;color:#c8f53c'>\u25b2 98.3% this week</div></div>"
+  },
+  {
+   "id": "chart",
+   "type": "path",
+   "pos": [
+    420,
+    -160,
+    10
+   ],
+   "points": [
+    [
+     -260,
+     -60
+    ],
+    [
+     -170,
+     -20
+    ],
+    [
+     -90,
+     -50
+    ],
+    [
+     0,
+     10
+    ],
+    [
+     80,
+     -10
+    ],
+    [
+     170,
+     60
+    ],
+    [
+     260,
+     90
+    ]
+   ],
+   "smooth": true,
+   "stroke": "#c8f53c",
+   "width": 7,
+   "glow": 0.6,
+   "fillTo": -110,
+   "fill": "#c8f53c",
+   "keys": {
+    "trimEnd": [
+     [
+      0.6,
+      0
+     ],
+     [
+      2.4,
+      1,
+      "inOut"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "title",
+   "type": "text",
+   "text": "Back your instincts",
+   "size": 110,
+   "weight": 800,
+   "color": "#ffffff",
+   "pos": [
+    420,
+    -380,
+    0
+   ],
+   "spans": [
+    {
+     "text": "instincts",
+     "font": "Caveat",
+     "color": "$lime",
+     "size": 140,
+     "weight": 700
+    }
+   ],
+   "anim": [
+    {
+     "id": "wipe",
+     "sel": {
+      "by": "char",
+      "shape": "smooth",
+      "start": 0,
+      "end": 0.2,
+      "offset": [
+       [
+        0,
+        0
+       ],
+       [
+        1.6,
+        1.2,
+        "out"
+       ]
+      ]
+     },
+     "add": {
+      "wipe": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "whip",
+   "type": "shape",
+   "shape": "ellipse",
+   "w": 120,
+   "h": 120,
+   "fill": "#ff6a3d",
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      -900
+     ],
+     [
+      1,
+      900,
+      "inOut"
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      420
+     ]
+    ]
+   }
+  },
+  {
+   "id": "grade",
+   "type": "adjust",
+   "saturation": 0.05,
+   "fade": 0,
+   "fadeColor": "#ffffff",
+   "keys": {
+    "fade": [
+     [
+      5.4,
+      0
+     ],
+     [
+      6,
+      1,
+      "in"
+     ]
+    ]
+   }
+  }
+ ]
+}

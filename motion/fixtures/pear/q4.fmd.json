@@ -1,0 +1,697 @@
+{
+ "v": 1,
+ "name": "Pear Q4 — trade and share",
+ "comp": {
+  "w": 1920,
+  "h": 1080,
+  "fps": 30,
+  "dur": 4.57,
+  "bg": "#fafbf8",
+  "cam": "shot",
+  "env": "sky",
+  "motionBlur": {
+   "angle": 200,
+   "samples": 8
+  },
+  "post": {
+   "bloom": 0.25,
+   "bloomThreshold": 1.1,
+   "grain": 0.12,
+   "vignette": 0.15
+  }
+ },
+ "brand": {
+  "font": "Inter Variable",
+  "colors": {
+   "lime": "#c9f23a",
+   "pale": "#eaf8b8",
+   "ink": "#16241a",
+   "sky": "#2f86e0",
+   "white": "#ffffff"
+  }
+ },
+ "assets": {},
+ "markers": [],
+ "bindings": [],
+ "layers": [
+  {
+   "id": "shot",
+   "type": "camera",
+   "fov": 35,
+   "pos": [
+    0,
+    0,
+    1713
+   ],
+   "keys": {
+    "pos.z": [
+     [
+      0,
+      1713
+     ],
+     [
+      4.57,
+      1540,
+      "inOut"
+     ]
+    ],
+    "pos.x": [
+     [
+      0,
+      -90
+     ],
+     [
+      4.57,
+      90,
+      "inOut"
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      30
+     ],
+     [
+      4.57,
+      -30,
+      "inOut"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "day",
+   "type": "sky",
+   "name": "Day",
+   "top": "#1a5fc6",
+   "horizon": "#9fcdf0",
+   "clouds": 0.36,
+   "cloudScale": 1.4,
+   "hills": "#2f6a2a",
+   "hillHeight": 0.55,
+   "grass": "#2c6a18",
+   "sun": 0.35,
+   "seed": 8
+  },
+  {
+   "id": "night",
+   "type": "sky",
+   "name": "Night",
+   "out": 0.95,
+   "top": "#040a1e",
+   "horizon": "#1b3264",
+   "clouds": 0.42,
+   "cloudScale": 1.4,
+   "hills": "#0b1d14",
+   "hillHeight": 0.55,
+   "grass": "#0f2a14",
+   "stars": 0.8,
+   "sun": 0,
+   "seed": 8,
+   "keys": {
+    "opacity": [
+     [
+      0.58,
+      1
+     ],
+     [
+      0.9,
+      0,
+      "inOut"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "title",
+   "type": "text",
+   "name": "Trade and Share",
+   "text": "Trade and Share",
+   "size": 168,
+   "weight": 500,
+   "color": "#ffffff",
+   "out": 1,
+   "pos": [
+    0,
+    40,
+    0
+   ],
+   "spans": [
+    {
+     "text": "and",
+     "color": "$lime"
+    }
+   ],
+   "keys": {
+    "blur": [
+     [
+      0.55,
+      0
+     ],
+     [
+      0.9,
+      30,
+      "in"
+     ]
+    ],
+    "opacity": [
+     [
+      0.62,
+      1
+     ],
+     [
+      0.95,
+      0
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      1
+     ],
+     [
+      0.95,
+      1.06
+     ]
+    ]
+   }
+  },
+  {
+   "id": "mcard",
+   "type": "html",
+   "name": "Odds card",
+   "in": 0.62,
+   "out": 3.15,
+   "w": 860,
+   "h": 900,
+   "radius": 44,
+   "pos": [
+    0,
+    -120,
+    0
+   ],
+   "html": "<div style=\"width:100%;height:100%;padding:26px 30px;font-family:'Inter Variable'\">\n<div style=\"width:70px;height:6px;border-radius:3px;background:rgba(255,255,255,.8);margin:0 auto\"></div>\n<div style=\"height:170px\"></div>\n<div style=\"text-align:center;font-size:30px;font-weight:600;color:rgba(255,255,255,.95)\">Manifold</div>\n<div style=\"text-align:center;margin-top:12px\"><span style=\"background:#d4f76a;color:#2c3a06;font-size:19px;font-weight:600;padding:7px 18px;border-radius:14px\">Best odds found</span></div>\n</div>",
+   "glass": {
+    "blur": 30,
+    "tint": "#e8f1ff",
+    "amount": 0.22,
+    "rim": 0.4
+   },
+   "keys": {
+    "pos.y": [
+     [
+      0,
+      -900
+     ],
+     [
+      0.4,
+      -150,
+      "out"
+     ],
+     [
+      2.2,
+      -130
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.35,
+      0,
+      "out"
+     ],
+     [
+      2.25,
+      0
+     ],
+     [
+      2.5,
+      30,
+      "in"
+     ]
+    ],
+    "opacity": [
+     [
+      2.3,
+      1
+     ],
+     [
+      2.53,
+      0
+     ]
+    ]
+   }
+  },
+  {
+   "id": "plate0",
+   "type": "shape",
+   "parent": "mcard",
+   "in": 0.62,
+   "out": 3.15,
+   "shape": "rect",
+   "w": 800,
+   "h": 100,
+   "radius": 22,
+   "fill": "#ffffff",
+   "pos": [
+    0,
+    70,
+    0.5
+   ]
+  },
+  {
+   "id": "plate1",
+   "type": "shape",
+   "parent": "mcard",
+   "in": 0.62,
+   "out": 3.15,
+   "shape": "rect",
+   "w": 800,
+   "h": 100,
+   "radius": 22,
+   "fill": "#ffffff",
+   "pos": [
+    0,
+    -48,
+    0.5
+   ]
+  },
+  {
+   "id": "plate2",
+   "type": "shape",
+   "parent": "mcard",
+   "in": 0.62,
+   "out": 3.15,
+   "shape": "rect",
+   "w": 800,
+   "h": 100,
+   "radius": 22,
+   "fill": "#ffffff",
+   "pos": [
+    0,
+    -166,
+    0.5
+   ]
+  },
+  {
+   "id": "sel",
+   "type": "shape",
+   "name": "Selection",
+   "parent": "mcard",
+   "in": 0.62,
+   "out": 3.15,
+   "shape": "rect",
+   "w": 810,
+   "h": 108,
+   "radius": 24,
+   "fill": "#e2fb93",
+   "stroke": "#bff03a",
+   "strokeWidth": 4,
+   "pos": [
+    0,
+    -166,
+    1
+   ],
+   "keys": {
+    "pos.y": [
+     [
+      0.55,
+      -166,
+      "hold"
+     ],
+     [
+      1.02,
+      -48,
+      "out"
+     ],
+     [
+      1.25,
+      -48
+     ],
+     [
+      1.72,
+      70,
+      "out"
+     ]
+    ],
+    "opacity": [
+     [
+      0.3,
+      0
+     ],
+     [
+      0.45,
+      1
+     ]
+    ]
+   }
+  },
+  {
+   "id": "row0",
+   "type": "html",
+   "parent": "mcard",
+   "in": 0.62,
+   "out": 3.15,
+   "w": 800,
+   "h": 100,
+   "pos": [
+    0,
+    70,
+    2
+   ],
+   "html": "<div style=\"display:flex;align-items:center;border-radius:22px;padding:18px 24px;height:100px;margin-top:0\">\n<div style=\"width:30px;height:30px;border-radius:15px;border:3px solid #c9ced6;margin-right:20px\"></div>\n<div style=\"flex:1\"><div style=\"font-size:27px;font-weight:600;color:#15181c\">Polymarket <span style=\"font-size:17px;background:#15181c;color:#fff;border-radius:10px;padding:3px 10px;margin-left:6px\">Best</span></div><div style=\"font-size:18px;color:#9aa0a8;margin-top:4px\">Recommended</div></div>\n<div style=\"text-align:right\"><div style=\"font-size:30px;font-weight:700;color:#15181c\">$0.67</div><div style=\"font-size:18px;color:#9aa0a8;margin-top:2px\">74.6 shares</div></div></div>"
+  },
+  {
+   "id": "row1",
+   "type": "html",
+   "parent": "mcard",
+   "in": 0.62,
+   "out": 3.15,
+   "w": 800,
+   "h": 100,
+   "pos": [
+    0,
+    -48,
+    2
+   ],
+   "html": "<div style=\"display:flex;align-items:center;border-radius:22px;padding:18px 24px;height:100px;margin-top:0\">\n<div style=\"width:30px;height:30px;border-radius:15px;border:3px solid #c9ced6;margin-right:20px\"></div>\n<div style=\"flex:1\"><div style=\"font-size:27px;font-weight:600;color:#15181c\">Kalshi</div><div style=\"font-size:18px;color:#9aa0a8;margin-top:4px\">-2.1 shares vs best</div></div>\n<div style=\"text-align:right\"><div style=\"font-size:30px;font-weight:700;color:#15181c\">$0.65</div><div style=\"font-size:18px;color:#9aa0a8;margin-top:2px\">72.5 shares</div></div></div>"
+  },
+  {
+   "id": "row2",
+   "type": "html",
+   "parent": "mcard",
+   "in": 0.62,
+   "out": 3.15,
+   "w": 800,
+   "h": 100,
+   "pos": [
+    0,
+    -166,
+    2
+   ],
+   "html": "<div style=\"display:flex;align-items:center;border-radius:22px;padding:18px 24px;height:100px;margin-top:0\">\n<div style=\"width:30px;height:30px;border-radius:15px;border:3px solid #c9ced6;margin-right:20px\"></div>\n<div style=\"flex:1\"><div style=\"font-size:27px;font-weight:600;color:#15181c\">Manifold</div><div style=\"font-size:18px;color:#9aa0a8;margin-top:4px\">-4.2 shares vs best</div></div>\n<div style=\"text-align:right\"><div style=\"font-size:30px;font-weight:700;color:#15181c\">$0.63</div><div style=\"font-size:18px;color:#9aa0a8;margin-top:2px\">70.4 shares</div></div></div>"
+  },
+  {
+   "id": "logo0",
+   "type": "mesh",
+   "name": "Logo",
+   "parent": "mcard",
+   "in": 0.62,
+   "out": 1.3,
+   "geom": "box",
+   "size": 130,
+   "material": "plastic",
+   "color": "#7b4fe6",
+   "pos": [
+    0,
+    300,
+    60
+   ],
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      -40
+     ],
+     [
+      0.68,
+      60
+     ]
+    ],
+    "rot.x": [
+     [
+      0,
+      20
+     ],
+     [
+      0.68,
+      -10
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      0.6
+     ],
+     [
+      0.2,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "logo1",
+   "type": "mesh",
+   "name": "Logo",
+   "parent": "mcard",
+   "in": 1.3,
+   "out": 2,
+   "geom": "box",
+   "size": 130,
+   "material": "plastic",
+   "color": "#27c28f",
+   "pos": [
+    0,
+    300,
+    60
+   ],
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      -40
+     ],
+     [
+      0.7,
+      60
+     ]
+    ],
+    "rot.x": [
+     [
+      0,
+      20
+     ],
+     [
+      0.7,
+      -10
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      0.6
+     ],
+     [
+      0.2,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "logo2",
+   "type": "mesh",
+   "name": "Logo",
+   "parent": "mcard",
+   "in": 2,
+   "out": 3.15,
+   "geom": "box",
+   "size": 130,
+   "material": "plastic",
+   "color": "#3a6be0",
+   "pos": [
+    0,
+    300,
+    60
+   ],
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      -40
+     ],
+     [
+      1.15,
+      60
+     ]
+    ],
+    "rot.x": [
+     [
+      0,
+      20
+     ],
+     [
+      1.15,
+      -10
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      0.6
+     ],
+     [
+      0.2,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "confirm",
+   "type": "shape",
+   "name": "Confirm",
+   "in": 2.45,
+   "shape": "rect",
+   "w": 1000,
+   "h": 110,
+   "radius": 30,
+   "fill": "#eefbb4",
+   "pos": [
+    0,
+    -40,
+    0
+   ],
+   "keys": {
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.2,
+      1
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      20
+     ],
+     [
+      0.25,
+      0,
+      "out"
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      0.9
+     ],
+     [
+      0.3,
+      1,
+      "out"
+     ],
+     [
+      0.7,
+      1
+     ],
+     [
+      0.8,
+      0.96,
+      "inOut"
+     ],
+     [
+      0.95,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "confirmhot",
+   "type": "shape",
+   "name": "Confirm pressed",
+   "in": 3.2,
+   "out": 3.7,
+   "shape": "rect",
+   "w": 1000,
+   "h": 110,
+   "radius": 30,
+   "fill": "#c9f23a",
+   "pos": [
+    0,
+    -40,
+    0.5
+   ],
+   "keys": {
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.08,
+      1
+     ],
+     [
+      0.35,
+      1
+     ],
+     [
+      0.5,
+      0
+     ]
+    ]
+   }
+  },
+  {
+   "id": "confirmlabel",
+   "type": "text",
+   "name": "Confirm label",
+   "in": 2.45,
+   "text": "Confirm",
+   "size": 34,
+   "weight": 600,
+   "color": "#2a3308",
+   "pos": [
+    0,
+    -52,
+    1
+   ],
+   "keys": {
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.25,
+      1
+     ]
+    ]
+   }
+  },
+  {
+   "id": "fog",
+   "type": "adjust",
+   "name": "Cloud dissolve",
+   "in": 3.55,
+   "fadeColor": "#f4f7fa",
+   "dissolve": 1,
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.85,
+      1,
+      "inOut"
+     ]
+    ]
+   }
+  }
+ ]
+}
