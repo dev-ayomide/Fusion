@@ -139,9 +139,9 @@ export function ExportDialog() {
         {error && <div className="warn" style={{ color: "var(--danger)" }}>{error}</div>}
         {result && (
           <>
-            <video src={result.url} controls autoPlay loop muted playsInline data-testid="export-video" />
+            <video src={result.url} controls autoPlay loop muted={!result.audio} playsInline data-testid="export-video" />
             <div className="hint mono" data-testid="export-info">
-              {result.ext.replace(".", "").toUpperCase()} · {result.codec.toUpperCase()} · {result.width}×{result.height} · {result.frames} frames · {(result.blob.size / 1024 / 1024).toFixed(2)} MB · {(result.ms / 1000).toFixed(1)}s to render
+              {result.ext.replace(".", "").toUpperCase()} · {result.codec.toUpperCase()} · {result.width}×{result.height} · {result.frames} frames · {(result.blob.size / 1024 / 1024).toFixed(2)} MB · {(result.ms / 1000).toFixed(1)}s to render{result.audio ? ` · ${result.audio.codec.toUpperCase()} audio · ${result.audio.tracks} track${result.audio.tracks > 1 ? "s" : ""}` : ""}{result.audioNote ? ` · ${result.audioNote}` : ""}
             </div>
           </>
         )}

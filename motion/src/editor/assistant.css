@@ -95,7 +95,7 @@
 .ch-icon.review, .ch-icon.streaming { background: var(--ai-bg); color: var(--ai); }
 .ch-icon .icon { width: 12px; height: 12px; }
 .spin { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ai-soft); border-right-color: transparent; animation: orbspin .7s linear infinite; }
-.ch-label { flex: 1; min-width: 0; font-weight: 550; }
+.ch-label { flex: 1; min-width: 0; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ch-err { color: #c2780a; font-weight: 550; }
 .ch-toggle { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 600; color: var(--muted); padding: 4px 6px 4px 9px; border-radius: 999px; }
 .ch-toggle:hover { color: var(--text); background: var(--raise); }

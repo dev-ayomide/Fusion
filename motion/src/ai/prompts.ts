@@ -6,7 +6,15 @@ import { catalog } from "../fmd/outline";
  * text so providers with prompt caching reuse it across every call.
  */
 
+import { MUSIC } from "../audio/music-catalog";
+
 const EXPO = "cubic(0.16,1,0.3,1)";
+
+/** The bundled royalty-free music library, as the AI sees it. */
+export const MUSIC_NOTE = `MUSIC — the video has a soundtrack in "audio" (an id-collection of tracks). Library (all free, CC0):
+${MUSIC.filter((m) => !m.hidden).map((m) => `  lib://music/${m.name} — "${m.title}", ${m.bpm} BPM, ${m.mood.join("/")}: ${m.desc}`).join("\n")}
+Set or replace the music: {"op":"set","path":"audio/music","value":{"src":"lib://music/<name>","name":"<title>","at":0,"dur":<comp dur>,"volume":0.9,"fadeOut":1.5}}. Change volume: audio/music/volume. Remove: {"op":"del","path":"audio/music"}.
+Pick by mood. One bar = 240/BPM seconds — scene cuts that land on bar lines feel on-beat. Don't touch a track the user uploaded (src is not lib://) unless asked.`;
 
 export const FMD_REFERENCE = `FUSION MOTION DOCUMENT (FMD) — one JSON document is the whole video. It is evaluated as a pure function of time and rendered live with Three.js. You edit it only with small JSON "ops".
 
@@ -115,6 +123,7 @@ Emit ops that:
 3. Set "comp" finishing (keep w/h/fps/dur as given): {"op":"set","path":"comp/bg","value":"$<dark or light base>"}, comp/motionBlur {"angle":200,"samples":8}, comp/post {"bloom":0.6-1,"bloomThreshold":1,"vignette":0.25,"grain":0.05,"contrast":0.06}, comp/env (studio|city|sunset|dawn|night|…) matching the mood.
 4. Add ONE shared camera {"op":"add","id":"cam","after":null,"layer":{"type":"camera","fov":35,"pos":[0,0,1713]}} and {"op":"set","path":"comp/cam","value":"cam"}. A gentle push-in over the whole video is nice: keys pos.z [[0,1800],[<dur>,1650,"easy"]].
 5. Optionally a subtle full-length base background (gradient with noise 0.05) at the back, id "base".
+6. Unless the outline already lists an audio track, pick ONE library track that fits the mood and set it as "audio/music" for the whole video (see MUSIC).
 Do NOT build any scene content — scenes come next, one at a time.
 
 REPLY with ONLY a JSON object (no markdown): {"message":"one sentence about the look","ops":[...]}`;
@@ -152,5 +161,6 @@ export function systemFor(kind: TaskKind): string {
   const task = { plan: PLAN_TASK, setup: SETUP_TASK, scene: SCENE_TASK, edit: EDIT_TASK, repair: REPAIR_TASK }[kind];
   // the planner only needs the craft vocabulary, not the full op reference
   if (kind === "plan") return `You are the creative director of Fusion Motion, an AI motion-graphics studio known for premium, cinematic product and brand films.\n\n${PLAN_CRAFT}\n\n${task}`;
-  return `You are a senior motion designer operating Fusion Motion, an AI-native motion-graphics editor. You never write prose about what you'd do — you emit ops that do it.\n\n${FMD_REFERENCE}\n\n${CRAFT}\n\n${task}`;
+  const music = kind === "setup" || kind === "edit" ? `\n\n${MUSIC_NOTE}` : "";
+  return `You are a senior motion designer operating Fusion Motion, an AI-native motion-graphics editor. You never write prose about what you'd do — you emit ops that do it.\n\n${FMD_REFERENCE}\n\n${CRAFT}${music}\n\n${task}`;
 }

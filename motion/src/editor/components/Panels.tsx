@@ -78,10 +78,10 @@ export function LayersPanel() {
       </div>
       <div className="panel-h">
         <span>Assets</span>
-        <span>{Object.keys(doc.assets).length}</span>
+        <span>{Object.values(doc.assets).filter((a) => !a.mime.startsWith("audio/")).length}</span>
       </div>
       <div className="assets">
-        {Object.entries(doc.assets).map(([id, a]) => (
+        {Object.entries(doc.assets).filter(([, a]) => !a.mime.startsWith("audio/")).map(([id, a]) => (
           <button
             key={id}
             className="asset"

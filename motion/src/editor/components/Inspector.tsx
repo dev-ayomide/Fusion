@@ -123,7 +123,7 @@ function AssetPicker({ doc, value, onChange, allowNone }: { doc: Doc; value?: st
       <select value={value ?? ""} onChange={(e) => onChange(e.target.value || undefined)} style={{ flex: 1 }} aria-label="Asset">
         {allowNone && <option value="">{allowNone}</option>}
         {!allowNone && !value && <option value="">Choose…</option>}
-        {Object.keys(doc.assets).map((id) => (
+        {Object.keys(doc.assets).filter((id) => !doc.assets[id].mime.startsWith("audio/")).map((id) => (
           <option key={id} value={id}>{doc.assets[id].name ?? id}</option>
         ))}
       </select>

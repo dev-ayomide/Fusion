@@ -8,7 +8,8 @@ import { playhead } from "../playhead";
 import { onFontsChanged } from "../../render/glyphs";
 import { onEnvReady } from "../../render/env";
 import { onHtmlReady } from "../../render/html";
-import { onAssetsChanged, importAsset, LIBRARY, libraryUrl } from "../../assets/assets";
+import { onAssetsChanged, importAsset, LIBRARY, libraryUrl, isAudioFile } from "../../assets/assets";
+import { uploadAudio } from "../../audio/actions";
 import { setChannelOps, findLayer, localTime, uniqueId } from "../edit";
 import { createLayerOps, type NewKind } from "../create";
 import { Icon } from "./ui";
@@ -297,8 +298,16 @@ export function Viewport() {
 
   const importFiles = async (files: FileList | File[], at?: { x: number; y: number }) => {
     const st = useStore.getState();
+    const songs = [...files].filter((f) => isAudioFile(f));
+    for (const f of songs) {
+      try {
+        if (await uploadAudio(f, null)) st.toast(`Added ${f.name} as music`);
+      } catch (e) {
+        st.toast((e as Error).message, "error");
+      }
+    }
     const imgs = [...files].filter((f) => f.type.startsWith("image/"));
-    if (!imgs.length) return st.toast("Drop PNG, JPG, WebP or SVG images", "error");
+    if (!imgs.length) return songs.length ? undefined : st.toast("Drop images (PNG, JPG, WebP, SVG) or music (MP3, WAV, M4A)", "error");
     const target = at ? pickAt(at.x, at.y) : null;
     const targetL = target ? findLayer(st.doc, target) : null;
     for (const f of imgs) {

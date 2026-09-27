@@ -430,7 +430,8 @@ export function Timeline() {
   const pro = mode === "pro";
   const rows = useMemo(() => buildRows(doc, expanded, pro), [doc, expanded, pro]);
   const cam = activeCamera(doc);
-  const [height, setHeight] = useState(pro ? 320 : 280);
+  // + the pinned music section (≈36 px) so adding audio didn't take rows away from the layers
+  const [height, setHeight] = useState((pro ? 320 : 280) + 36);
   const [width, setWidth] = useState(800);
   const [win, setWin] = useState<Win>({ start: 0, pps: 100 });
   const [playing, setPlaying] = useState(false);
@@ -598,8 +599,15 @@ export function Timeline() {
       x: (t: number) => (tracksCanvas.current?.getBoundingClientRect().left ?? 0) + X(t),
       rowY: (id: string, ch?: string) => {
         const i = rows.findIndex((r) => r.L.id === id && (ch ? r.kind === "channel" && r.ch === ch : r.kind === "layer"));
+        if (i < 0) return null;
+        // bring the row into the visible part of the scrolling track list first
+        const wrap = tracksWrap.current;
+        if (wrap && (i * ROW < wrap.scrollTop || (i + 1) * ROW > wrap.scrollTop + wrap.clientHeight)) {
+          wrap.scrollTop = Math.max(0, i * ROW - (wrap.clientHeight - ROW) / 2);
+          if (namesRef.current) namesRef.current.scrollTop = wrap.scrollTop;
+        }
         const top = tracksCanvas.current?.getBoundingClientRect().top ?? 0;
-        return i < 0 ? null : top + i * ROW + ROW / 2;
+        return top + i * ROW + ROW / 2;
       },
       camY: () => {
         const r = camCanvas.current?.getBoundingClientRect();

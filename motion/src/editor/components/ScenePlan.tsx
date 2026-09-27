@@ -276,13 +276,16 @@ function BuildBar() {
   const building = scenes.find((s) => s.status === "building");
   const idx = building ? scenes.indexOf(building) : -1;
   if (d.phase === "planning") return null;
-  if (d.phase === "building")
+  const finishing = d.phase === "paused" && !!d.turnId;
+  if (d.phase === "building" || finishing)
     return (
       <div className="sb-build" data-testid="build-progress">
         <div className="sb-build-line">
           <span className="orb sm" />
           <span className="grow">
-            {building ? (
+            {finishing ? (
+              <>Finishing <b>scene {idx + 1}</b>, then pausing…</>
+            ) : building ? (
               <>
                 Building <b>scene {idx + 1}</b> of {scenes.length} · {building.title}
               </>
@@ -292,9 +295,15 @@ function BuildBar() {
               "Setting the look — palette, type, camera…"
             )}
           </span>
-          <button className="btn sm ghost" onClick={director.pauseBuild} title="Finish the current scene, then stop">
-            Pause
-          </button>
+          {finishing ? (
+            <button className="btn sm ghost" onClick={() => director.startBuild()} title="Keep building after this scene">
+              Keep going
+            </button>
+          ) : (
+            <button className="btn sm ghost" onClick={director.pauseBuild} title="Finish the current scene, then stop">
+              Pause
+            </button>
+          )}
         </div>
         <div className="sb-meter" role="progressbar" aria-valuemin={0} aria-valuemax={scenes.length} aria-valuenow={built}>
           {scenes.map((s, i) => (

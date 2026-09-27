@@ -1,7 +1,10 @@
 /**
- * Screen-records a showcase reel being built in the real editor: landing page → prompt → the agent
- * answers through the bridge in five turns (one per act, ops streaming into the live preview) →
- * review/keep → playback → Pro timeline → in-browser MP4 export.
+ * Screen-records a showcase reel being built in the real editor with the plan → build flow:
+ * landing prompt → the agent proposes a scene plan (storyboard) → the user tweaks one scene's brief →
+ * Build → the look is set, then the five acts build one by one (ops streaming live, each one undo
+ * step) → playback → Pro timeline → in-browser MP4 export. The agent ("Claude Opus 5.5") answers
+ * through window.fusion.bridge with the SOLSTICE acts from fixtures/showcase/s02-solstice.fmd.json.
+ *   STOP_AFTER=<n scenes> ends early (no playback of the whole piece, no export) — for smoke tests.
  * Captured with the CDP screencast (sharper than Playwright's recorder), assembled with ffmpeg.
  *   npx tsx e2e/record-build.ts [outDir]      (dev server on :5180; FFMPEG or Remotion's bundled ffmpeg)
  */
@@ -19,33 +22,43 @@ fs.rmSync(FRAMES, { recursive: true, force: true });
 fs.mkdirSync(FRAMES, { recursive: true });
 
 const AGENT = "Claude Opus 5.5";
-const TURNS: { prompt: string; reply: string; ids: (id: string) => boolean; extra?: boolean; play: [number, number] }[] = [
+const PROMPT = "A 21-second hype promo for SOLSTICE, a midnight-sun music festival in Lofoten, Norway. Open on an arctic night with a breathing aurora and the line “The sun never sets.” 120 BPM — every cut on the beat.";
+const LOOK = "Arctic night into midnight sun: void #07060a, sun #ff5a1f, amber #ffb000, magenta #ff2e88, cream #fff4e0, ice #9ad7ff. Inter Tight 900 slams + Instrument Serif. Cut on the beat.";
+const TWEAK = " Each name gets its own plate colour and its own entrance.";
+/** The five acts. `ids` picks each act's layers from the showcase doc (the bridge prefixes them with the scene id). */
+const SCENES: { title: string; dur: number; brief: string; reply: string; ids: (id: string) => boolean }[] = [
   {
-    prompt: "A 21-second hype promo for SOLSTICE, a midnight-sun music festival in Lofoten, Norway. Open on an arctic night with a breathing aurora and the line “The sun never sets.” 120 BPM — every cut on the beat.",
-    reply: "Act 1 — the night. A starfield over snow peaks, four blurred aurora bands breathing out of phase, coordinates typing in, the headline rising word by word on the beat, then it stretches and blurs into a cream flash exactly on the drop at 4.0 s. The comp is 1080p/30 with motion blur, bloom and a sunset HDRI for the 3D to come.",
-    ids: (id) => id === "cam" || id.startsWith("n-"), extra: true, play: [0, 4.4],
+    title: "Arctic night", dur: 4,
+    brief: "A starfield over snow peaks, aurora bands breathing out of phase, coordinates typing in, and “The sun never sets.” rising word by word — then it stretches into a cream flash on the drop.",
+    reply: "Act 1 — the night: stars over peaks, four blurred aurora bands breathing out of phase, coordinates typing in, the headline rising word by word, then a cream flash exactly on the drop at 4.0 s.",
+    ids: (id) => id.startsWith("n-"),
   },
   {
-    prompt: "Now the drop: eight artists, one per beat, a different plate colour and a different entrance for each.",
-    reply: "Eight names on eight beats (4.0 → 8.0 s): slam, whip-in from left, spring drop, tracking collapse, 3D flip, pop, whip from right, and a two-line slam — each on its own plate with a lineup counter. A stuttering strobe on the last half-beat sets up the next hit.",
-    ids: (id) => /^d\d|^d-/.test(id), play: [3.6, 8.3],
+    title: "The drop", dur: 4,
+    brief: "Eight artists, one per beat, slamming onto hard-cut colour plates with a lineup counter; a strobe on the last half-beat.",
+    reply: "Eight names on eight beats: slam, whip-in, spring drop, tracking collapse, 3D flip, pop, whip, and a two-line slam — each on its own plate, with a stuttering strobe into the next hit.",
+    ids: (id) => /^d\d|^d-/.test(id),
   },
   {
-    prompt: "Build a sun machine that pulses on every kick, with gold orbiting it.",
-    reply: "The sun machine (8 → 12 s): an emissive core inside a chrome ring, two counter-rotating ray cloners, four gold coins on a tilted orbit rig. The glow, rays and core pulse with a 0.5 s period — locked to the kick at 120 BPM. SOLSTICE tracks in underneath; an amber cloud-dissolve carries us out.",
-    ids: (id) => id.startsWith("u-"), play: [7.8, 12.3],
+    title: "Sun machine", dur: 4,
+    brief: "A glowing sun core inside a chrome ring, counter-rotating rays and gold coins orbiting, pulsing on every kick; SOLSTICE tracks in; an amber cloud dissolve out.",
+    reply: "The sun machine: an emissive core in a chrome ring, two counter-rotating ray cloners and four gold coins on a tilted orbit rig, all pulsing on the kick. SOLSTICE tracks in; an amber dissolve carries us out.",
+    ids: (id) => id.startsWith("u-"),
   },
   {
-    prompt: "Dawn: a glass festival pass floating over the mountains, and stats that roll up on the beat.",
-    reply: "Dawn (12 → 16 s): a procedural sky with drifting clouds and peaks, a frosted-glass 3-day pass flipping up in 3D with its ticket number rolling to 4,021, then 72h · 40 · 1 counting up on three consecutive beats.",
-    ids: (id) => id.startsWith("w-"), play: [11.8, 16.2],
+    title: "Dawn pass", dur: 4,
+    brief: "Dawn sky over the mountains; a frosted-glass festival pass flips up in 3D with its ticket number rolling, then 72h · 40 · 1 count up on three beats.",
+    reply: "Dawn: a procedural sky with drifting clouds and peaks, a frosted-glass pass flipping up with its ticket number rolling to 4,021, then 72h · 40 · 1 counting up on three consecutive beats.",
+    ids: (id) => id.startsWith("w-"),
   },
   {
-    prompt: "Finish with the sun rising over a glowing horizon line, then the logo and ticket info.",
-    reply: "Finale (16 → 21 s): a horizon line draws out from the centre, the sun and its rays rise inside a mask so they sit behind the line, SOLSTICE cascades in letter by letter, the ticket line types on, one last flash on the final hit at 20 s, fade to black.",
-    ids: (id) => id.startsWith("f-"), play: [15.8, 21],
+    title: "Sunrise finale", dur: 5,
+    brief: "A horizon line draws out from the centre, the sun rises behind it, SOLSTICE cascades in, the ticket line types on, a last flash on the final hit, fade to black.",
+    reply: "Finale: the horizon line draws out, the sun and its rays rise inside a mask behind it, SOLSTICE cascades in letter by letter, the ticket line types on, one last flash at 20 s, fade to black.",
+    ids: (id) => id.startsWith("f-"),
   },
 ];
+const STOP_AFTER = Number(process.env.STOP_AFTER ?? 0);
 
 const OVERLAY = `(() => {
   const boot = () => {
@@ -103,15 +116,23 @@ async function main() {
   const fusion = <T,>(fn: string, arg?: unknown) => page.evaluate(([fn, arg]) => new Function("f", "arg", `return (${fn})(f, arg)`)((window as unknown as { fusion: unknown }).fusion, arg) as T, [fn, arg] as const);
   const setTime = (t: number) => fusion("(f, t) => f.time.set(t)", t);
   const play = async (from: number, to: number) => {
+    // Space must reach the editor, not a focused field or button
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await setTime(from); await pause(250);
     await page.keyboard.press("Space");
     await pause((to - from) * 1000);
     await page.keyboard.press("Space");
   };
-  const respond = async (reply: string, ops: unknown[], delayMs: number) => {
-    const pending = await fusion<{ turnId: string }[]>("(f) => f.bridge.pending()");
-    await fusion("(f, a) => f.bridge.respond(a.id, a.r)", { id: pending.at(-1)!.turnId, r: { message: reply, ops, delayMs } });
+  type Pending = { turnId: string; kind: string; scene?: { id: string; index: number } };
+  const nextPending = async (): Promise<Pending> => {
+    for (;;) {
+      const p = await fusion<Pending[]>("(f) => f.bridge.pending()");
+      if (p.length) return p[0];
+      await pause(150);
+    }
   };
+  const answer = (turnId: string, r: unknown) => fusion("(f, a) => f.bridge.respond(a.id, a.r)", { id: turnId, r });
+  const scrollChat = () => page.locator(".msgs").evaluate((el) => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })).catch(() => {});
 
   /* ------------------------------------------------------------------ */
   await page.goto(BASE);
@@ -120,70 +141,99 @@ async function main() {
   await pause(1500);
   await cdp.send("Page.startScreencast", { format: "jpeg", quality: 90, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
   await pause(1200);
-  await caption("Fusion Motion — describe a video; an AI agent builds it as editable motion design");
+  await caption("Fusion Motion — describe a video; an AI agent plans it, then builds it as editable motion design");
   await moveTo(W * 0.5, H * 0.45);
   await pause(2200);
 
-  const T0 = TURNS[0];
   await caption("1 · Describe the video");
-  await type(page.getByLabel("Describe your video"), T0.prompt, 20);
+  await type(page.getByLabel("Describe your video"), PROMPT, 20);
   await pause(600);
   await click(page.getByTestId("start-create"));
   await page.getByTestId("editor").waitFor();
   await pause(1300);
-  await caption(`2 · ${AGENT} connects through the agent bridge and reads the document outline`);
-  await pause(1500);
+  await caption(`2 · ${AGENT} connects through the agent bridge and drafts a storyboard`);
   await fusion("(f, n) => f.bridge.connect(n)", AGENT);
-  await pause(1000);
+  const plan = await nextPending();
+  if (plan.kind !== "plan") throw new Error(`expected a plan turn, got ${plan.kind}`);
+  await pause(1800);
+  await answer(plan.turnId, {
+    message: "SOLSTICE in five acts on a 120 BPM grid: the arctic night, the drop, the sun machine, dawn, and the sunrise finale — every cut lands on a beat.",
+    plan: { look: LOOK, scenes: SCENES.map(({ title, dur, brief }) => ({ title, dur, brief })) },
+  });
+  await page.getByTestId("scene-s5").waitFor();
+  mark("PLAN");
+  await caption("3 · The whole video as a scene plan — every scene, its timing and an editable brief");
+  await pause(3200);
 
-  for (let i = 0; i < TURNS.length; i++) {
-    const T = TURNS[i];
-    if (i > 0) {
-      await caption(`${i + 2} · Next prompt: act ${i + 1}`);
-      await type(page.getByLabel("Message the AI"), T.prompt, 18);
-      await page.keyboard.press("Enter");
-      await pause(900);
-    }
-    const ops: unknown[] = [];
-    if (T.extra) {
+  await caption("4 · Tweak any scene before building — here, the drop");
+  const brief = page.getByLabel("Brief for The drop");
+  await click(brief);
+  // caret to the very end of the brief (End only reaches the end of the visual line)
+  await brief.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(el.value.length, el.value.length));
+  await page.keyboard.type(TWEAK, { delay: 22 });
+  await pause(500);
+  await click(page.locator(".sb-head h2"));
+  await pause(900);
+
+  await caption("5 · Build — the look is set once, then each scene is built in order");
+  await click(page.getByTestId("build-video"));
+  for (;;) {
+    const p = await nextPending();
+    if (p.kind === "setup") {
       const existing = await fusion<{ layers: { id: string }[] }>("(f) => f.doc()");
-      ops.push(
-        // clear the blank canvas first: its layers use the old palette, so swapping the brand before
-        // deleting them would leave dangling colour tokens and the review would reject the brand op
-        ...existing.layers.map((l) => ({ op: "del", path: l.id })),
-        { op: "set", path: "name", value: "SOLSTICE — festival promo" },
-        { op: "set", path: "brand", value: DOC.brand },
-        { op: "set", path: "style", value: DOC.style },
-        { op: "set", path: "markers", value: DOC.markers },
-        { op: "set", path: "comp", value: { ...DOC.comp, cam: undefined } },
-      );
+      const { id: camId, ...cam } = DOC.layers.find((l: { id: string }) => l.id === "cam");
+      await pause(1400);
+      await answer(p.turnId, {
+        message: "The look: a near-black arctic base, sun-orange and amber accents, cream type; 1080p/30 with motion blur, bloom, grain and a sunset HDRI; one shared camera that shakes harder on every act.",
+        ops: [
+          // clear the blank canvas first: its layers use the old palette
+          ...existing.layers.map((l) => ({ op: "del", path: l.id })),
+          { op: "set", path: "name", value: "SOLSTICE — festival promo" },
+          { op: "set", path: "brand", value: DOC.brand },
+          { op: "set", path: "style", value: DOC.style },
+          { op: "set", path: "markers", value: DOC.markers },
+          { op: "set", path: "comp", value: { ...DOC.comp, cam: undefined } },
+          { op: "add", id: camId, after: null, layer: cam },
+          { op: "set", path: "comp/cam", value: camId },
+        ],
+        delayMs: 120,
+      });
+      await pause(1200);
+      continue;
     }
-    const layers = DOC.layers.filter((l: { id: string }) => T.ids(l.id));
-    for (const l of layers) {
-      const { id, ...layer } = l;
-      ops.push({ op: "add", id, layer });
-    }
-    if (T.extra) ops.push({ op: "set", path: "comp/cam", value: DOC.comp.cam });
-    await caption(i === 0 ? "3 · The agent answers with ops — each one streams into the live preview" : `${i + 3} · ${ops.length} ops streaming in — every one reviewable`);
-    await respond(T.reply, ops, Math.max(40, Math.min(160, 5200 / ops.length)));
-    await pause(900);
-    await page.locator(".msgs").evaluate((el) => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })).catch(() => {});
-    await pause(900);
-    await click(page.getByTestId("keep"));
-    await pause(500);
-    await caption(i === 0 ? "Keep → one undoable transaction. Play it:" : "Kept. Play the new act:");
-    await play(T.play[0], T.play[1]);
-    await pause(500);
+    if (p.kind !== "scene" || !p.scene) throw new Error(`unexpected ${p.kind} turn`);
+    const i = p.scene.index;
+    const S = SCENES[i];
+    await caption(`${6 + i} · Scene ${i + 1} of ${SCENES.length} — ${S.title}: ${AGENT} answers with ops, streaming into the live preview`);
+    await pause(1400);
+    const ops = DOC.layers.filter((l: { id: string }) => S.ids(l.id)).map(({ id, ...layer }: { id: string }) => ({ op: "add", id, layer }));
+    await answer(p.turnId, { message: S.reply, ops, delayMs: Math.max(40, Math.min(150, 4800 / ops.length)) });
+    await scrollChat();
+    await pause(700);
+    const t0 = SCENES.slice(0, i).reduce((a, s) => a + s.dur, 0);
+    await play(Math.max(0, t0 - 0.2), Math.min(21, t0 + S.dur + 0.3));
+    await pause(400);
+    if (STOP_AFTER && i + 1 >= STOP_AFTER) break;
+    if (i === SCENES.length - 1) break;
+  }
+  mark("BUILT");
+  if (STOP_AFTER) {
+    const st = await fusion<{ phase: string }>("(f) => f.director.state()");
+    const d = await fusion<{ scenes: { status: string }[]; layers: { id: string }[] }>("(f) => f.doc()");
+    console.log("smoke ok", st.phase, d.scenes.map((s) => s.status).join(","), d.layers.length, "layers", errors.length ? errors : "no errors");
+    await cdp.send("Page.stopScreencast");
+    await browser.close();
+    return;
   }
 
-  await caption("8 · Pro mode: the same document as layers, keyframes and behaviour clips");
+  await caption("11 · Pro mode: the same document as layers, keyframes and behaviour clips");
   await click(page.getByRole("group", { name: "Editor mode" }).getByRole("button", { name: "Pro" }));
   await pause(2500);
   await caption("The whole piece — 75 layers, one JSON document, playing live in the browser");
   await play(0, 21);
   await pause(600);
 
-  await caption("9 · Export: every frame rendered in the browser by the same renderer (sped up here)");
+  await caption("12 · Export: every frame rendered in the browser by the same renderer (sped up here)");
   await click(page.getByTestId("export-open"));
   await pause(600);
   await click(page.getByTestId("export-dialog").getByRole("button", { name: "MP4", exact: true }));

@@ -191,6 +191,8 @@ const slam = (id, text, t0, t1, o = {}) => ({
       beh: [{ id: "in", use: "fadeIn", at: 0, dur: 0.6 }] },
     { id: "s5-end", type: "adjust", name: "Fade out", in: T.end - 0.45, fadeColor: "$void", keys: { fade: [[0, 0], [0.45, 1, "in"]] } },
   );
+  // the score (bench/score.mjs s01), mastered into the music library by bench/music-library.mjs
+  d.audio = [{ id: "score", src: "lib://music/showcase-s01", name: "Type a Sentence (score)", at: 0, offset: 0, volume: 1, fadeIn: 0, fadeOut: 0 }];
   out("s01-type-a-sentence", d);
 }
 
@@ -348,5 +350,6 @@ export const S02_LINEUP = ["AURORA KIDS", "NØRTH", "SUNDOG", "VANTA", "HALO/HAL
     { id: "f-hit", type: "adjust", in: 20.0, out: 20.2, fadeColor: "$cream", keys: { fade: [[0, 0.5], [0.2, 0, "out"]] } },
     { id: "f-end", type: "adjust", in: T.end - 0.6, fadeColor: "$void", keys: { fade: [[0, 0], [0.6, 1, "in"]] } },
   );
+  d.audio = [{ id: "score", src: "lib://music/showcase-s02", name: "Solstice (score)", at: 0, offset: 0, volume: 1, fadeIn: 0, fadeOut: 0 }];
   out("s02-solstice", d);
 }

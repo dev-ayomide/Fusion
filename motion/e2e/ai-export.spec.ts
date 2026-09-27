@@ -160,7 +160,17 @@ test.describe("export", () => {
       expect(info.h).toBe(720);
       expect(info.ext).toBe("." + format);
       expect(info.size).toBeGreaterThan(5_000);
-      // the file plays back in the browser
+      // the file plays back in the browser — when this browser can decode the codec it chose. Playwright's
+      // Chromium has no proprietary decoders, so an H.264/HEVC MP4 (picked when the GPU encoder is available)
+      // can be written but not played back here; real Chrome plays it.
+      const playable = await page.evaluate((c) => {
+        const t = { avc: 'video/mp4; codecs="avc1.42E01E"', hevc: 'video/mp4; codecs="hvc1.1.6.L93.B0"', vp9: 'video/webm; codecs="vp9"', av1: 'video/mp4; codecs="av01.0.05M.08"', vp8: 'video/webm; codecs="vp8"' } as Record<string, string>;
+        return document.createElement("video").canPlayType(t[c] ?? "") !== "";
+      }, info.codec);
+      if (!playable) {
+        test.info().annotations.push({ type: "note", description: `${info.codec} isn't decodable in this browser build; playback check skipped` });
+        return;
+      }
       await expect.poll(() => page.getByTestId("export-video").evaluate((v: HTMLVideoElement) => v.readyState), { timeout: 20_000 }).toBeGreaterThan(1);
       const dur = await page.getByTestId("export-video").evaluate((v: HTMLVideoElement) => v.duration);
       expect(dur).toBeGreaterThan(0.9);

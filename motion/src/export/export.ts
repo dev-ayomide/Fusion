@@ -55,6 +55,53 @@ async function prepareAudio(doc: Doc, format: "mp4" | "webm"): Promise<{ buf: Au
   }
 }
 
+/**
+ * AAC encoders prepend "priming" samples (2112 on AudioToolbox) but WebCodecs stamps the first packet
+ * at 0, so the soundtrack would land ~44 ms late. We start the audio track at -priming/rate; mediabunny
+ * then writes an MP4 edit list that trims it, and the first real sample plays at exactly 0.
+ * The priming is measured with a tiny encode→decode round trip (it differs per platform encoder),
+ * falling back to the AAC-standard 2112 when this browser can't decode AAC. Opus/WebM needs nothing.
+ */
+const primingCache = new Map<AudioCodec, number>();
+async function encoderPriming(codec: AudioCodec, rate: number): Promise<number> {
+  if (codec !== "aac") return 0;
+  const hit = primingCache.get(codec);
+  if (hit !== undefined) return hit;
+  let priming = 2112;
+  try {
+    const measured = await measurePriming("mp4a.40.2", rate);
+    if (measured !== null && measured >= 0 && measured < 8192) priming = measured;
+  } catch {
+    /* keep the standard value */
+  }
+  primingCache.set(codec, priming);
+  return priming;
+}
+async function measurePriming(codec: string, rate: number): Promise<number | null> {
+  if (typeof AudioEncoder === "undefined" || typeof AudioDecoder === "undefined") return null;
+  const frames = rate / 5, click = Math.round(rate / 20);
+  const pcm = new Float32Array(frames * 2);
+  for (let i = 0; i < 4; i++) pcm[click + i] = pcm[frames + click + i] = 0.9;
+  const chunks: EncodedAudioChunk[] = [];
+  let config: AudioDecoderConfig | undefined;
+  const enc = new AudioEncoder({ output: (c, meta) => { chunks.push(c); if (meta?.decoderConfig) config = meta.decoderConfig; }, error: () => undefined });
+  enc.configure({ codec, sampleRate: rate, numberOfChannels: 2, bitrate: 128000 });
+  enc.encode(new AudioData({ format: "f32-planar", sampleRate: rate, numberOfFrames: frames, numberOfChannels: 2, timestamp: 0, data: pcm }));
+  await enc.flush();
+  enc.close();
+  const dcfg = config ?? { codec, sampleRate: rate, numberOfChannels: 2 };
+  if (!(await AudioDecoder.isConfigSupported(dcfg)).supported) return null;
+  const out: Float32Array[] = [];
+  const dec = new AudioDecoder({ output: (d) => { const b = new Float32Array(d.numberOfFrames); d.copyTo(b, { planeIndex: 0, format: "f32-planar" }); out.push(b); d.close(); }, error: () => undefined });
+  dec.configure(dcfg);
+  for (const c of chunks) dec.decode(c);
+  await dec.flush();
+  dec.close();
+  let idx = 0, best = 0, k = 0;
+  for (const b of out) for (let i = 0; i < b.length; i++, k++) if (Math.abs(b[i]) > best) { best = Math.abs(b[i]); idx = k; }
+  return best > 0.1 ? idx - click : null;
+}
+
 /** Slice [from, to) seconds of a buffer (mediabunny places consecutive buffers back to back). */
 function sliceBuffer(buf: AudioBuffer, from: number, to: number): AudioBuffer {
   const a = Math.round(from * buf.sampleRate), b = Math.min(buf.length, Math.round(to * buf.sampleRate));
@@ -96,7 +143,8 @@ export async function exportVideo(doc: Doc, opts: ExportOptions): Promise<Export
   let audioSrc: AudioBufferSource | null = null;
   let audioDone = 0;
   if (audio && "buf" in audio) {
-    audioSrc = new AudioBufferSource({ codec: audio.codec, bitrate: AUDIO_BITRATE });
+    const priming = await encoderPriming(audio.codec, MIX_RATE);
+    audioSrc = new AudioBufferSource({ codec: audio.codec, bitrate: AUDIO_BITRATE }, { startTimestamp: -priming / MIX_RATE });
     output.addAudioTrack(audioSrc);
   }
   // feed audio in 1 s slices, a little ahead of the video, so the muxer can interleave as it goes

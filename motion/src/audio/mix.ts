@@ -6,7 +6,7 @@ export const MIX_RATE = 48000;
 
 /** Tracks that contribute sound to an export (unmuted, audible within the comp). */
 export function audibleTracks(doc: Doc) {
-  return doc.audio.filter((a) => {
+  return (doc.audio ?? []).filter((a) => {
     const t = timing(a);
     return !t.muted && t.volume > 0 && t.at < doc.comp.dur;
   });

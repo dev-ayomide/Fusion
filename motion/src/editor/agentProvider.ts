@@ -203,13 +203,13 @@ export async function checkProviders(): Promise<Record<ProviderId, boolean>> {
 /**
  * Connect the best available provider with no clicks (Claude › DeepSeek › Mistral). Skipped when an
  * agent is already connected, and in automated browsers (tests drive the bridge themselves) unless
- * the URL says `?ai=auto`.
+ * the URL asks for it (`?ai=auto` or `?ai=<provider id>`; `?ai=off` disables it everywhere).
  */
 export async function autoConnect() {
   const avail = await checkProviders();
   const q = new URLSearchParams(location.search).get("ai");
   if (q === "off") return;
-  if (navigator.webdriver && q !== "auto") return;
+  if (navigator.webdriver && !q) return;
   if (useStore.getState().agent) return;
   const pick = (q && q in PROVIDERS && avail[q as ProviderId] ? (q as ProviderId) : null) ?? PROVIDER_ORDER.find((id) => avail[id]);
   if (pick) connectProvider(pick);

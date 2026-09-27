@@ -2086,5 +2086,17 @@
     ]
    }
   }
+ ],
+ "audio": [
+  {
+   "id": "score",
+   "src": "lib://music/showcase-s01",
+   "name": "Type a Sentence (score)",
+   "at": 0,
+   "offset": 0,
+   "volume": 1,
+   "fadeIn": 0,
+   "fadeOut": 0
+  }
  ]
 }

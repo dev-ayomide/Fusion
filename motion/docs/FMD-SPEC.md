@@ -146,4 +146,9 @@ and the bridge: `bridge.connect(name)`, `bridge.pending()` → `{turnId, prompt,
 `bridge.respond(turnId, {message, ops, chips})`. Responses stream into a preview the user reviews op by op.
 Chips may carry ops (applied with no model call) or a follow-up prompt.
 
+Pending turns have a `kind`: `edit`, `plan`, `setup` or `scene`. Plan turns are answered with
+`respond(turnId, {message, plan: {scenes, look}})`, which fills `doc.scenes` (`{id, title, start, dur, brief, status}`).
+Scene turns build one scene: new layer ids are namespaced `<sceneId>-…` and each scene lands as one undo step. The
+director API (`fusion.director.plan/build/rebuild/editScene/state`) drives the flow. See `docs/AGENT-FLOW.md`.
+
 See `docs/TOKENS.md` for measured sizes.

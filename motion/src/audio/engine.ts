@@ -163,6 +163,7 @@ export function startAudioEngine(docSource: () => Doc, subscribe: (fn: () => voi
   playhead.subscribePlaying(() => {
     if (playhead.isPlaying()) {
       unlockAudio();
+      if (preview.current()) preview.stop();
       schedule();
     } else stopAll(0.03);
   });
