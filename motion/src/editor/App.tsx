@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useStore } from "./store";
 import { playhead } from "./playhead";
-import { TopBar, StartScreen, ExportDialog, HelpDialog } from "./components/Shell";
+import { TopBar, ExportDialog, HelpDialog } from "./components/Shell";
+import { StartScreen } from "./components/Landing";
 import { Viewport } from "./components/Viewport";
 import { Timeline } from "./components/Timeline";
 import { Inspector } from "./components/Inspector";

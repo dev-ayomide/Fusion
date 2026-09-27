@@ -89,7 +89,7 @@ export function Viewport() {
     stage.sync(d, evaluate(d, t));
     const r = stage.renderer;
     r.setScissorTest(false);
-    r.setClearColor(0x0d0e12, 1);
+    r.setClearColor(0xf4f3f6, 1);
     r.clear();
     const toGL = (rc: Rect) => ({ x: rc.x, y: H - rc.y - rc.h, w: rc.w, h: rc.h });
     if (split) {
@@ -110,7 +110,7 @@ export function Viewport() {
   function drawOverlay(stage: Stage, shot: Rect, sel: string[], previewing: boolean) {
     const ov = overlay.current;
     if (!ov) return;
-    const boxes: string[] = [];
+    const boxes: string[] = [`<div class="shotframe" style="left:${shot.x}px;top:${shot.y}px;width:${shot.w}px;height:${shot.h}px"></div>`];
     const now = Date.now();
     const ai = useStore.getState().aiChanged;
     const ids = new Set(sel);
@@ -119,7 +119,7 @@ export function Viewport() {
       const b = stage.bounds(id);
       if (!b) continue;
       const isAi = !sel.includes(id);
-      boxes.push(`<div class="selbox${isAi ? " ai" : ""}" style="left:${shot.x + b.x * shot.w}px;top:${shot.y + b.y * shot.h}px;width:${b.w * shot.w}px;height:${b.h * shot.h}px"><span class="lbl">${id}</span></div>`);
+      boxes.push(`<div class="selbox${isAi ? " ai" : ""}" style="left:${shot.x + b.x * shot.w}px;top:${shot.y + b.y * shot.h}px;width:${b.w * shot.w}px;height:${b.h * shot.h}px"><span class="lbl">${id}</span><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i></div>`);
     }
     if (hover.current && !ids.has(hover.current) && !playhead.isPlaying()) {
       const b = stage.bounds(hover.current);

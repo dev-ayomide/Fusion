@@ -61,18 +61,18 @@ export function GraphEditor({ L, ch, width, height, X, keyIndex }: Props) {
     ctx.textBaseline = "middle";
     for (let k = 0; k <= 4; k++) {
       const v = lo + ((hi - lo) * k) / 4;
-      ctx.fillStyle = "#1c1f25";
+      ctx.fillStyle = "#efeef2";
       ctx.fillRect(0, Math.round(Y(v)), width, 1);
-      ctx.fillStyle = "#5b6270";
+      ctx.fillStyle = "#a3a0aa";
       ctx.fillText(String(Math.round(v * 100) / 100), 6, Y(v) - 7);
     }
     if (tr.length < 2) {
-      ctx.fillStyle = "#737a86";
+      ctx.fillStyle = "#8a8691";
       ctx.fillText("Add at least two keyframes to shape the curve.", 16, height / 2);
       return;
     }
     // the curve
-    ctx.strokeStyle = "#8c9bff";
+    ctx.strokeStyle = "#0a9bf0";
     ctx.lineWidth = 2;
     ctx.beginPath();
     const t0 = tr[0][0], t1 = tr[tr.length - 1][0];
@@ -98,13 +98,13 @@ export function GraphEditor({ L, ch, width, height, X, keyIndex }: Props) {
       if (keyIndex < tr.length - 1) segH(keyIndex + 1, "out");
       for (const h of hs) {
         const k = h.side === "in" ? tr[h.seg] : tr[h.seg - 1];
-        ctx.strokeStyle = "#f3b24a";
+        ctx.strokeStyle = "#f59e0b";
         ctx.lineWidth = 1.2;
         ctx.beginPath();
         ctx.moveTo(X(a + k[0]), Y(k[1]));
         ctx.lineTo(h.x, h.y);
         ctx.stroke();
-        ctx.fillStyle = "#f3b24a";
+        ctx.fillStyle = "#f59e0b";
         ctx.beginPath();
         ctx.arc(h.x, h.y, 4.5, 0, Math.PI * 2);
         ctx.fill();
@@ -117,7 +117,7 @@ export function GraphEditor({ L, ch, width, height, X, keyIndex }: Props) {
     // keys
     keysAt.current = tr.map((k, i) => ({ x: X(a + k[0]), y: Y(k[1]), i }));
     for (const k of keysAt.current) {
-      ctx.fillStyle = k.i === keyIndex ? "#ffffff" : "#f3b24a";
+      ctx.fillStyle = k.i === keyIndex ? "#19171c" : "#f59e0b";
       ctx.fillRect(k.x - 4, k.y - 4, 8, 8);
     }
   });

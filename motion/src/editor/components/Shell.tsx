@@ -1,14 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "../store";
-import { playhead } from "../playhead";
-import { TEMPLATES } from "../../templates";
-import { Stage } from "../../render/stage";
-import { fontsReady, ensureFont } from "../../render/glyphs";
-import { importAsset } from "../../assets/assets";
 import { exportVideo, downloadBlob, type ExportResult } from "../../export/export";
-import { savedProject, clearSaved, restoreAssets } from "../persist";
-import { sendPrompt } from "../bridge";
-import type { Doc } from "../../fmd/schema";
 import { Icon, Seg } from "./ui";
 
 /* ------------------------------ top bar ----------------------------- */
@@ -46,132 +38,6 @@ export function TopBar() {
   );
 }
 
-/* ---------------------------- start screen --------------------------- */
-function useThumbnails(): Record<string, string> {
-  const [thumbs, setThumbs] = useState<Record<string, string>>({});
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const canvas = document.createElement("canvas");
-      const stage = new Stage(canvas, { preserveDrawingBuffer: true });
-      stage.setSize(480, 270, 1);
-      stage.textResolution = 1;
-      const docs = TEMPLATES.map((t) => t.make());
-      for (const d of docs) for (const L of d.layers) if (L.type === "text") ensureFont(L.font ?? d.brand.font, L.weight ?? 600);
-      await fontsReady();
-      await new Promise((r) => setTimeout(r, 150));
-      const out: Record<string, string> = {};
-      TEMPLATES.forEach((t, i) => {
-        const d = docs[i];
-        const at = t.id === "blank" ? 0 : Math.min(d.comp.dur - 0.2, 3.6);
-        stage.renderFrame(d, at, { samples: 1 });
-        stage.renderFrame(d, at, { samples: 1 });
-        out[t.id] = canvas.toDataURL("image/jpeg", 0.85);
-      });
-      stage.dispose();
-      if (!cancelled) setThumbs(out);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return thumbs;
-}
-
-export function StartScreen() {
-  const thumbs = useThumbnails();
-  const [text, setText] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const saved = savedProject();
-  const open = (doc: Doc) => {
-    const st = useStore.getState();
-    st.loadDoc(doc);
-    st.set("screen", "editor");
-    playhead.set(0);
-  };
-  const begin = async () => {
-    const tpl = TEMPLATES.find((t) => t.id === "blank")!;
-    const doc = tpl.make();
-    doc.name = text.trim().split(/[.,\n]/)[0].slice(0, 40) || "Untitled";
-    open(doc);
-    const st = useStore.getState();
-    const ops = [];
-    for (const f of files) {
-      const { id, entry } = await importAsset(f, Object.keys(st.doc.assets).concat(ops.map((o) => o.path.split("/")[1])));
-      ops.push({ op: "set" as const, path: `assets/${id}`, value: entry });
-    }
-    if (ops.length) st.commit(ops, { source: "you", intent: `Imported ${ops.length} image${ops.length > 1 ? "s" : ""}` });
-    st.setTab("assistant");
-    if (text.trim()) sendPrompt(text.trim());
-  };
-  return (
-    <div className="start" data-testid="start">
-      <div className="start-inner">
-        <div className="brand" style={{ fontSize: 15 }}>
-          <span className="brand-mark" /> Fusion Motion
-        </div>
-        <div>
-          <h1>Motion graphics you can talk to.</h1>
-          <p className="lede">Describe it, drop in your logo or app screenshots, and the AI builds an editable timeline — not a video you can't change. Tweak it with sliders, or open Pro mode for keyframes.</p>
-        </div>
-        <div className="prompt-card">
-          <textarea
-            placeholder="A 6-second launch promo for my budgeting app. Dark, premium, phone floating in 3D, headline “Money, made calm.”"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            aria-label="Describe your video"
-            onKeyDown={(e) => e.key === "Enter" && (e.metaKey || e.ctrlKey) && begin()}
-          />
-          <div className="prompt-row">
-            <label className="attach">
-              <input type="file" accept="image/*" multiple hidden onChange={(e) => setFiles([...files, ...[...(e.target.files ?? [])]])} data-testid="start-upload" />
-              <Icon name="image" sm /> Add logo or screenshots
-            </label>
-            <div className="thumbs">
-              {files.map((f, i) => (
-                <img key={i} src={URL.createObjectURL(f)} alt={f.name} title={f.name} />
-              ))}
-            </div>
-            <div className="spacer" />
-            <span className="faint" style={{ fontSize: 12 }}>⌘↵</span>
-            <button className="btn ai" onClick={begin} disabled={!text.trim() && !files.length} data-testid="start-create">
-              <Icon name="sparkle" sm /> Create with AI
-            </button>
-          </div>
-        </div>
-        {saved && (
-          <div className="resume">
-            <Icon name="frame" />
-            <div style={{ flex: 1 }}>
-              <b>{saved.doc.name ?? "Untitled"}</b>
-              <div className="faint" style={{ fontSize: 12 }}>
-                Last edited {new Date(saved.savedAt).toLocaleString()} · {saved.doc.layers.length} layers
-              </div>
-            </div>
-            <button className="btn sm" onClick={() => { clearSaved(); location.reload(); }}>Forget</button>
-            <button className="btn sm primary" onClick={() => { open(saved.doc); void restoreAssets(saved.doc); }} data-testid="resume">Continue</button>
-          </div>
-        )}
-        <div className="section-h">
-          <h2>Or start from a template</h2>
-          <span className="faint" style={{ fontSize: 12 }}>Every template is plain JSON you can reshape</span>
-        </div>
-        <div className="tpl-grid">
-          {TEMPLATES.map((t) => (
-            <button key={t.id} className="tpl" onClick={() => open(t.make())} data-testid={`tpl-${t.id}`}>
-              <div className="thumb" style={{ backgroundImage: thumbs[t.id] ? `url(${thumbs[t.id]})` : undefined }} />
-              <div className="meta">
-                <b>{t.title}</b>
-                <span>{t.blurb}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ------------------------------ export ------------------------------ */
 export function ExportDialog() {
   const doc = useStore((s) => s.doc);
@@ -186,6 +52,11 @@ export function ExportDialog() {
     abort.current?.abort();
     useStore.getState().set("exportOpen", false);
   };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !progress && close();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [progress]);
   const run = async () => {
     setError("");
     setResult(null);

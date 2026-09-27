@@ -356,10 +356,10 @@ export class Stage {
   renderSceneView(cam: THREE.PerspectiveCamera, rect: Rect) {
     const r = this.renderer;
     if (!this.helpers.length) {
-      const grid = new THREE.GridHelper(4000, 20, 0x3a3f4b, 0x262a33);
+      const grid = new THREE.GridHelper(4000, 20, 0xc9c7ce, 0xdedce2);
       grid.rotation.x = Math.PI / 2;
       grid.position.z = -1;
-      const frameLine = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color: 0x8c9bff }));
+      const frameLine = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color: 0x0a9bf0 }));
       const helper = new THREE.CameraHelper(this.camera);
       this.helpers.push(grid, frameLine, helper);
       this.helpers.forEach((x) => {
@@ -377,7 +377,7 @@ export class Stage {
     r.setScissorTest(true);
     r.setScissor(rect.x, rect.y, rect.w, rect.h);
     r.setViewport(rect.x, rect.y, rect.w, rect.h);
-    r.setClearColor(0x14161b, 1);
+    r.setClearColor(0xeceaef, 1);
     r.clear();
     r.render(this.scene, cam);
     r.setScissorTest(false);

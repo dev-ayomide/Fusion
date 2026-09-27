@@ -64,32 +64,32 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
   // grid
   const step = niceStep(win.pps);
   for (let t = Math.ceil(win.start / step) * step; X(t) < w; t += step) {
-    ctx.fillStyle = Math.abs(t - Math.round(t)) < 1e-6 ? "#1e2127" : "#17191e";
+    ctx.fillStyle = Math.abs(t - Math.round(t)) < 1e-6 ? "#e9e8ec" : "#f3f2f5";
     ctx.fillRect(Math.round(X(t)), 0, 1, rows.length * ROW);
   }
   const dur = doc.comp.dur;
-  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.fillStyle = "rgba(25,23,28,.035)";
   ctx.fillRect(X(dur), 0, Math.max(0, w - X(dur)), rows.length * ROW);
   rows.forEach((row, i) => {
     const y = i * ROW;
     const L = row.L;
     const isSel = sel.includes(L.id);
-    ctx.fillStyle = isSel && row.kind === "layer" ? "rgba(140,155,255,.07)" : "transparent";
+    ctx.fillStyle = isSel && row.kind === "layer" ? "rgba(10,155,240,.05)" : "transparent";
     ctx.fillRect(0, y, w, ROW);
-    ctx.fillStyle = "#1a1d22";
+    ctx.fillStyle = "#f3f2f5";
     ctx.fillRect(0, y + ROW - 1, w, 1);
     const [a, b] = span(doc, L);
     if (row.kind === "layer") {
       const x0 = X(a), x1 = X(b);
       const top = y + 4, h = ROW - 8;
-      const base = camLane ? "rgba(255,159,67,.16)" : isSel ? "rgba(140,155,255,.30)" : "#232730";
-      ctx.fillStyle = base;
-      rr(ctx, x0, top, x1 - x0, h, 6);
+      const pill = h / 2;
+      ctx.fillStyle = camLane ? "rgba(255,154,61,.18)" : isSel ? "rgba(10,155,240,.14)" : "#efeef2";
+      rr(ctx, x0, top, x1 - x0, h, pill);
       ctx.fill();
       if (isSel) {
-        ctx.strokeStyle = "#8c9bff";
-        ctx.lineWidth = 1.2;
-        rr(ctx, x0 + 0.5, top + 0.5, x1 - x0 - 1, h - 1, 6);
+        ctx.strokeStyle = "#0a9bf0";
+        ctx.lineWidth = 1.5;
+        rr(ctx, x0 + 0.75, top + 0.75, x1 - x0 - 1.5, h - 1.5, pill);
         ctx.stroke();
       }
       hits.push({ kind: "bar", x: x0 + 6, y: top, w: Math.max(0, x1 - x0 - 12), h, id: L.id });
@@ -104,14 +104,15 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
         const cx0 = X(c.t0), cx1 = X(c.t1);
         const cy = top + 2 + c.lane * lh;
         const col = behColor(c.bh.use);
-        ctx.fillStyle = hexA(col, c.loop ? 0.22 : 0.85);
-        rr(ctx, cx0 + 1, cy + 0.5, Math.max(4, cx1 - cx0 - 2), lh - 1, 4);
+        const cr = (lh - 1) / 2;
+        ctx.fillStyle = hexA(col, c.loop ? 0.16 : 0.9);
+        rr(ctx, cx0 + 1, cy + 0.5, Math.max(4, cx1 - cx0 - 2), lh - 1, cr);
         ctx.fill();
         if (c.loop) {
-          ctx.strokeStyle = hexA(col, 0.8);
+          ctx.strokeStyle = hexA(col, 0.75);
           ctx.setLineDash([3, 3]);
           ctx.lineWidth = 1;
-          rr(ctx, cx0 + 1.5, cy + 1, Math.max(4, cx1 - cx0 - 3), lh - 2, 4);
+          rr(ctx, cx0 + 1.5, cy + 1, Math.max(4, cx1 - cx0 - 3), lh - 2, cr);
           ctx.stroke();
           ctx.setLineDash([]);
         }
@@ -120,9 +121,9 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
           ctx.beginPath();
           ctx.rect(cx0, cy, cx1 - cx0 - 4, lh);
           ctx.clip();
-          ctx.fillStyle = c.loop ? col : "#0c0d10";
+          ctx.fillStyle = c.loop ? col : "#19171c";
           ctx.font = `600 ${lh > 14 ? 11 : 9.5}px Inter Variable, system-ui, sans-serif`;
-          ctx.fillText(CATALOG[c.bh.use]?.label ?? c.bh.use, cx0 + 7, cy + lh / 2 + 0.5);
+          ctx.fillText(CATALOG[c.bh.use]?.label ?? c.bh.use, cx0 + 9, cy + lh / 2 + 0.5);
           ctx.restore();
         }
         hits.push({ kind: "clip", x: cx0, y: cy, w: Math.max(4, cx1 - cx0 - 6), h: lh, id: L.id, beh: c.bh.id });
@@ -132,20 +133,20 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
       for (const tr of Object.values(L.keys ?? {}))
         for (const k of tr) {
           const kx = X(a + k[0]);
-          ctx.fillStyle = "#f3b24a";
+          ctx.fillStyle = "#f59e0b";
           diamond(ctx, kx, top + h - 2, 3);
         }
       const age = now - (ai[L.id] ?? 0);
       if (age < 5000) {
         const al = 1 - age / 5000;
-        ctx.strokeStyle = `rgba(243,178,74,${al})`;
+        ctx.strokeStyle = `rgba(139,92,246,${al})`;
         ctx.lineWidth = 2;
-        rr(ctx, x0 - 1, top - 1, x1 - x0 + 2, h + 2, 7);
+        rr(ctx, x0 - 1.5, top - 1.5, x1 - x0 + 3, h + 3, (h + 3) / 2);
         ctx.stroke();
       }
     } else {
       const tr = L.keys?.[row.ch] ?? [];
-      ctx.strokeStyle = "#3a404b";
+      ctx.strokeStyle = "#dcdae0";
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       tr.forEach((k, j) => (j ? ctx.lineTo(X(a + k[0]), y + ROW / 2) : ctx.moveTo(X(a + k[0]), y + ROW / 2)));
@@ -153,10 +154,10 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
       tr.forEach((k, j) => {
         const kx = X(a + k[0]);
         const isK = keySel && keySel.layer === L.id && keySel.channel === row.ch && keySel.index === j;
-        ctx.fillStyle = isK ? "#ffffff" : "#f3b24a";
+        ctx.fillStyle = isK ? "#19171c" : "#f59e0b";
         keyGlyph(ctx, kx, y + ROW / 2, isK ? 6.5 : 5.5, j > 0 ? interp(k[2], "in") : null, j < tr.length - 1 ? interp(tr[j + 1][2], "out") : null);
         if (win.pps > 60) {
-          ctx.fillStyle = "#6b7280";
+          ctx.fillStyle = "#8a8691";
           ctx.font = "10px JetBrains Mono Variable, monospace";
           ctx.fillText(String(Math.round(k[1] * 100) / 100), kx + 9, y + ROW / 2 + 0.5);
         }
@@ -324,10 +325,10 @@ export function Timeline() {
         ctx.textBaseline = "middle";
         for (let s = Math.ceil(win.start / step) * step; X(s) < width; s += step) {
           const major = Math.abs(s / (step * 2) - Math.round(s / (step * 2))) < 1e-6 || step >= 1;
-          ctx.fillStyle = major ? "#3a404b" : "#262a31";
+          ctx.fillStyle = major ? "#cfcdd4" : "#e6e5e9";
           ctx.fillRect(Math.round(X(s)), major ? 14 : 20, 1, major ? 14 : 8);
           if (major) {
-            ctx.fillStyle = "#737a86";
+            ctx.fillStyle = "#8a8691";
             ctx.fillText(step < 1 ? s.toFixed(2) : `${Math.round(s)}s`, X(s) + 4, 9);
           }
         }
@@ -336,9 +337,13 @@ export function Timeline() {
           diamond(ctx, X(m.t), 22, 4);
         }
         const px = X(t);
-        ctx.fillStyle = "#8c9bff";
-        rr(ctx, px - 7, 3, 14, 16, 4);
+        ctx.save();
+        ctx.shadowColor = "rgba(10,155,240,.45)";
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = "#0a9bf0";
+        rr(ctx, px - 7, 3, 14, 16, 7);
         ctx.fill();
+        ctx.restore();
       }
       if (headRef.current) headRef.current.style.transform = `translateX(${X(t)}px)`;
       if (tcRef.current) tcRef.current.textContent = fmtTime(t, doc.comp.fps);
@@ -604,7 +609,7 @@ export function Timeline() {
             </span>
           ))}
           <span>
-            <i style={{ background: "var(--ai)", transform: "rotate(45deg) scale(.8)" }} />
+            <i style={{ background: "var(--key)", borderRadius: 1, transform: "rotate(45deg) scale(.8)" }} />
             Keyframe
           </span>
         </div>
@@ -684,7 +689,7 @@ export function Timeline() {
               ))}
             {!rows.length && <div className="faint" style={{ position: "absolute", top: 10, left: 14 }}>Add something from the toolbar or ask the AI.</div>}
           </div>
-          <div ref={headRef} style={{ position: "absolute", top: 0, bottom: 0, left: namesW, width: 1.5, background: "#8c9bff", pointerEvents: "none", boxShadow: "0 0 0 .5px rgba(140,155,255,.4)" }} />
+          <div ref={headRef} style={{ position: "absolute", top: 0, bottom: 0, left: namesW, width: 1.5, background: "#0a9bf0", pointerEvents: "none", boxShadow: "0 0 6px rgba(10,155,240,.4)" }} />
           {tip && <div className="vbadge" style={{ position: "absolute", left: namesW + tip.x + 12, top: Math.max(0, tip.y - 30), pointerEvents: "none", color: "var(--text)" }}>{tip.text}</div>}
         </div>
       </div>

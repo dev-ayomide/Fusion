@@ -112,7 +112,7 @@ export function deleteOps(doc: Doc, ids: string[]): Op[] {
   return ops;
 }
 
-export const BEH_COLORS: Record<string, string> = { Enter: "#47c78e", Exit: "#e2688a", Loop: "#5aa9ff", Text: "#b38cff", Camera: "#ff9f43" };
+export const BEH_COLORS: Record<string, string> = { Enter: "#3ccf91", Exit: "#f7729a", Loop: "#4aa8ff", Text: "#b593ff", Camera: "#ffa24a" };
 export function behColor(use: string): string {
   return BEH_COLORS[CATALOG[use]?.group ?? "Enter"] ?? "#8b919c";
 }
