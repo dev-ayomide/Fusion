@@ -4,7 +4,7 @@ import { TEMPLATES } from "../../templates";
 import { Stage } from "../../render/stage";
 import { fontsReady, ensureFont } from "../../render/glyphs";
 import { newProjectFromDoc } from "../persist";
-import { relativeTime } from "../projects";
+import { relativeTime, renderDocThumb } from "../projects";
 import { openDoc, startProject } from "../startFlow";
 import { ProjectsSection, openFromLibrary, useProjects } from "./Projects";
 import { CATALOG } from "../../fmd/catalog";
@@ -22,24 +22,18 @@ function useThumbnails(): Record<string, string> {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const canvas = document.createElement("canvas");
-      const stage = new Stage(canvas, { preserveDrawingBuffer: true });
-      stage.setSize(480, 270, 1);
-      stage.textResolution = 1;
-      const docs = TEMPLATES.map((t) => t.make());
-      for (const d of docs) for (const L of d.layers) if (L.type === "text") ensureFont(L.font ?? d.brand.font, L.weight ?? 600);
-      await fontsReady();
-      await new Promise((r) => setTimeout(r, 150));
-      const out: Record<string, string> = {};
-      TEMPLATES.forEach((t, i) => {
-        const d = docs[i];
-        const at = t.id === "blank" ? 0 : Math.min(d.comp.dur - 0.2, 3.6);
-        stage.renderFrame(d, at, { samples: 1 });
-        stage.renderFrame(d, at, { samples: 1 });
-        out[t.id] = canvas.toDataURL("image/jpeg", 0.85);
-      });
-      stage.dispose();
-      if (!cancelled) setThumbs(out);
+      await new Promise((r) => setTimeout(r, 400));
+      // the shared, serialised thumbnail renderer (also used by the library), one template at a time
+      for (const t of TEMPLATES) {
+        if (cancelled) return;
+        try {
+          const d = t.make();
+          const url = await renderDocThumb(d, t.id === "blank" ? 0 : Math.min(d.comp.dur - 0.2, 3.6), 480, 270, 0.85);
+          if (!cancelled) setThumbs((m) => ({ ...m, [t.id]: url }));
+        } catch {
+          /* no WebGL — cards keep their plain background */
+        }
+      }
     })();
     return () => {
       cancelled = true;
@@ -48,7 +42,10 @@ function useThumbnails(): Record<string, string> {
   return thumbs;
 }
 
-/** Plays a template with the real renderer; pauses while scrolled out of view. */
+/**
+ * Plays a template with the real renderer. Pauses off-screen and in hidden tabs, never spends more
+ * than about half the main thread on the preview, and shows a still frame on software GL.
+ */
 function LiveStage({ doc, onTime }: { doc: Doc; onTime: (t: number) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const tick = useRef(onTime);
@@ -60,13 +57,25 @@ function LiveStage({ doc, onTime }: { doc: Doc; onTime: (t: number) => void }) {
     let alive = true;
     let visible = true;
     let raf = 0;
+    let nextAt = 0;
+    let still = false;
+    try {
+      const gl = stage.renderer.getContext();
+      const info = gl.getExtension("WEBGL_debug_renderer_info");
+      still = /swiftshader|llvmpipe|software|basic render/i.test(String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)));
+    } catch {
+      /* ignore */
+    }
     const t0 = performance.now();
     const fit = () => {
       const r = canvas.getBoundingClientRect();
-      stage.setSize(Math.max(2, r.width), Math.max(2, r.height), Math.min(2, window.devicePixelRatio || 1));
+      stage.setSize(Math.max(2, r.width), Math.max(2, r.height), still ? 0.5 : Math.min(2, window.devicePixelRatio || 1));
     };
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting));
-    const ro = new ResizeObserver(fit);
+    const ro = new ResizeObserver(() => {
+      fit();
+      if (still && alive) stage.renderFrame(doc, Math.min(doc.comp.dur - 0.2, 3.6), { samples: 1 });
+    });
     io.observe(canvas);
     ro.observe(canvas);
     for (const L of doc.layers) if (L.type === "text") ensureFont(L.font ?? doc.brand.font, L.weight ?? 600);
@@ -75,12 +84,21 @@ function LiveStage({ doc, onTime }: { doc: Doc; onTime: (t: number) => void }) {
       if (!alive) return;
       fit();
       await stage.prepare(doc, 0);
+      if (!alive) return;
+      if (still) {
+        const t = Math.min(doc.comp.dur - 0.2, 3.6);
+        stage.renderFrame(doc, t, { samples: 1 });
+        tick.current(t);
+        return;
+      }
       const loop = (now: number) => {
         if (!alive) return;
         raf = requestAnimationFrame(loop);
-        if (!visible) return;
+        if (!visible || document.hidden || now < nextAt) return;
         const t = ((now - t0) / 1000) % doc.comp.dur;
+        const c0 = performance.now();
         stage.renderFrame(doc, t, { samples: 1 });
+        nextAt = now + (performance.now() - c0);
         tick.current(t);
       };
       raf = requestAnimationFrame(loop);
