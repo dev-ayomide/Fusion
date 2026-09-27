@@ -897,6 +897,8 @@ export function Timeline() {
     setWin({ start: 0, pps: Math.max(10, (width - PAD * 2 - 8) / doc.comp.dur) });
   };
 
+  // the music lanes and the scenes band are added on top of the chosen height, so they never squeeze the layer rows
+  const pinnedH = (doc.audio.length ? Math.min(3, doc.audio.length) * LANE : 34) + 1 + (hasScenes ? BAND : 0);
   const startResize = (e: React.PointerEvent) => {
     const y0 = e.clientY, h0 = height;
     const move = (ev: PointerEvent) => setHeight(Math.min(window.innerHeight * 0.7, Math.max(150, h0 - (ev.clientY - y0))));
@@ -922,7 +924,7 @@ export function Timeline() {
     return L && ch && L.keys?.[ch] ? { L, ch, index: keySel && keySel.layer === L.id && keySel.channel === ch ? keySel.index : null } : null;
   })();
   return (
-    <section className="timeline" style={{ height, ["--names" as string]: `${namesW}px`, gridTemplateRows: "6px 44px minmax(0, 1fr) auto auto" }} aria-label="Timeline">
+    <section className="timeline" style={{ height: height + pinnedH, ["--names" as string]: `${namesW}px`, gridTemplateRows: "6px 44px minmax(0, 1fr) auto auto" }} aria-label="Timeline">
       <div className="tl-resize" onPointerDown={startResize} title="Drag to resize" />
       <div className="tl-bar">
         <button className="play" onClick={() => playhead.toggle()} aria-label={playing ? "Pause" : "Play"} title="Play / pause (Space)">
