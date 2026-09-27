@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { describeOp, applyTxn, type Op } from "../../fmd/ops";
 import { useStore, type Turn } from "../store";
 import { sendPrompt, respond, estTokens } from "../bridge";
+import { connectProvider, disconnectProvider, PROVIDERS, type ProviderId } from "../agentProvider";
 import { Icon } from "./ui";
 
 type StyleKey = "energy" | "bounce" | "depth" | "speed";
@@ -238,6 +239,7 @@ export function Assistant() {
   const selection = useStore((s) => s.selection);
   const mode = useStore((s) => s.mode);
   const [text, setText] = useState("");
+  const [provider, setProvider] = useState<ProviderId>("agentrouter");
   const msgs = useRef<HTMLDivElement>(null);
   useEffect(() => {
     msgs.current?.scrollTo({ top: msgs.current.scrollHeight, behavior: "smooth" });
@@ -252,11 +254,24 @@ export function Assistant() {
       <div className="agent-state">
         <span className={`dot${agent ? " on" : ""}`} />
         {agent ? (
-          <span>
-            <b style={{ color: "var(--text)" }}>{agent.name}</b> connected · edits arrive as reviewable ops
+          <span title="Edits arrive as reviewable ops">
+            <b style={{ color: "var(--text)" }}>{agent.name}</b> connected
           </span>
         ) : (
-          <span>No AI agent connected · requests queue until one connects</span>
+          <span title="Requests queue until an agent connects">No AI connected</span>
+        )}
+        <div className="spacer" />
+        {agent ? (
+          <button className="btn sm ghost" onClick={disconnectProvider}>Disconnect</button>
+        ) : (
+          <>
+            <select value={provider} onChange={(e) => setProvider(e.target.value as ProviderId)} aria-label="AI provider" style={{ height: 28, fontSize: 12, fontWeight: 550, borderRadius: 999, paddingLeft: 12, minWidth: 104 }}>
+              {Object.entries(PROVIDERS).map(([id, cfg]) => (
+                <option key={id} value={id}>{cfg.label}</option>
+              ))}
+            </select>
+            <button className="btn sm ai" onClick={() => connectProvider(provider)} title={`Calls ${PROVIDERS[provider].label} for every request from now on`}>Connect</button>
+          </>
         )}
       </div>
       <StyleBox />
