@@ -27,11 +27,18 @@ Source of truth for the schema: `src/fmd/schema.ts` (Zod 4). Behaviour catalog: 
   "markers": [],
   "style":  { "energy": 0.5, "bounce": 0.5, "depth": 0.7, "speed": 0.5 },
   "bindings": [{ "from": "style.bounce", "path": "phone/beh/rise/bounce", "lo": 0.05, "hi": 0.7 }],
+  "scenes": [{ "id": "s1", "title": "Hook", "start": 0, "dur": 3, "brief": "Phone rises on a spring.", "status": "done" }],
+  "audio":  [{ "id": "music", "src": "lib://music/drive", "at": 0, "offset": 0, "volume": 0.8, "fadeIn": 0, "fadeOut": 1.5 }],
   "layers": [ … back to front … ]
 }
 ```
 
 - Colours are lowercase `#rrggbb` or a **named brand token** `$accent` (names, not indices — models don't shift them).
+- `scenes` (optional, default `[]`) is the storyboard: shots laid end to end, each built into layers whose ids start with
+  `<scene id>-` inside `[start, start + dur)`. `status` is `planned | building | done`. See `AGENT-FLOW.md`.
+- `audio` (optional, default `[]`) is the soundtrack. `src` is an audio asset id (an upload) or a bundled CC0 track
+  `lib://music/<name>`; `at` is comp time, `offset` trims the file head, `dur` caps the length, `volume` is 0–2,
+  `fadeIn`/`fadeOut` in seconds, `muted` silences it. Export mixes every audible track into the MP4/WebM.
 - Readable keys everywhere (`type`, `text`, `colors`); defaults are omitted; the wire format is minified.
 
 ## 3. Layers
@@ -116,7 +123,7 @@ The log stores **three primitives**, id-addressed:
 ```
 
 **Path grammar:** `/` separates segments, dots belong to channel names, no brackets, no indices except tuple components.
-First segment is a root field (`comp brand assets markers style bindings name`) or a layer id.
+First segment is a root field (`comp brand assets markers style bindings scenes audio name`) or a layer id.
 Arrays of objects with ids (`beh`, `fx`, `anim`, `markers`, layers) are addressed by id: `title/beh/type/stagger`.
 Tuples by axis: `phone/pos/y`.
 

@@ -141,8 +141,10 @@ export function ExportDialog() {
           <>
             <video src={result.url} controls autoPlay loop muted={!result.audio} playsInline data-testid="export-video" />
             <div className="hint mono" data-testid="export-info">
-              {result.ext.replace(".", "").toUpperCase()} · {result.codec.toUpperCase()} · {result.width}×{result.height} · {result.frames} frames · {(result.blob.size / 1024 / 1024).toFixed(2)} MB · {(result.ms / 1000).toFixed(1)}s to render{result.audio ? ` · ${result.audio.codec.toUpperCase()} audio · ${result.audio.tracks} track${result.audio.tracks > 1 ? "s" : ""}` : ""}{result.audioNote ? ` · ${result.audioNote}` : ""}
+              {result.ext.replace(".", "").toUpperCase()} · {result.codec.toUpperCase()} · {result.width}×{result.height} · {result.frames} frames · {(result.blob.size / 1024 / 1024).toFixed(2)} MB · {(result.ms / 1000).toFixed(1)}s to render
+              {result.audio && ` · ${result.audio.codec.toUpperCase()} audio (${result.audio.tracks} track${result.audio.tracks > 1 ? "s" : ""})`}
             </div>
+            {result.audioNote && <div className="warn" data-testid="export-audio-note">{result.audioNote}</div>}
           </>
         )}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
