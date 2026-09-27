@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useStore } from "../store";
+import { getSaveState, subscribeSaveState } from "../persist";
+import { BrandMark } from "./Brand";
 import { exportVideo, downloadBlob, type ExportResult } from "../../export/export";
 import { Icon, Seg } from "./ui";
 
@@ -12,18 +14,30 @@ export function TopBar() {
   const st = useStore.getState();
   return (
     <header className="topbar">
-      <button className="brand" onClick={() => st.set("screen", "start")} title="Back to projects">
-        <span className="brand-mark" />
-        Fusion Motion
+      <button className="tb-home" onClick={() => st.set("screen", "start")} title="All videos" aria-label="Back to your videos" data-testid="home">
+        <BrandMark size={22} />
+        <span className="tb-home-label">Your videos</span>
       </button>
+      <span className="tb-sep" aria-hidden="true">/</span>
       <input
-        className="projname"
+        className="projname tb-name"
         aria-label="Project name"
         key={doc.name}
         defaultValue={doc.name ?? "Untitled"}
-        onBlur={(e) => e.target.value !== doc.name && st.commit([{ op: "set", path: "name", value: e.target.value }], { source: "you", intent: `Renamed project` })}
-        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+        size={Math.min(36, Math.max(8, (doc.name ?? "Untitled").length + 1))}
+        onBlur={(e) => {
+          const v = e.target.value.trim() || "Untitled";
+          if (v !== (doc.name ?? "Untitled")) st.commit([{ op: "set", path: "name", value: v }], { source: "you", intent: `Renamed project` });
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape") {
+            (e.target as HTMLInputElement).value = doc.name ?? "Untitled";
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
       />
+      <SaveBadge />
       <button className="iconbtn" disabled={!canUndo} onClick={() => st.undo()} title="Undo (⌘Z)" aria-label="Undo"><Icon name="undo" /></button>
       <button className="iconbtn" disabled={!canRedo} onClick={() => st.redo()} title="Redo (⇧⌘Z)" aria-label="Redo"><Icon name="redo" /></button>
       <div className="spacer" />
@@ -35,6 +49,16 @@ export function TopBar() {
         <Icon name="export" sm /> Export
       </button>
     </header>
+  );
+}
+
+function SaveBadge() {
+  const state = useSyncExternalStore(subscribeSaveState, getSaveState, getSaveState);
+  if (state === "idle") return null;
+  return (
+    <span className={`tb-save ${state}`} role="status" aria-live="polite" title="Your videos are saved in this browser">
+      {state === "saving" ? "Saving…" : "Saved"}
+    </span>
   );
 }
 

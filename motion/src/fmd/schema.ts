@@ -312,6 +312,37 @@ export const Binding = z.object({
   hi: z.number(),
 });
 
+/**
+ * A planned shot. The AI proposes the list before building; the user edits it; each scene is then
+ * built into layers inside [start, start + dur). `status` tracks the build.
+ */
+export const Scene = z.object({
+  id: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_-]*$/),
+  title: z.string(),
+  start: z.number().min(0),
+  dur: z.number().positive(),
+  /** what happens in the shot: the user-editable brief the AI builds from */
+  brief: z.string(),
+  status: z.enum(["planned", "building", "done"]).optional(),
+});
+
+/** A music or sound track on the comp timeline. `src` is an asset id or a library ref (lib://music/<name>). */
+export const AudioTrack = z.object({
+  id: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_-]*$/),
+  src: z.string(),
+  name: z.string().optional(),
+  /** comp time the track starts at (s) */
+  at: z.number().min(0).default(0),
+  /** seconds into the file where playback begins (trim head) */
+  offset: z.number().min(0).default(0),
+  /** play length (s); defaults to the rest of the file / the comp */
+  dur: z.number().positive().optional(),
+  volume: z.number().min(0).max(2).default(1),
+  fadeIn: z.number().min(0).default(0),
+  fadeOut: z.number().min(0).default(0),
+  muted: z.boolean().optional(),
+});
+
 export const Doc = z.object({
   v: z.literal(1),
   name: z.string().optional(),
@@ -351,6 +382,8 @@ export const Doc = z.object({
     .object({ energy: z.number().min(0).max(1), bounce: z.number().min(0).max(1), depth: z.number().min(0).max(1), speed: z.number().min(0).max(1) })
     .default({ energy: 0.5, bounce: 0.5, depth: 0.5, speed: 0.5 }),
   bindings: z.array(Binding).default([]),
+  scenes: z.array(Scene).default([]),
+  audio: z.array(AudioTrack).default([]),
   layers: z.array(Layer),
 });
 
@@ -370,6 +403,8 @@ export type ClonerLayer = z.infer<typeof ClonerLayer>;
 export type CameraLayer = z.infer<typeof CameraLayer>;
 export type GradientLayer = z.infer<typeof GradientLayer>;
 export type Binding = z.infer<typeof Binding>;
+export type Scene = z.infer<typeof Scene>;
+export type AudioTrack = z.infer<typeof AudioTrack>;
 export type HtmlLayer = z.infer<typeof HtmlLayer>;
 export type PathLayer = z.infer<typeof PathLayer>;
 export type MeshLayer = z.infer<typeof MeshLayer>;

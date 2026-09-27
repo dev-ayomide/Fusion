@@ -1,195 +1,216 @@
-import { catalog } from "../fmd/outline";
-import type { PendingTurn } from "./bridge";
+import { callModel, parseLooseJson, type ModelConfig } from "../ai/llm";
+import { systemFor, type TaskKind } from "../ai/prompts";
+import { repairOps, sanitizeOps } from "../ai/repair";
+import type { Op } from "../fmd/ops";
+import { buildPreview, useStore, type Chip } from "./store";
+import { prepareTurnOps, respond, type PendingTurn } from "./bridge";
 
 /**
- * Real in-app AI providers for the agent bridge (`window.fusion.bridge`). The editor itself
- * never calls a model — this module is just another bridge client, exactly like an external
- * script or MCP agent would be. It polls for pending turns, asks the connected provider for
- * ops, and answers through the same `bridge.respond` every other agent uses.
+ * In-app AI providers. The editor itself never calls a model — this module is just another bridge
+ * client, exactly like an external script or MCP agent: it polls `bridge.pending()`, asks the
+ * connected model, and answers through `bridge.respond`. Keys stay on the dev server (vite.config.ts).
  */
 
-const SYSTEM_PROMPT = `You are a motion-graphics editor AI working on a Fusion Motion Document (FMD) — a single JSON document that a small "ops" log edits, evaluated as a pure function of time and rendered live. You never write prose about what you'd do — you emit ops that do it.
+export type ProviderId = "anthropic" | "agentrouter" | "mistral";
 
-CONTEXT YOU RECEIVE
-- An outline: one line per layer (id, type, in–out, key fields), back-to-front paint order.
-- If layers are selected, their full JSON too — edit those unless the request is clearly comp-wide.
-- The user's request.
-
-PATH GRAMMAR (used by every op)
-"/" separates segments; the first segment is a layer id or a root field (v, name, comp, brand, assets, markers, style, bindings).
-  phone/rot              a layer field
-  phone/pos/y            a tuple component (x|y|z)
-  phone/beh/rise/dur     a field of behavior "rise" on layer "phone"
-  phone/keys/rot.y       a whole keyframe track for channel rot.y
-  comp/dur, brand/colors/accent, style/energy
-
-OPS (JSON, one array)
-  {"op":"set","path":"...","value":...}        — set a field. Also creates a NEW layer (path = new id, value = full layer object incl. "type") or a NEW behavior (path = "<layer>/beh/<newBehId>", value = {use, at, ...params}, no "id" needed).
-  {"op":"set","path":"...","delta":N}          — add N to a current number.
-  {"op":"del","path":"..."}                     — delete a field, a behavior, or a whole layer (path = layer id).
-  {"op":"ord","id":"...","after":"<id>"|null}   — reorder layers (after: null = send to back).
-  {"op":"key","path":"<layer>/keys/<channel>","keys":[[t,value,ease?],...]} — replace a channel's keyframes. t is layer-local seconds (0 = layer's "in").
-  {"op":"style","key":"energy"|"bounce"|"depth"|"speed","value":0..1} — the four global vibe sliders.
-  {"op":"trim","id":"...","delta":N}            — shift a layer's in-point by N seconds, keeping its animation content in place.
-
-RULES
-- Only use layer ids that exist in the outline (or an id you're creating right now).
-- Colors are "#rrggbb" (lowercase) or "$brandColorName" from brand.colors.
-- New layer/behavior ids: start with a letter, then letters/digits/_/- only.
-- A layer's "beh" field is ALWAYS an ARRAY, never an object — even when a new layer starts with only one behavior: "beh": [{"id":"in","use":"rise","at":0}]. Never write "beh": {"in": {...}}.
-- A behavior "owns" the channels in its catalog entry — don't give two behaviors on the same layer overlapping time windows over the same channel.
-- Prefer a catalog behavior over hand-written keyframes for a standard entrance/exit/loop; use "key" for anything bespoke (counters, custom paths, chart lines).
-- Keep edits minimal and targeted — don't rewrite fields the user didn't ask about.
-- If the request is ambiguous, make the single most reasonable choice — never ask a question back.
-
-EXAMPLE — adding a whole new layer with an entrance behavior:
-{"op":"set","path":"subtitle","value":{"type":"text","text":"Built for teams","size":34,"color":"$ink","in":2,"out":6,"pos":[100,20,0],"beh":[{"id":"in","use":"rise","at":0,"dist":90}]}}
-
-BEHAVIOR CATALOG
-${catalog()}
-
-LAYER TYPES (fields beyond the common id/in/out/parent/pos/rot/scale/opacity/blur/keys/beh/expr)
-  text     text, size, font?, weight?, color?, align?, tracking?, lineHeight?, spans?[{text,color?,weight?,size?}], value? (rolling number), anim?[{id,sel:{by,shape,start,end},add:{pos?,rot?,scale?,opacity?,wipe?}}]
-  shape    shape:"rect"|"ellipse", w, h, radius?, fill?, stroke?, strokeWidth?, shadow?, glass?
-  image    src (asset id), w, h?, radius?, shadow?, glass?
-  device   model:"iphone"|"browser", screen? (asset id), w?, color?
-  cloner   mode:"radial"|"grid"|"linear", n, r?, cols?, gap?, spin?, orient?, child:{kind:"shape"|"image"|"text", shape?, w, h?, fill?, src?, text?, colors?[]}, reveal?{dur,bounce?,at?}
-  camera   fov?, target?
-  group    clip?{w,h,radius}
-  html     html (string, {{var}} placeholders), w, h, radius?, vars?{name:number}
-  path     points:[[x,y],...], smooth?, closed?, stroke?, width?, trimStart?, trimEnd?, glow?, fillTo?, fill?
-  mesh     geom:"sphere"|"box"|"torus"|"cylinder"|"capsule"|"cone"|"balloon"|"pear"|"coin"|"ring"|"slab", size, material:"chrome"|"foil"|"metal"|"gold"|"glass"|"plastic"|"matte"|"clay"|"emissive", color?, map? (asset id)
-  gradient colors:[..2-4], kind?:"linear"|"radial", angle?, noise?
-  sky      top?, horizon?, clouds?, sun?, hills?, mountains?, grass?, stars?
-  adjust   exposure?, contrast?, saturation?, fadeColor?, fade?, dissolve? (affects everything below it)
-
-RESPONSE FORMAT — reply with ONLY a raw JSON object, no markdown fences, no commentary outside it:
-{"message": "one short, casual sentence about what you changed", "ops": [ ...ops... ], "chips": [{"label":"short follow-up idea","ops":[...]}]}
-"chips" is optional (0-3 small one-click follow-ups). If you truly cannot help, return {"message":"...", "ops":[]}.`;
-
-export type ProviderId = "mistral" | "agentrouter";
-
-interface ProviderConfig {
-  label: string;
-  endpoint: string;
-  model: string;
-  /** the endpoint honours OpenAI's {"type":"json_object"} response_format */
-  jsonMode: boolean;
-  extraBody?: Record<string, unknown>;
+export interface Provider extends ModelConfig {
+  id: ProviderId;
+  /** the motion/.env variable that enables it */
+  env: string;
+  vendor: string;
 }
 
-export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
-  mistral: { label: "Mistral", endpoint: "/api/mistral/v1/chat/completions", model: "mistral-medium-latest", jsonMode: true },
+export const PROVIDERS: Record<ProviderId, Provider> = {
+  anthropic: { id: "anthropic", label: "Claude Opus 5.5", vendor: "Anthropic", env: "ANTHROPIC_API_KEY", wire: "anthropic", endpoint: "/api/anthropic/v1/messages", model: "claude-opus-5-5", maxTokens: 64000 },
   agentrouter: {
+    id: "agentrouter",
     label: "DeepSeek",
+    vendor: "DeepSeek via AgentRouter",
+    env: "AGENTROUTER_API_KEY",
+    wire: "openai",
     endpoint: "/api/agentrouter/chat/completions",
     model: "deepseek-v4-flash",
     jsonMode: true,
-    // ops replies are short and structured — thinking tokens would just eat the budget
+    maxTokens: 16384,
+    // ops replies are structured — thinking tokens would just eat the budget
     extraBody: { thinking: { type: "disabled" } },
   },
+  mistral: { id: "mistral", label: "Mistral", vendor: "Mistral AI", env: "MISTRAL_API_KEY", wire: "openai", endpoint: "/api/mistral/v1/chat/completions", model: "mistral-medium-latest", jsonMode: true, maxTokens: 16000 },
 };
+/** Auto-connect preference. */
+export const PROVIDER_ORDER: ProviderId[] = ["anthropic", "agentrouter", "mistral"];
+
+/* ------------------------------- prompts ------------------------------- */
+
+function userMessage(turn: PendingTurn): string {
+  const scene = turn.scene;
+  const sceneBlock = scene
+    ? `SCENE ${scene.index + 1} of ${scene.count} — "${scene.title}"\nWINDOW: ${turn.window![0]}–${turn.window![1]} s (comp time, ${scene.dur} s long). Every new layer id starts with "${scene.prefix}".\nBRIEF: ${scene.brief || "(no brief — make it fit the plan)"}${scene.prev ? `\nPREVIOUS SCENE: ${scene.prev.title} — ${scene.prev.brief}` : "\nThis is the OPENING scene."}${scene.next ? `\nNEXT SCENE: ${scene.next.title} — ${scene.next.brief}` : "\nThis is the FINAL scene — end on a held, composed frame."}`
+    : "";
+  switch (turn.kind) {
+    case "plan":
+      return `${turn.prompt}\n\nReturn the scene plan JSON.`;
+    case "setup":
+      return `${turn.prompt}\n\nDOCUMENT OUTLINE:\n${turn.outline}\n\nReturn the setup ops JSON.`;
+    case "scene":
+      return `ART DIRECTION: ${turn.plan?.look || "(match the brand below)"}\n\nDOCUMENT OUTLINE (brand colours, fonts, the shared camera and every built scene):\n${turn.outline}\n\n${sceneBlock}\n\nBuild this scene now. Return the JSON.`;
+    default:
+      return `${turn.outline}${turn.inspect ? "\n\nFOCUSED LAYER JSON:\n" + turn.inspect.slice(0, 24000) : ""}${sceneBlock ? "\n\nSCOPED TO " + sceneBlock : ""}${turn.docValid ? "" : "\n\n(note: the document currently has validation issues)"}\n\nREQUEST: ${turn.prompt}`;
+  }
+}
+
+const budget = (cfg: Provider, kind: TaskKind) => {
+  const claude = cfg.wire === "anthropic";
+  switch (kind) {
+    case "plan":
+      return { maxTokens: claude ? 16000 : 4000, effort: "medium" as const };
+    case "setup":
+      return { maxTokens: claude ? 16000 : 4000, effort: "low" as const };
+    case "scene":
+      return { maxTokens: cfg.maxTokens, effort: "medium" as const };
+    case "repair":
+      return { maxTokens: claude ? 16000 : 6000, effort: "low" as const };
+    default:
+      return { maxTokens: claude ? 32000 : 8000, effort: "medium" as const };
+  }
+};
+
+async function ask(cfg: Provider, kind: TaskKind, user: string, usage: { in: number; out: number }): Promise<Record<string, unknown>> {
+  const system = systemFor(kind);
+  let last: Error | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const r = await callModel(cfg, { system, user, ...budget(cfg, kind) });
+    usage.in += r.usage?.in ?? 0;
+    usage.out += r.usage?.out ?? 0;
+    try {
+      const parsed = parseLooseJson(r.text);
+      if (parsed && typeof parsed === "object") return (Array.isArray(parsed) ? { ops: parsed } : parsed) as Record<string, unknown>;
+    } catch (e) {
+      last = e as Error;
+    }
+    // a malformed reply is usually a one-off — ask once more before surfacing an error
+  }
+  throw new Error(`${cfg.label} did not return valid JSON${last ? ` (${last.message})` : ""}`);
+}
+
+/** Per-agent-op validation errors, as the editor will judge them (after scene prefixing). */
+function checker(turn: PendingTurn) {
+  const meta = { kind: turn.kind, sceneId: turn.scene?.id, window: turn.window };
+  return (ops: Op[]) => {
+    const doc = useStore.getState().doc;
+    const prepared = prepareTurnOps(meta, ops, doc);
+    const { opErrors } = buildPreview(doc, prepared.ops, prepared.ops.map(() => true));
+    const out: (string | null)[] = ops.map(() => null);
+    opErrors.forEach((e, i) => {
+      const j = prepared.from[i];
+      if (e && j >= 0 && !out[j]) out[j] = e;
+    });
+    return out;
+  };
+}
+
+async function handle(cfg: Provider, turn: PendingTurn) {
+  const usage = { in: 0, out: 0 };
+  const kind: TaskKind = turn.kind;
+  const user = userMessage(turn);
+  const reply = await ask(cfg, kind, user, usage);
+  const message = typeof reply.message === "string" ? reply.message : "";
+  if (kind === "plan") {
+    await respond(turn.turnId, { message, plan: { scenes: reply.scenes ?? reply.plan, look: typeof reply.look === "string" ? reply.look : undefined } });
+  } else {
+    let ops = sanitizeOps(reply.ops);
+    if (ops.length) {
+      const rep = await repairOps(ops, checker(turn), (req) => ask(cfg, "repair", `${user}\n\nYOUR PREVIOUS OPS (${ops.length}) were checked.\n${req}`, usage));
+      ops = rep.ops;
+    }
+    const chips = Array.isArray(reply.chips)
+      ? (reply.chips as Chip[]).filter((c) => c && typeof c.label === "string" && (Array.isArray(c.ops) || typeof c.prompt === "string")).slice(0, 2)
+      : undefined;
+    await respond(turn.turnId, { message, ops, chips, delayMs: kind === "scene" || kind === "setup" ? Math.max(25, Math.min(90, 3000 / Math.max(1, ops.length))) : 70 });
+  }
+  if (usage.in || usage.out) useStore.getState().patchTurn(turn.turnId, { tokens: usage });
+}
+
+/* ------------------------------ connection ------------------------------ */
 
 let timer: ReturnType<typeof setInterval> | null = null;
 let activeProvider: ProviderId | null = null;
 const inFlight = new Set<string>();
 
-interface FusionApi {
-  bridge: {
-    connect(name: string): boolean;
-    disconnect(): void;
-    pending(): PendingTurn[];
-    respond(turnId: string, r: { message: string; ops?: unknown[]; chips?: { label: string; ops: unknown[] }[]; delayMs?: number }): Promise<void>;
-  };
-}
-const fusion = () => (window as unknown as { fusion: FusionApi }).fusion;
-
-/** Strips ```json fences a model may add despite instructions not to. */
-function extractJson(content: string): string {
-  const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(content);
-  return fenced ? fenced[1].trim() : content.trim();
+function fusion() {
+  return (window as unknown as { fusion?: { bridge: { connect(name: string, o?: { provider?: string }): boolean; disconnect(): void; pending(): PendingTurn[] } } }).fusion;
 }
 
-async function callProvider(cfg: ProviderConfig, user: string, attempt = 0): Promise<Response> {
-  const res = await fetch(cfg.endpoint, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      model: cfg.model,
-      temperature: 0.3,
-      ...(cfg.jsonMode ? { response_format: { type: "json_object" } } : {}),
-      ...cfg.extraBody,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: user },
-      ],
-    }),
-  });
-  if (res.status === 429 && attempt < 2) {
-    await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
-    return callProvider(cfg, user, attempt + 1);
-  }
-  return res;
-}
-
-async function askProvider(cfg: ProviderConfig, turn: PendingTurn, attempt = 0): Promise<{ message: string; ops: unknown[]; chips?: { label: string; ops: unknown[] }[] }> {
-  const user = `${turn.outline}${turn.inspect ? "\n\nSELECTED LAYER JSON:\n" + turn.inspect : ""}${turn.docValid ? "" : "\n\n(note: the document currently has validation issues)"}\n\nREQUEST: ${turn.prompt}`;
-  const res = await callProvider(cfg, user);
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`${cfg.label} ${res.status}${body ? ": " + body.slice(0, 200) : ""}`);
-  }
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (typeof content !== "string") throw new Error(`${cfg.label} returned no content`);
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(extractJson(content));
-  } catch {
-    // occasionally a model emits malformed JSON on complex requests — one silent retry
-    // resolves this most of the time without the user ever seeing an error turn
-    if (attempt < 1) return askProvider(cfg, turn, attempt + 1);
-    throw new Error(`${cfg.label} did not return valid JSON`);
-  }
-  const p = parsed as { message?: unknown; ops?: unknown; chips?: unknown };
-  return {
-    message: typeof p.message === "string" ? p.message : "",
-    ops: Array.isArray(p.ops) ? p.ops : [],
-    chips: Array.isArray(p.chips) ? (p.chips as { label: string; ops: unknown[] }[]) : undefined,
-  };
-}
-
-async function tick(cfg: ProviderConfig) {
+function tick(cfg: Provider) {
   const bridge = fusion()?.bridge;
   if (!bridge) return;
+  // someone else (an external agent) connected: step aside
+  if (useStore.getState().agent?.provider !== cfg.id) return stopPolling();
   for (const turn of bridge.pending()) {
     if (inFlight.has(turn.turnId)) continue;
     inFlight.add(turn.turnId);
-    askProvider(cfg, turn)
-      .then((r) => bridge.respond(turn.turnId, { ...r, delayMs: 70 }))
-      .catch((e: Error) => bridge.respond(turn.turnId, { message: `⚠️ ${e.message}`, ops: [] }))
+    handle(cfg, turn)
+      .catch((e: Error) => {
+        const t = useStore.getState().turns.find((x) => x.id === turn.turnId);
+        if (t && (t.status === "waiting" || t.status === "streaming")) {
+          if (useStore.getState().preview?.turnId === turn.turnId) useStore.getState().discardPreview();
+          useStore.getState().patchTurn(turn.turnId, { status: "error", text: e.message });
+          if (t.kind === "plan") useStore.getState().setDirector({ phase: useStore.getState().doc.scenes.length ? "ready" : "idle" });
+        }
+      })
       .finally(() => inFlight.delete(turn.turnId));
   }
 }
 
-export function connectProvider(id: ProviderId) {
-  const cfg = PROVIDERS[id];
-  if (timer) clearInterval(timer);
-  inFlight.clear();
-  fusion()?.bridge.connect(cfg.label);
-  activeProvider = id;
-  timer = setInterval(() => tick(cfg), 600);
-  void tick(cfg);
-}
-
-export function disconnectProvider() {
+function stopPolling() {
   if (timer) clearInterval(timer);
   timer = null;
   activeProvider = null;
   inFlight.clear();
+}
+
+export function connectProvider(id: ProviderId) {
+  const cfg = PROVIDERS[id];
+  stopPolling();
+  fusion()?.bridge.connect(cfg.label, { provider: id });
+  activeProvider = id;
+  timer = setInterval(() => tick(cfg), 600);
+  tick(cfg);
+}
+
+export function disconnectProvider() {
+  stopPolling();
   fusion()?.bridge.disconnect();
 }
 
 export function activeProviderId() {
   return activeProvider;
+}
+
+/** Which providers have a key on the dev server. */
+export async function checkProviders(): Promise<Record<ProviderId, boolean>> {
+  let avail = { anthropic: false, agentrouter: false, mistral: false };
+  try {
+    const r = await fetch("/api/ai/providers", { cache: "no-store" });
+    if (r.ok) avail = { ...avail, ...(await r.json()) };
+  } catch {
+    /* no dev server endpoint (static build) */
+  }
+  useStore.getState().set("providers", avail);
+  return avail;
+}
+
+/**
+ * Connect the best available provider with no clicks (Claude › DeepSeek › Mistral). Skipped when an
+ * agent is already connected, and in automated browsers (tests drive the bridge themselves) unless
+ * the URL says `?ai=auto`.
+ */
+export async function autoConnect() {
+  const avail = await checkProviders();
+  const q = new URLSearchParams(location.search).get("ai");
+  if (q === "off") return;
+  if (navigator.webdriver && q !== "auto") return;
+  if (useStore.getState().agent) return;
+  const pick = (q && q in PROVIDERS && avail[q as ProviderId] ? (q as ProviderId) : null) ?? PROVIDER_ORDER.find((id) => avail[id]);
+  if (pick) connectProvider(pick);
 }

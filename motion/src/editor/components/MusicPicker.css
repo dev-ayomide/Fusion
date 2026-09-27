@@ -1,0 +1,87 @@
+/* Music picker — same airy, pill-shaped language as the rest of the editor. */
+:root {
+  --music: #5b6cff;
+  --music-bg: rgba(91, 108, 255, 0.1);
+}
+.mp-glyph { flex: none; display: block; }
+.mp-dialog { width: min(680px, calc(100% - 32px)); max-height: min(860px, calc(100vh - 48px)); background: var(--panel); border-radius: 24px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; gap: 14px; padding: 22px 22px 18px; animation: dialogin .25s var(--ease-snap); min-height: 0; }
+.mp-head { display: flex; align-items: flex-start; gap: 10px; }
+.mp-head h2 { margin: 0; font: 750 20px var(--display); letter-spacing: -0.03em; }
+.mp-head p { margin: 4px 0 0; font-size: 12.5px; }
+
+.mp-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.mp-tabs button { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; background: var(--raise); color: var(--muted); font-size: 12px; font-weight: 550; }
+.mp-tabs button[aria-selected="true"] { background: var(--music); color: #fff; }
+
+/* current track card */
+.mp-current { border-radius: 18px; background: linear-gradient(180deg, var(--music-bg), rgba(91, 108, 255, 0.03)); border: 1px solid rgba(91, 108, 255, 0.18); padding: 12px 14px; display: grid; gap: 10px; animation: mpin .25s var(--ease); }
+.mp-current.muted { filter: grayscale(1); opacity: .75; }
+.mp-current-h { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mp-current-t { display: grid; min-width: 0; flex: 1; }
+.mp-current-t b { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-current-t span { font-size: 11.5px; }
+.mp-disc { width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center; background: var(--music); color: #fff; flex: none; box-shadow: 0 4px 12px rgba(91, 108, 255, .35); }
+.mp-current-wave { height: 34px; }
+.mp-current-wave rect { fill: var(--music); opacity: .18; transition: opacity .2s var(--ease); }
+.mp-current-wave rect.on { opacity: .75; }
+.mp-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.mp-range { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 8px; font-size: 11.5px; color: var(--muted); }
+.mp-range-l { grid-column: 1; }
+.mp-range output { grid-column: 2; grid-row: 1; font: 11px var(--mono); color: var(--text); }
+.mp-range input { grid-column: 1 / span 2; accent-color: var(--music); }
+.mp-actions { display: flex; gap: 8px; align-items: center; }
+.mp-danger:hover:not(:disabled) { background: rgba(229, 72, 77, .12); color: var(--danger); }
+.mp-icon { width: 28px; height: 28px; border-radius: 999px; display: inline-grid; place-items: center; color: var(--muted); background: transparent; flex: none; transition: background .15s var(--ease), color .15s var(--ease); }
+.mp-icon:hover { background: var(--raise2); color: var(--text); }
+.mp-icon.on { background: var(--text); color: #fff; }
+
+/* mood filter */
+.mp-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.mp-filters button { height: 26px; padding: 0 11px; border-radius: 999px; background: var(--raise); color: var(--muted); font-size: 11.5px; font-weight: 550; text-transform: capitalize; transition: background .15s var(--ease), color .15s var(--ease); }
+.mp-filters button:hover { color: var(--text); }
+.mp-filters button[aria-pressed="true"] { background: var(--text); color: #fff; }
+
+/* library */
+.mp-list { overflow-y: auto; min-height: 120px; display: grid; gap: 2px; margin: 0 -8px; padding: 0 8px; }
+.mp-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) 132px auto; align-items: center; gap: 12px; padding: 9px 8px; border-radius: 14px; transition: background .15s var(--ease); }
+.mp-row:hover { background: var(--panel2); }
+.mp-row.playing { background: var(--music-bg); }
+.mp-row.current { background: var(--music-bg); box-shadow: inset 0 0 0 1px rgba(91, 108, 255, .25); }
+.mp-play { position: relative; width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; color: var(--text); background: var(--raise); transition: background .15s var(--ease), transform .12s var(--ease), color .15s var(--ease); }
+.mp-play:hover { background: var(--text); color: #fff; }
+.mp-play:active { transform: scale(.92); }
+.mp-row.playing .mp-play { background: var(--music); color: #fff; }
+.mp-play .icon { position: relative; }
+.mp-ring { position: absolute; inset: -3px; width: 42px; height: 42px; transform: rotate(-90deg); pointer-events: none; }
+.mp-ring circle { fill: none; stroke-width: 2.2; }
+.mp-ring .bg { stroke: transparent; }
+.mp-ring .fg { stroke: var(--music); stroke-linecap: round; }
+.mp-meta { min-width: 0; display: grid; gap: 3px; }
+.mp-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.mp-title b { font-weight: 650; white-space: nowrap; }
+.mp-num { font: 10.5px var(--mono); color: var(--faint); white-space: nowrap; }
+.mp-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.mp-tags span { font-size: 10.5px; font-weight: 550; padding: 1px 7px; border-radius: 999px; background: var(--raise); color: var(--muted); text-transform: capitalize; }
+.mp-desc { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-wave { width: 100%; height: 30px; display: block; }
+.mp-wave rect { fill: var(--line2); transition: fill .2s var(--ease); }
+.mp-row:hover .mp-wave rect { fill: #d4d2da; }
+.mp-wave rect.on, .mp-row:hover .mp-wave rect.on { fill: var(--music); }
+.mp-row.current .mp-wave rect { fill: rgba(91, 108, 255, .45); }
+.mp-row-actions { display: flex; align-items: center; gap: 4px; justify-content: flex-end; min-width: 92px; }
+.mp-inuse { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 11px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--music); background: #fff; box-shadow: var(--shadow-sm); }
+
+/* upload */
+.mp-drop { display: flex; align-items: center; gap: 12px; border: 1.5px dashed var(--line2); border-radius: 16px; padding: 12px 16px; cursor: pointer; color: var(--muted); transition: border-color .15s var(--ease), background .15s var(--ease), color .15s var(--ease); }
+.mp-drop div { display: grid; gap: 1px; font-size: 12px; }
+.mp-drop b { color: var(--text); font-weight: 600; font-size: 12.5px; }
+.mp-drop:hover, .mp-drop.over { border-color: var(--music); background: var(--music-bg); color: var(--music); }
+.mp-drop.busy { opacity: .7; pointer-events: none; }
+.mp-err { color: var(--danger); font-size: 12px; margin-top: -4px; }
+@keyframes mpin { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 620px) {
+  .mp-row { grid-template-columns: 36px minmax(0, 1fr) auto; }
+  .mp-row .mp-wave { display: none; }
+  .mp-controls { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,2700 @@
+{
+ "v": 1,
+ "name": "Showcase 02 — SOLSTICE",
+ "comp": {
+  "w": 1920,
+  "h": 1080,
+  "fps": 30,
+  "dur": 21,
+  "bg": "$void",
+  "cam": "cam",
+  "env": "sunset",
+  "motionBlur": {
+   "angle": 240,
+   "samples": 10
+  },
+  "post": {
+   "bloom": 0.9,
+   "bloomThreshold": 1,
+   "vignette": 0.28,
+   "grain": 0.05,
+   "contrast": 0.08,
+   "saturation": 0.06
+  }
+ },
+ "brand": {
+  "font": "Inter Variable",
+  "colors": {
+   "void": "#07060a",
+   "sun": "#ff5a1f",
+   "amber": "#ffb000",
+   "magenta": "#ff2e88",
+   "cream": "#fff4e0",
+   "ice": "#9ad7ff",
+   "night": "#02030c",
+   "ember": "#3a0d05"
+  }
+ },
+ "assets": {},
+ "bindings": [],
+ "style": {
+  "energy": 1,
+  "bounce": 0.5,
+  "depth": 0.8,
+  "speed": 0.7
+ },
+ "markers": [
+  {
+   "id": "drop",
+   "t": 4,
+   "label": "Drop"
+  },
+  {
+   "id": "sun",
+   "t": 8,
+   "label": "Sun machine"
+  },
+  {
+   "id": "dawn",
+   "t": 12,
+   "label": "Dawn"
+  },
+  {
+   "id": "fin",
+   "t": 16,
+   "label": "Finale"
+  }
+ ],
+ "layers": [
+  {
+   "id": "cam",
+   "type": "camera",
+   "fov": 35,
+   "pos": [
+    0,
+    0,
+    1713
+   ],
+   "keys": {
+    "pos.z": [
+     [
+      0,
+      1900
+     ],
+     [
+      4,
+      1640,
+      "easy"
+     ],
+     [
+      4,
+      1713,
+      "hold"
+     ],
+     [
+      8,
+      2250,
+      "hold"
+     ],
+     [
+      12,
+      1650,
+      "easy"
+     ],
+     [
+      12,
+      1850,
+      "hold"
+     ],
+     [
+      16,
+      1560,
+      "easy"
+     ],
+     [
+      16,
+      1713,
+      "hold"
+     ],
+     [
+      21,
+      1600,
+      "easy"
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      -120
+     ],
+     [
+      4,
+      60,
+      "easy"
+     ],
+     [
+      4,
+      0,
+      "hold"
+     ],
+     [
+      12,
+      -60,
+      "hold"
+     ],
+     [
+      16,
+      40,
+      "easy"
+     ],
+     [
+      16,
+      0,
+      "hold"
+     ]
+    ],
+    "rot.z": [
+     [
+      0,
+      0
+     ],
+     [
+      8,
+      -4,
+      "hold"
+     ],
+     [
+      12,
+      4,
+      "easy"
+     ],
+     [
+      12,
+      0,
+      "hold"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "hand",
+     "use": "shake",
+     "at": 0,
+     "dur": 4,
+     "amp": 5,
+     "freq": 0.4
+    },
+    {
+     "id": "drop",
+     "use": "shake",
+     "at": 4,
+     "dur": 4,
+     "amp": 18,
+     "freq": 3
+    },
+    {
+     "id": "sun",
+     "use": "shake",
+     "at": 8,
+     "dur": 4,
+     "amp": 10,
+     "freq": 1.2
+    },
+    {
+     "id": "air",
+     "use": "shake",
+     "at": 12,
+     "dur": 9,
+     "amp": 6,
+     "freq": 0.5
+    }
+   ]
+  },
+  {
+   "id": "n-sky",
+   "type": "sky",
+   "top": "$night",
+   "horizon": "#1c2250",
+   "stars": 1,
+   "clouds": 0.12,
+   "cloudScale": 1.4,
+   "drift": 0.02,
+   "mountains": true,
+   "mountainHeight": 0.95,
+   "hills": "#04050c",
+   "hillHeight": 0.22,
+   "seed": 7,
+   "out": 4,
+   "keys": {
+    "sun": [
+     [
+      2.6,
+      0
+     ],
+     [
+      4,
+      0.35,
+      "easyIn"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "n-aur0",
+   "type": "shape",
+   "shape": "ellipse",
+   "w": 1300,
+   "h": 180,
+   "fill": "#35ff9a",
+   "pos": [
+    -520,
+    330,
+    -300
+   ],
+   "rot": [
+    0,
+    0,
+    -6
+   ],
+   "blur": 110,
+   "opacity": 0.4,
+   "out": 4,
+   "motionBlur": false,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      -640
+     ],
+     [
+      4,
+      -380,
+      "easy"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      1.2,
+      0.42,
+      "easy"
+     ],
+     [
+      3.7,
+      0.5
+     ],
+     [
+      4,
+      0.9
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "breathe",
+     "use": "pulse",
+     "at": 0,
+     "amp": 0.12,
+     "period": 2
+    },
+    {
+     "id": "float",
+     "use": "float",
+     "at": 0,
+     "amp": 30,
+     "period": 3
+    }
+   ]
+  },
+  {
+   "id": "n-aur1",
+   "type": "shape",
+   "shape": "ellipse",
+   "w": 1100,
+   "h": 180,
+   "fill": "#7a4bff",
+   "pos": [
+    380,
+    380,
+    -300
+   ],
+   "rot": [
+    0,
+    0,
+    8
+   ],
+   "blur": 110,
+   "opacity": 0.4,
+   "out": 4,
+   "motionBlur": false,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      260
+     ],
+     [
+      4,
+      520,
+      "easy"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      1.2,
+      0.42,
+      "easy"
+     ],
+     [
+      3.7,
+      0.5
+     ],
+     [
+      4,
+      0.9
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "breathe",
+     "use": "pulse",
+     "at": 1.3,
+     "amp": 0.12,
+     "period": 2.4
+    },
+    {
+     "id": "float",
+     "use": "float",
+     "at": 0,
+     "amp": 30,
+     "period": 4
+    }
+   ]
+  },
+  {
+   "id": "n-aur2",
+   "type": "shape",
+   "shape": "ellipse",
+   "w": 900,
+   "h": 180,
+   "fill": "#2fd7ff",
+   "pos": [
+    0,
+    280,
+    -300
+   ],
+   "rot": [
+    0,
+    0,
+    -6
+   ],
+   "blur": 110,
+   "opacity": 0.4,
+   "out": 4,
+   "motionBlur": false,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      -120
+     ],
+     [
+      4,
+      140,
+      "easy"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      1.2,
+      0.42,
+      "easy"
+     ],
+     [
+      3.7,
+      0.5
+     ],
+     [
+      4,
+      0.9
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "breathe",
+     "use": "pulse",
+     "at": 2.1,
+     "amp": 0.12,
+     "period": 2.8
+    },
+    {
+     "id": "float",
+     "use": "float",
+     "at": 0,
+     "amp": 30,
+     "period": 5
+    }
+   ]
+  },
+  {
+   "id": "n-aur3",
+   "type": "shape",
+   "shape": "ellipse",
+   "w": 700,
+   "h": 180,
+   "fill": "$magenta",
+   "pos": [
+    700,
+    300,
+    -300
+   ],
+   "rot": [
+    0,
+    0,
+    8
+   ],
+   "blur": 110,
+   "opacity": 0.4,
+   "out": 4,
+   "motionBlur": false,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      580
+     ],
+     [
+      4,
+      840,
+      "easy"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      1.2,
+      0.42,
+      "easy"
+     ],
+     [
+      3.7,
+      0.5
+     ],
+     [
+      4,
+      0.9
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "breathe",
+     "use": "pulse",
+     "at": 0.7,
+     "amp": 0.12,
+     "period": 3.2
+    },
+    {
+     "id": "float",
+     "use": "float",
+     "at": 0,
+     "amp": 30,
+     "period": 6
+    }
+   ]
+  },
+  {
+   "id": "n-coord",
+   "type": "text",
+   "text": "69.6°N  ·  LOFOTEN  ·  00:00",
+   "size": 26,
+   "font": "JetBrains Mono Variable",
+   "weight": 500,
+   "color": "$ice",
+   "tracking": 3,
+   "pos": [
+    0,
+    330,
+    0
+   ],
+   "out": 3.9,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 0.3,
+     "stagger": 0.03
+    }
+   ]
+  },
+  {
+   "id": "n-line",
+   "type": "text",
+   "text": "The sun never sets.",
+   "size": 150,
+   "font": "Instrument Serif",
+   "color": "$cream",
+   "pos": [
+    0,
+    80,
+    0
+   ],
+   "out": 4,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typeUp",
+     "at": 1,
+     "by": "word",
+     "stagger": 0.25,
+     "dist": 50,
+     "dur": 0.7
+    }
+   ],
+   "keys": {
+    "blur": [
+     [
+      1,
+      18
+     ],
+     [
+      1.8,
+      0,
+      "out"
+     ],
+     [
+      3.4,
+      0
+     ],
+     [
+      4,
+      26,
+      "in"
+     ]
+    ],
+    "scale": [
+     [
+      1,
+      1
+     ],
+     [
+      4,
+      1.12,
+      "easyIn"
+     ]
+    ],
+    "tracking": [
+     [
+      3,
+      0
+     ],
+     [
+      4,
+      30,
+      "easyIn"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "n-sub",
+   "type": "text",
+   "text": "not for seventy-two hours.",
+   "size": 34,
+   "font": "JetBrains Mono Variable",
+   "weight": 500,
+   "color": "$amber",
+   "pos": [
+    0,
+    -40,
+    0
+   ],
+   "out": 3.9,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 2.2,
+     "stagger": 0.035
+    }
+   ]
+  },
+  {
+   "id": "n-flash",
+   "type": "adjust",
+   "name": "Flash",
+   "in": 3.88,
+   "out": 4.35,
+   "fadeColor": "$cream",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.12,
+      1,
+      "in"
+     ],
+     [
+      0.47,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d0-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$sun",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 4,
+   "out": 4.5,
+   "motionBlur": false
+  },
+  {
+   "id": "d0-n",
+   "type": "text",
+   "text": "AURORA KIDS",
+   "size": 234,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$void",
+   "tracking": -6,
+   "lineHeight": 0.92,
+   "in": 4,
+   "out": 4.5,
+   "keys": {
+    "scale": [
+     [
+      0,
+      2.6
+     ],
+     [
+      0.18,
+      1,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      0.5,
+      1.06
+     ]
+    ],
+    "rot.z": [
+     [
+      0,
+      -9
+     ],
+     [
+      0.22,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d0-k",
+   "type": "text",
+   "text": "01 / 08",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$void",
+   "align": "left",
+   "pos": [
+    -880,
+    470,
+    20
+   ],
+   "in": 4,
+   "out": 4.5
+  },
+  {
+   "id": "d0-f",
+   "type": "text",
+   "text": "SOLSTICE 26 — LINEUP",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$void",
+   "align": "right",
+   "pos": [
+    880,
+    470,
+    20
+   ],
+   "in": 4,
+   "out": 4.5
+  },
+  {
+   "id": "d1-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$void",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 4.5,
+   "out": 5,
+   "motionBlur": false
+  },
+  {
+   "id": "d1-n",
+   "type": "text",
+   "text": "NØRTH",
+   "size": 380,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$sun",
+   "tracking": -6,
+   "lineHeight": 0.92,
+   "in": 4.5,
+   "out": 5,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      -1400
+     ],
+     [
+      0.2,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      0.5,
+      40
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d1-k",
+   "type": "text",
+   "text": "02 / 08",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$sun",
+   "align": "left",
+   "pos": [
+    -880,
+    470,
+    20
+   ],
+   "in": 4.5,
+   "out": 5
+  },
+  {
+   "id": "d1-f",
+   "type": "text",
+   "text": "SOLSTICE 26 — LINEUP",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$sun",
+   "align": "right",
+   "pos": [
+    880,
+    470,
+    20
+   ],
+   "in": 4.5,
+   "out": 5
+  },
+  {
+   "id": "d2-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$magenta",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 5,
+   "out": 5.5,
+   "motionBlur": false
+  },
+  {
+   "id": "d2-n",
+   "type": "text",
+   "text": "SUNDOG",
+   "size": 380,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$cream",
+   "tracking": -6,
+   "lineHeight": 0.92,
+   "in": 5,
+   "out": 5.5,
+   "keys": {
+    "pos.y": [
+     [
+      0,
+      700
+     ],
+     [
+      0.22,
+      0,
+      "spring(0.3,0.5)"
+     ]
+    ],
+    "scale": [
+     [
+      0.22,
+      1
+     ],
+     [
+      0.5,
+      1.05
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d2-k",
+   "type": "text",
+   "text": "03 / 08",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$cream",
+   "align": "left",
+   "pos": [
+    -880,
+    470,
+    20
+   ],
+   "in": 5,
+   "out": 5.5
+  },
+  {
+   "id": "d2-f",
+   "type": "text",
+   "text": "SOLSTICE 26 — LINEUP",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$cream",
+   "align": "right",
+   "pos": [
+    880,
+    470,
+    20
+   ],
+   "in": 5,
+   "out": 5.5
+  },
+  {
+   "id": "d3-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$cream",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 5.5,
+   "out": 6,
+   "motionBlur": false
+  },
+  {
+   "id": "d3-n",
+   "type": "text",
+   "text": "VANTA",
+   "size": 380,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$void",
+   "tracking": -6,
+   "lineHeight": 0.92,
+   "in": 5.5,
+   "out": 6,
+   "keys": {
+    "tracking": [
+     [
+      0,
+      140
+     ],
+     [
+      0.25,
+      -6,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      1.3
+     ],
+     [
+      0.25,
+      1,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d3-k",
+   "type": "text",
+   "text": "04 / 08",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$void",
+   "align": "left",
+   "pos": [
+    -880,
+    470,
+    20
+   ],
+   "in": 5.5,
+   "out": 6
+  },
+  {
+   "id": "d3-f",
+   "type": "text",
+   "text": "SOLSTICE 26 — LINEUP",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$void",
+   "align": "right",
+   "pos": [
+    880,
+    470,
+    20
+   ],
+   "in": 5.5,
+   "out": 6
+  },
+  {
+   "id": "d4-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$void",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 6,
+   "out": 6.5,
+   "motionBlur": false
+  },
+  {
+   "id": "d4-n",
+   "type": "text",
+   "text": "HALO/HALO",
+   "size": 286,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$magenta",
+   "tracking": -6,
+   "lineHeight": 0.92,
+   "in": 6,
+   "out": 6.5,
+   "keys": {
+    "rot.x": [
+     [
+      0,
+      -90
+     ],
+     [
+      0.24,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "scale": [
+     [
+      0.24,
+      1
+     ],
+     [
+      0.5,
+      1.06
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d4-k",
+   "type": "text",
+   "text": "05 / 08",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$magenta",
+   "align": "left",
+   "pos": [
+    -880,
+    470,
+    20
+   ],
+   "in": 6,
+   "out": 6.5
+  },
+  {
+   "id": "d4-f",
+   "type": "text",
+   "text": "SOLSTICE 26 — LINEUP",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$magenta",
+   "align": "right",
+   "pos": [
+    880,
+    470,
+    20
+   ],
+   "in": 6,
+   "out": 6.5
+  },
+  {
+   "id": "d5-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$amber",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 6.5,
+   "out": 7,
+   "motionBlur": false
+  },
+  {
+   "id": "d5-n",
+   "type": "text",
+   "text": "ELSKA",
+   "size": 380,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$void",
+   "tracking": -6,
+   "lineHeight": 0.92,
+   "in": 6.5,
+   "out": 7,
+   "keys": {
+    "scale": [
+     [
+      0,
+      0.2
+     ],
+     [
+      0.2,
+      1,
+      "spring(0.35,0.6)"
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d5-k",
+   "type": "text",
+   "text": "06 / 08",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$void",
+   "align": "left",
+   "pos": [
+    -880,
+    470,
+    20
+   ],
+   "in": 6.5,
+   "out": 7
+  },
+  {
+   "id": "d5-f",
+   "type": "text",
+   "text": "SOLSTICE 26 — LINEUP",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$void",
+   "align": "right",
+   "pos": [
+    880,
+    470,
+    20
+   ],
+   "in": 6.5,
+   "out": 7
+  },
+  {
+   "id": "d6-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$ice",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 7,
+   "out": 7.5,
+   "motionBlur": false
+  },
+  {
+   "id": "d6-n",
+   "type": "text",
+   "text": "FJORD SYSTEM",
+   "size": 215,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$void",
+   "tracking": -6,
+   "lineHeight": 0.92,
+   "in": 7,
+   "out": 7.5,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      1400
+     ],
+     [
+      0.2,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      0.5,
+      -40
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d6-k",
+   "type": "text",
+   "text": "07 / 08",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$void",
+   "align": "left",
+   "pos": [
+    -880,
+    470,
+    20
+   ],
+   "in": 7,
+   "out": 7.5
+  },
+  {
+   "id": "d6-f",
+   "type": "text",
+   "text": "SOLSTICE 26 — LINEUP",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$void",
+   "align": "right",
+   "pos": [
+    880,
+    470,
+    20
+   ],
+   "in": 7,
+   "out": 7.5
+  },
+  {
+   "id": "d7-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$void",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 7.5,
+   "out": 8,
+   "motionBlur": false
+  },
+  {
+   "id": "d7-n",
+   "type": "text",
+   "text": "MIDNIGHT\nORCHESTRA",
+   "size": 286,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$cream",
+   "tracking": -6,
+   "lineHeight": 0.92,
+   "in": 7.5,
+   "out": 8,
+   "keys": {
+    "scale": [
+     [
+      0,
+      3.2
+     ],
+     [
+      0.24,
+      1,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      0.5,
+      1.04
+     ]
+    ],
+    "rot.z": [
+     [
+      0,
+      6
+     ],
+     [
+      0.24,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d7-k",
+   "type": "text",
+   "text": "08 / 08",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$cream",
+   "align": "left",
+   "pos": [
+    -880,
+    470,
+    20
+   ],
+   "in": 7.5,
+   "out": 8
+  },
+  {
+   "id": "d7-f",
+   "type": "text",
+   "text": "SOLSTICE 26 — LINEUP",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$cream",
+   "align": "right",
+   "pos": [
+    880,
+    470,
+    20
+   ],
+   "in": 7.5,
+   "out": 8
+  },
+  {
+   "id": "d-strobe",
+   "type": "adjust",
+   "name": "Roll strobe",
+   "in": 7.75,
+   "out": 8,
+   "fadeColor": "$cream",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.0625,
+      0.7,
+      "hold"
+     ],
+     [
+      0.125,
+      0,
+      "hold"
+     ],
+     [
+      0.1875,
+      0.8,
+      "hold"
+     ],
+     [
+      0.25,
+      1,
+      "hold"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "u-bg",
+   "type": "gradient",
+   "kind": "radial",
+   "colors": [
+    "$ember",
+    "#12060a",
+    "$void"
+   ],
+   "noise": 0.05,
+   "in": 8,
+   "out": 12
+  },
+  {
+   "id": "u-glow",
+   "type": "shape",
+   "shape": "ellipse",
+   "w": 1100,
+   "h": 1100,
+   "fill": "$sun",
+   "blur": 160,
+   "opacity": 0.55,
+   "pos": [
+    0,
+    40,
+    -300
+   ],
+   "in": 8,
+   "out": 12,
+   "motionBlur": false,
+   "beh": [
+    {
+     "id": "kick",
+     "use": "pulse",
+     "at": 0,
+     "amp": 0.1,
+     "period": 0.5
+    }
+   ]
+  },
+  {
+   "id": "u-rays2",
+   "type": "cloner",
+   "mode": "radial",
+   "n": 140,
+   "r": 640,
+   "orient": true,
+   "pos": [
+    0,
+    40,
+    -100
+   ],
+   "in": 8,
+   "out": 12,
+   "child": {
+    "kind": "shape",
+    "shape": "rect",
+    "w": 4,
+    "h": 70,
+    "radius": 2,
+    "fill": "$sun"
+   },
+   "reveal": {
+    "dur": 0.4,
+    "at": 0.1
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.003
+    },
+    {
+     "id": "w",
+     "type": "wave",
+     "amp": [
+      0,
+      0,
+      60
+     ],
+     "freq": 1,
+     "phase": 0.2
+    }
+   ],
+   "keys": {
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      -70
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0.8
+     ]
+    ]
+   }
+  },
+  {
+   "id": "u-rays",
+   "type": "cloner",
+   "mode": "radial",
+   "n": 64,
+   "r": 430,
+   "orient": true,
+   "pos": [
+    0,
+    40,
+    -50
+   ],
+   "in": 8,
+   "out": 12,
+   "child": {
+    "kind": "shape",
+    "shape": "rect",
+    "w": 12,
+    "h": 170,
+    "radius": 6,
+    "fill": "$amber"
+   },
+   "reveal": {
+    "dur": 0.45,
+    "bounce": 0.4,
+    "at": 0
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.006
+    }
+   ],
+   "keys": {
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      95
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "kick",
+     "use": "pulse",
+     "at": 0,
+     "amp": 0.07,
+     "period": 0.5
+    }
+   ]
+  },
+  {
+   "id": "u-ring",
+   "type": "mesh",
+   "geom": "ring",
+   "material": "chrome",
+   "color": "#ffd9b8",
+   "size": 1080,
+   "pos": [
+    0,
+    40,
+    0
+   ],
+   "in": 8,
+   "out": 12,
+   "depth": true,
+   "keys": {
+    "rot.x": [
+     [
+      0,
+      76
+     ]
+    ],
+    "rot.y": [
+     [
+      0,
+      -14
+     ],
+     [
+      4,
+      14
+     ]
+    ],
+    "rot.z": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      200
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      0.3
+     ],
+     [
+      0.6,
+      1,
+      "spring(0.6,0.4)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "u-core",
+   "type": "mesh",
+   "geom": "sphere",
+   "material": "emissive",
+   "color": "#ff6a12",
+   "size": 360,
+   "pos": [
+    0,
+    40,
+    20
+   ],
+   "in": 8,
+   "out": 12,
+   "depth": true,
+   "keys": {
+    "scale": [
+     [
+      0,
+      0
+     ],
+     [
+      0.5,
+      1,
+      "spring(0.5,0.55)"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "kick",
+     "use": "pulse",
+     "at": 0.5,
+     "amp": 0.06,
+     "period": 0.5
+    }
+   ]
+  },
+  {
+   "id": "u-rig",
+   "type": "group",
+   "pos": [
+    0,
+    40,
+    0
+   ],
+   "rot": [
+    18,
+    0,
+    0
+   ],
+   "in": 8,
+   "out": 12,
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      260
+     ]
+    ]
+   }
+  },
+  {
+   "id": "u-coin0",
+   "type": "mesh",
+   "geom": "coin",
+   "material": "gold",
+   "color": "#ffc44d",
+   "size": 150,
+   "parent": "u-rig",
+   "in": 8,
+   "depth": true,
+   "pos": [
+    620,
+    0,
+    0
+   ],
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      900
+     ]
+    ],
+    "scale": [
+     [
+      0.3,
+      0
+     ],
+     [
+      0.8,
+      1,
+      "spring(0.5,0.5)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "u-coin1",
+   "type": "mesh",
+   "geom": "coin",
+   "material": "gold",
+   "color": "#ffc44d",
+   "size": 150,
+   "parent": "u-rig",
+   "in": 8,
+   "depth": true,
+   "pos": [
+    0,
+    0,
+    620
+   ],
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      40
+     ],
+     [
+      4,
+      940
+     ]
+    ],
+    "scale": [
+     [
+      0.42,
+      0
+     ],
+     [
+      0.92,
+      1,
+      "spring(0.5,0.5)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "u-coin2",
+   "type": "mesh",
+   "geom": "coin",
+   "material": "gold",
+   "color": "#ffc44d",
+   "size": 150,
+   "parent": "u-rig",
+   "in": 8,
+   "depth": true,
+   "pos": [
+    -620,
+    0,
+    0
+   ],
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      80
+     ],
+     [
+      4,
+      980
+     ]
+    ],
+    "scale": [
+     [
+      0.54,
+      0
+     ],
+     [
+      1.04,
+      1,
+      "spring(0.5,0.5)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "u-coin3",
+   "type": "mesh",
+   "geom": "coin",
+   "material": "gold",
+   "color": "#ffc44d",
+   "size": 150,
+   "parent": "u-rig",
+   "in": 8,
+   "depth": true,
+   "pos": [
+    0,
+    0,
+    -620
+   ],
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      120
+     ],
+     [
+      4,
+      1020
+     ]
+    ],
+    "scale": [
+     [
+      0.6599999999999999,
+      0
+     ],
+     [
+      1.1600000000000001,
+      1,
+      "spring(0.5,0.5)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "u-date",
+   "type": "text",
+   "text": "19 — 21  JUNE  2026",
+   "size": 30,
+   "font": "JetBrains Mono Variable",
+   "weight": 600,
+   "color": "$amber",
+   "tracking": 8,
+   "pos": [
+    0,
+    470,
+    200
+   ],
+   "in": 8.5,
+   "out": 12,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 0,
+     "stagger": 0.03
+    }
+   ]
+  },
+  {
+   "id": "u-title",
+   "type": "text",
+   "text": "SOLSTICE",
+   "size": 250,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$cream",
+   "pos": [
+    0,
+    -380,
+    250
+   ],
+   "in": 9,
+   "out": 12,
+   "keys": {
+    "tracking": [
+     [
+      0,
+      120
+     ],
+     [
+      0.8,
+      10,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      3,
+      30
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      30
+     ],
+     [
+      0.4,
+      0,
+      "out"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.15,
+      1
+     ]
+    ]
+   }
+  },
+  {
+   "id": "u-out",
+   "type": "adjust",
+   "in": 11.75,
+   "out": 12.3,
+   "fadeColor": "$amber",
+   "dissolve": 0.5,
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.25,
+      1,
+      "in"
+     ],
+     [
+      0.55,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "w-sky",
+   "type": "sky",
+   "top": "#2a5fae",
+   "horizon": "#ffc38a",
+   "clouds": 0.45,
+   "cloudScale": 1.2,
+   "drift": 0.05,
+   "sun": 0.85,
+   "mountains": true,
+   "mountainHeight": 1.1,
+   "hills": "#1b2a3a",
+   "grass": "#1d2638",
+   "hillHeight": 0.3,
+   "seed": 4,
+   "in": 12,
+   "out": 16
+  },
+  {
+   "id": "w-pass",
+   "type": "html",
+   "name": "Festival pass",
+   "w": 940,
+   "h": 440,
+   "radius": 34,
+   "pos": [
+    0,
+    150,
+    100
+   ],
+   "in": 12.25,
+   "out": 16,
+   "depth": true,
+   "glass": {
+    "blur": 40,
+    "tint": "#0d1426",
+    "amount": 0.55,
+    "rim": 0.8
+   },
+   "shadow": {
+    "x": 0,
+    "y": -40,
+    "blur": 80,
+    "color": "#0b1a33",
+    "opacity": 0.35
+   },
+   "vars": {
+    "n": 0
+   },
+   "keys": {
+    "vars.n": [
+     [
+      0.3,
+      0
+     ],
+     [
+      2.2,
+      4021,
+      "expoOut"
+     ]
+    ],
+    "rot.x": [
+     [
+      0,
+      -70
+     ],
+     [
+      0.7,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.2,
+      1
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "sway",
+     "use": "sway",
+     "at": 0.7,
+     "deg": 9,
+     "period": 3.6
+    },
+    {
+     "id": "bob",
+     "use": "float",
+     "at": 0.7,
+     "amp": 12,
+     "period": 2.4
+    }
+   ],
+   "html": "<div style='width:940px;height:440px;display:flex;font-family:Inter Tight Variable;color:#fff'><div style='width:300px;display:flex;align-items:center;justify-content:center;border-right:2px dashed rgba(255,255,255,.45)'><div style='width:190px;height:190px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffd36b,#ff5a1f 60%,#c2250a);box-shadow:0 0 60px #ff7a2a'></div></div><div style='flex:1;padding:44px 48px;display:flex;flex-direction:column;justify-content:space-between'><div><div style='font:700 18px JetBrains Mono Variable;letter-spacing:4px;opacity:.85'>3-DAY PASS · GENERAL ADMISSION</div><div style='font-weight:900;font-size:96px;letter-spacing:-3px;line-height:1;margin-top:14px'>SOLSTICE 26</div><div style='font-size:26px;font-weight:600;margin-top:12px;opacity:.95'>19 — 21 June · Lofoten, Norway</div></div><div style='display:flex;align-items:flex-end;justify-content:space-between'><div style='font:600 20px JetBrains Mono Variable;opacity:.85'>NO. {{n}}</div><div style='height:54px;width:260px;background:repeating-linear-gradient(90deg,#fff 0 3px,transparent 3px 7px,#fff 7px 8px,transparent 8px 12px)'></div></div></div></div>"
+  },
+  {
+   "id": "w-stat0",
+   "type": "text",
+   "text": "{value}h",
+   "value": 0,
+   "size": 150,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$cream",
+   "tracking": -4,
+   "pos": [
+    -560,
+    -250,
+    150
+   ],
+   "in": 13.5,
+   "out": 16,
+   "keys": {
+    "value": [
+     [
+      0,
+      0
+     ],
+     [
+      0.8,
+      72,
+      "expoOut"
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      -330
+     ],
+     [
+      0.4,
+      -250,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.15,
+      1
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      16
+     ],
+     [
+      0.3,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "w-lab0",
+   "type": "text",
+   "text": "of daylight",
+   "size": 30,
+   "font": "JetBrains Mono Variable",
+   "weight": 600,
+   "color": "$cream",
+   "pos": [
+    -560,
+    -355,
+    150
+   ],
+   "in": 13.7,
+   "out": 16,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 0,
+     "stagger": 0.04
+    }
+   ]
+  },
+  {
+   "id": "w-stat1",
+   "type": "text",
+   "text": "{value}",
+   "value": 0,
+   "size": 150,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$cream",
+   "tracking": -4,
+   "pos": [
+    0,
+    -250,
+    150
+   ],
+   "in": 14,
+   "out": 16,
+   "keys": {
+    "value": [
+     [
+      0,
+      0
+     ],
+     [
+      0.8,
+      40,
+      "expoOut"
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      -330
+     ],
+     [
+      0.4,
+      -250,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.15,
+      1
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      16
+     ],
+     [
+      0.3,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "w-lab1",
+   "type": "text",
+   "text": "artists",
+   "size": 30,
+   "font": "JetBrains Mono Variable",
+   "weight": 600,
+   "color": "$cream",
+   "pos": [
+    0,
+    -355,
+    150
+   ],
+   "in": 14.2,
+   "out": 16,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 0,
+     "stagger": 0.04
+    }
+   ]
+  },
+  {
+   "id": "w-stat2",
+   "type": "text",
+   "text": "{value}",
+   "value": 0,
+   "size": 150,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$cream",
+   "tracking": -4,
+   "pos": [
+    560,
+    -250,
+    150
+   ],
+   "in": 14.5,
+   "out": 16,
+   "keys": {
+    "value": [
+     [
+      0,
+      0
+     ],
+     [
+      0.8,
+      1,
+      "expoOut"
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      -330
+     ],
+     [
+      0.4,
+      -250,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.15,
+      1
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      16
+     ],
+     [
+      0.3,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "w-lab2",
+   "type": "text",
+   "text": "sun",
+   "size": 30,
+   "font": "JetBrains Mono Variable",
+   "weight": 600,
+   "color": "$cream",
+   "pos": [
+    560,
+    -355,
+    150
+   ],
+   "in": 14.7,
+   "out": 16,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 0,
+     "stagger": 0.04
+    }
+   ]
+  },
+  {
+   "id": "w-flash",
+   "type": "adjust",
+   "in": 15.88,
+   "out": 16.4,
+   "fadeColor": "$cream",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.12,
+      1,
+      "in"
+     ],
+     [
+      0.52,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-bg",
+   "type": "gradient",
+   "kind": "linear",
+   "angle": 90,
+   "colors": [
+    "$void",
+    "#1a0806",
+    "#3a1206"
+   ],
+   "in": 16
+  },
+  {
+   "id": "f-clip",
+   "type": "group",
+   "name": "Horizon mask",
+   "pos": [
+    0,
+    230,
+    0
+   ],
+   "in": 16,
+   "clip": {
+    "w": 2600,
+    "h": 960
+   }
+  },
+  {
+   "id": "f-rays",
+   "type": "cloner",
+   "mode": "radial",
+   "n": 72,
+   "r": 760,
+   "orient": true,
+   "parent": "f-clip",
+   "in": 16,
+   "pos": [
+    0,
+    -330,
+    -100
+   ],
+   "child": {
+    "kind": "shape",
+    "shape": "rect",
+    "w": 8,
+    "h": 260,
+    "radius": 4,
+    "fill": "$sun"
+   },
+   "reveal": {
+    "dur": 0.6,
+    "at": 0.3
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.006
+    }
+   ],
+   "keys": {
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      5,
+      40
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0.75
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      -900
+     ],
+     [
+      1.4,
+      -330,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-sun",
+   "type": "mesh",
+   "geom": "sphere",
+   "material": "emissive",
+   "color": "#ff5a1f",
+   "size": 820,
+   "parent": "f-clip",
+   "in": 16,
+   "pos": [
+    0,
+    -330,
+    0
+   ],
+   "keys": {
+    "pos.y": [
+     [
+      0,
+      -1000
+     ],
+     [
+      1.4,
+      -330,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "kick",
+     "use": "pulse",
+     "at": 1.5,
+     "amp": 0.025,
+     "period": 0.5
+    }
+   ]
+  },
+  {
+   "id": "f-line",
+   "type": "path",
+   "points": [
+    [
+     -1100,
+     0
+    ],
+    [
+     1100,
+     0
+    ]
+   ],
+   "stroke": "$amber",
+   "width": 5,
+   "glow": 1,
+   "pos": [
+    0,
+    -250,
+    50
+   ],
+   "in": 16,
+   "keys": {
+    "trimStart": [
+     [
+      0,
+      0.5
+     ],
+     [
+      0.5,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "trimEnd": [
+     [
+      0,
+      0.5
+     ],
+     [
+      0.5,
+      1,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-logo",
+   "type": "text",
+   "text": "SOLSTICE",
+   "size": 270,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$cream",
+   "pos": [
+    0,
+    -410,
+    120
+   ],
+   "in": 16.9,
+   "keys": {
+    "tracking": [
+     [
+      0,
+      160
+     ],
+     [
+      1,
+      6,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      4.1,
+      20
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      30
+     ],
+     [
+      0.5,
+      0,
+      "out"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.12,
+      1
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "in",
+     "use": "cascade",
+     "at": 0,
+     "by": "char",
+     "stagger": 0.05,
+     "dist": 80
+    }
+   ]
+  },
+  {
+   "id": "f-info",
+   "type": "text",
+   "text": "19—21.06.2026   ·   LOFOTEN, NORWAY   ·   TICKETS ON SALE NOW",
+   "size": 26,
+   "font": "JetBrains Mono Variable",
+   "weight": 600,
+   "color": "$amber",
+   "tracking": 2,
+   "pos": [
+    0,
+    -520,
+    120
+   ],
+   "in": 18,
+   "spans": [
+    {
+     "text": "TICKETS ON SALE NOW",
+     "color": "$cream"
+    }
+   ],
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 0,
+     "stagger": 0.022
+    }
+   ]
+  },
+  {
+   "id": "f-hit",
+   "type": "adjust",
+   "in": 20,
+   "out": 20.2,
+   "fadeColor": "$cream",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0.5
+     ],
+     [
+      0.2,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-end",
+   "type": "adjust",
+   "in": 20.4,
+   "fadeColor": "$void",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.6,
+      1,
+      "in"
+     ]
+    ]
+   }
+  }
+ ]
+}

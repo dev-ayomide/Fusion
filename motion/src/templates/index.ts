@@ -15,7 +15,7 @@ const base = (name: string, colors: Record<string, string>, dur = 6): Doc => ({
   assets: {},
   markers: [],
   style: { energy: 0.5, bounce: 0.5, depth: 0.5, speed: 0.5 },
-  bindings: [],
+  bindings: [], scenes: [], audio: [],
   layers: [],
 });
 

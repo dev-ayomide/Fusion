@@ -108,7 +108,7 @@ describe("expressions", () => {
 });
 
 function mini(layers: Layer[], dur = 4): Doc {
-  return { v: 1, comp: { w: 1920, h: 1080, fps: 30, dur, bg: "#000000" }, brand: { font: "Inter", colors: { ink: "#ffffff" } }, assets: {}, markers: [], style: { energy: 0.5, bounce: 0.5, depth: 0.5, speed: 0.5 }, bindings: [], layers };
+  return { v: 1, comp: { w: 1920, h: 1080, fps: 30, dur, bg: "#000000" }, brand: { font: "Inter", colors: { ink: "#ffffff" } }, assets: {}, markers: [], style: { energy: 0.5, bounce: 0.5, depth: 0.5, speed: 0.5 }, bindings: [], scenes: [], audio: [], layers };
 }
 
 describe("composition pipeline", () => {

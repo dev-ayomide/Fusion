@@ -4,7 +4,9 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 const [doc, outdir, width = '960', fpsArg, fromArg, toArg] = process.argv.slice(2);
 fs.mkdirSync(outdir, { recursive: true });
-const b = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+// macOS: the real GPU through ANGLE/Metal is ~10× faster than SwiftShader; ANGLE=swiftshader forces software.
+const angle = process.env.ANGLE ?? (process.platform === 'darwin' ? 'metal' : 'swiftshader');
+const b = await chromium.launch({ args: [`--use-angle=${angle}`, angle === 'swiftshader' ? '--enable-unsafe-swiftshader' : '--enable-gpu', '--ignore-gpu-blocklist'] });
 const p = await b.newPage({ viewport: { width: Number(width), height: Math.round(Number(width) * 9 / 16) } });
 const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errs.push(m.text()); });
 await p.goto(`http://localhost:${process.env.PORT ?? 5181}/harness.html?doc=${doc}&time=0&w=${width}`);

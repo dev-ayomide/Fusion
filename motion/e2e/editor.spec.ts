@@ -217,6 +217,8 @@ test.describe("timeline", () => {
 test.describe("vibe sliders + bindings", () => {
   test("a slider drives every bound setting; a hand edit detaches its binding", async ({ page }) => {
     await openTemplate(page, "launch", "Simple");
+    // the vibe sliders live in a drawer at the top of the assistant
+    await page.getByRole("button", { name: "Vibe" }).click();
     const slider = page.locator("#style-bounce");
     await slider.focus();
     for (let i = 0; i < 30; i++) await page.keyboard.press("ArrowRight");
@@ -257,6 +259,43 @@ test.describe("json + history", () => {
     await page.locator(".hist-row").filter({ hasText: /^AIone/ }).click();
     expect((await layer(page, "title")).size).toBe(90);
     await expect(page.locator(".hist-row.future")).toHaveCount(2);
+  });
+});
+
+test.describe("projects library", () => {
+  test("each opened template becomes its own video; rename, duplicate and delete from the landing page", async ({ page }) => {
+    await fresh(page);
+    await expect(page.getByTestId("projects")).toHaveCount(0);
+    for (const id of ["logo", "kinetic"]) {
+      await page.getByTestId(`tpl-${id}`).click();
+      await expect(page.getByTestId("editor")).toBeVisible();
+      await page.getByTestId("home").click();
+      await expect(page.getByTestId("start")).toBeVisible();
+    }
+    const cards = page.getByTestId("project-card");
+    await expect(cards).toHaveCount(2);
+    await expect(cards.first()).toContainText("Kinetic type"); // most recent first
+    await expect(cards.nth(1)).toContainText("Logo reveal");
+
+    await cards.first().hover();
+    await cards.first().getByTestId("project-rename").click();
+    await page.getByLabel("Video name").fill("My trailer");
+    await page.getByLabel("Video name").press("Enter");
+    await expect(cards.first()).toContainText("My trailer");
+
+    await cards.first().getByTestId("project-duplicate").click();
+    await expect(cards).toHaveCount(3);
+    await expect(cards.first()).toContainText("My trailer copy");
+
+    await cards.first().hover();
+    await cards.first().getByTestId("project-delete").click();
+    await page.getByTestId("project-delete-confirm").click();
+    await expect(cards).toHaveCount(2);
+
+    // the renamed project opens with its new name
+    await page.getByRole("button", { name: "Open My trailer" }).click();
+    await expect(page.getByTestId("editor")).toBeVisible();
+    expect((await doc(page)).name).toBe("My trailer");
   });
 });
 

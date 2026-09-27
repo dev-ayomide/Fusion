@@ -28,6 +28,8 @@ export function outline(doc: Doc): string {
   ];
   if (Object.keys(doc.assets).length) lines.push("assets " + Object.entries(doc.assets).map(([k, a]) => `${k}(${a.mime.split("/")[1]}${a.w ? ` ${a.w}x${a.h}` : ""})`).join(" "));
   if (doc.markers.length) lines.push("markers " + doc.markers.map((m) => `${m.id}@${n(m.t)}`).join(" "));
+  for (const sc of doc.scenes) lines.push(`scene ${sc.id} ${n(sc.start)}–${n(sc.start + sc.dur)} ${JSON.stringify(sc.title)}${sc.status ? " " + sc.status : ""}: ${sc.brief.length > 90 ? sc.brief.slice(0, 88) + "…" : sc.brief}`);
+  for (const a of doc.audio) lines.push(`audio ${a.id} ${a.src}${a.name ? ` ${JSON.stringify(a.name)}` : ""} @${n(a.at)}${a.dur ? ` for ${n(a.dur)}s` : ""} vol ${n(a.volume)}${a.muted ? " muted" : ""}`);
   lines.push("layers back→front:");
   for (const l of doc.layers) lines.push(layerLine(doc, l));
   return lines.join("\n");

@@ -31,7 +31,10 @@ test.describe("AI bridge", () => {
       delayMs: 50,
     }), pending[0].turnId);
 
+    // the change list is a one-line summary until you ask to review it
     const card = page.getByTestId("diff-card");
+    await expect(card).toContainText("2 changes");
+    await card.getByRole("button", { name: /Review changes/ }).click();
     await expect(card).toContainText("Set title › size to 142");
     await expect(page.getByTestId("keep")).toHaveText("Keep all");
     // the preview is live but not committed
@@ -73,6 +76,8 @@ test.describe("AI bridge", () => {
       });
     });
     const card = page.getByTestId("diff-card");
+    await expect(card).toContainText("2 skipped");
+    await card.getByRole("button", { name: /Review changes/ }).click();
     await expect(card.locator(".err")).toHaveCount(2);
     await expect(page.getByTestId("keep")).toContainText("1 of 3");
     await page.getByTestId("keep").click();
@@ -95,7 +100,7 @@ test.describe("AI bridge", () => {
 
   test("pasting ops from any AI works without a connected agent", async ({ page }) => {
     await openTemplate(page, "launch");
-    await page.getByText("Paste ops from any AI").click();
+    await page.getByRole("button", { name: "Paste ops from any AI" }).click();
     await page.getByLabel("Ops to paste").fill('{"op":"set","path":"title/text","value":"Hello"}\n{"op":"set","path":"title/size","delta":10}');
     await page.getByRole("button", { name: "Preview ops" }).click();
     await page.getByTestId("keep").click();
@@ -112,8 +117,27 @@ test.describe("AI bridge", () => {
     await expect(page.getByTestId("editor")).toBeVisible();
     await expect.poll(async () => Object.keys(((await doc(page)) as any).assets)).toEqual(["logo"]);
     expect((await doc(page)).name).toBe("A launch video for Orbit");
+    // the landing prompt asks for a scene plan of the whole video
     const pending = await page.evaluate(() => (window as any).fusion.bridge.pending());
+    expect(pending[0].kind).toBe("plan");
     expect(pending[0].prompt).toContain("habit tracker");
+    expect(pending[0].settings.assets).toEqual(["logo"]);
+    await expect(page.getByTestId("storyboard")).toContainText("Drafting your storyboard");
+  });
+
+  test("an agent that answers the plan turn with plain ops still works (backward compatible)", async ({ page }) => {
+    await fresh(page);
+    await page.getByLabel("Describe your video").fill("A logo sting");
+    await page.getByTestId("start-create").click();
+    await page.evaluate(async () => {
+      const f = (window as any).fusion;
+      f.bridge.connect("Script");
+      const [p] = f.bridge.pending();
+      await f.bridge.respond(p.turnId, { message: "Here you go.", ops: [{ op: "set", path: "bg/angle", value: 45 }], delayMs: 0 });
+    });
+    await page.getByTestId("keep").click();
+    expect(((await layer(page, "bg")) as any).angle).toBe(45);
+    expect(await page.evaluate(() => (window as any).fusion.director.state().phase)).toBe("idle");
   });
 });
 

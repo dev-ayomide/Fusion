@@ -1,6 +1,7 @@
 import { Doc as DocSchema, type Doc, type Layer } from "./schema";
 import { CATALOG, suggestBeh, channelsFor, isChannelOf } from "./catalog";
 import { delPath, getPath, itemIndex, locate, setPath, PathError } from "./paths";
+import { MUSIC } from "../audio/music-catalog";
 
 /* ------------------------------------------------------------------ *
  * Primitives — the only things stored in the log.                     *
@@ -239,6 +240,47 @@ export function validate(doc: Doc): string[] {
   for (const l of doc.layers) errs.push(...validateLayer(doc, l, ids));
   if (doc.comp.cam && !doc.layers.some((l) => l.id === doc.comp.cam && l.type === "camera")) errs.push(`comp/cam: "${doc.comp.cam}" is not a camera layer`);
   for (const b of doc.bindings) if (getPath(doc, b.path) === undefined) errs.push(`bindings: path ${b.path} does not exist`);
+  errs.push(...validateAudio(doc), ...validateScenes(doc));
+  return errs;
+}
+
+/** Soundtrack checks: ids unique, src resolves to real audio, trims and fades make sense. */
+function validateAudio(doc: Doc): string[] {
+  const errs: string[] = [];
+  const seen = new Set<string>();
+  const libNames = MUSIC.filter((m) => !m.hidden).map((m) => m.name);
+  for (const a of doc.audio) {
+    const at = `audio/${a.id}`;
+    if (seen.has(a.id)) errs.push(`${at}: duplicate audio id`);
+    seen.add(a.id);
+    let fileDur: number | undefined;
+    if (a.src.startsWith("lib://")) {
+      const m = /^lib:\/\/music\/([a-z0-9-]+)$/.exec(a.src);
+      const t = m ? MUSIC.find((x) => x.name === m[1]) : undefined;
+      if (!t) errs.push(`${at}/src: unknown library track "${a.src}" (have ${libNames.map((n) => "lib://music/" + n).join(", ")})`);
+      else fileDur = t.dur;
+    } else {
+      const asset = doc.assets[a.src];
+      if (!asset) errs.push(`${at}/src: unknown asset "${a.src}" — upload audio first, or use a library track like lib://music/${libNames[0] ?? "drive"}`);
+      else if (!asset.mime.startsWith("audio/")) errs.push(`${at}/src: asset "${a.src}" is ${asset.mime}, not audio`);
+    }
+    // ops store what was written, so schema defaults may be absent here
+    const offset = a.offset ?? 0, fades = (a.fadeIn ?? 0) + (a.fadeOut ?? 0);
+    if (fileDur !== undefined && offset >= fileDur) errs.push(`${at}/offset: ${offset}s is past the end of the ${fileDur}s track`);
+    const len = a.dur ?? (fileDur !== undefined ? fileDur - offset : undefined);
+    if (len !== undefined && fades > len + 1e-6) errs.push(`${at}: fadeIn + fadeOut (${r3(fades)}s) is longer than the ${r3(len)}s it plays`);
+  }
+  return errs;
+}
+
+/** Scene plan checks: ids unique (timing is advisory — scenes may be re-planned before comp/dur changes). */
+function validateScenes(doc: Doc): string[] {
+  const errs: string[] = [];
+  const seen = new Set<string>();
+  for (const sc of doc.scenes) {
+    if (seen.has(sc.id)) errs.push(`scenes/${sc.id}: duplicate scene id`);
+    seen.add(sc.id);
+  }
   return errs;
 }
 

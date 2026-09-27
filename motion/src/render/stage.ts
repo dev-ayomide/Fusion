@@ -187,7 +187,9 @@ export class Stage {
     for (const L of doc.layers) {
       const anc = clipAncestor(L);
       const ref = anc ? refOf.get(anc)! : 0;
-      if (anc) minChildOrder.set(anc, Math.min(minChildOrder.get(anc) ?? Infinity, orders.get(L.id) ?? 0));
+      // full-screen layers sit at order ≈ -1000 in the scene root; letting them set the mask's order would
+      // draw it before every other mask, which then overwrite its stencil and hide the whole group
+      if (anc && !FULLSCREEN.has(L.type)) minChildOrder.set(anc, Math.min(minChildOrder.get(anc) ?? Infinity, orders.get(L.id) ?? 0));
       const v = this.views.get(L.id);
       if (!v) continue;
       v.root.traverse((o) => {

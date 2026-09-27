@@ -10,9 +10,9 @@
 type Json = unknown;
 type Obj = Record<string, Json>;
 
-export const ROOT_FIELDS = new Set(["v", "name", "comp", "brand", "assets", "markers", "style", "bindings"]);
+export const ROOT_FIELDS = new Set(["v", "name", "comp", "brand", "assets", "markers", "style", "bindings", "scenes", "audio"]);
 /** Arrays whose items are addressed by their `id`. */
-export const ID_COLLECTIONS = new Set(["beh", "fx", "anim", "markers", "layers"]);
+export const ID_COLLECTIONS = new Set(["beh", "fx", "anim", "markers", "layers", "scenes", "audio"]);
 const AX: Record<string, number> = { x: 0, y: 1, z: 2 };
 
 export interface Loc {

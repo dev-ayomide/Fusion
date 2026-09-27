@@ -5,3 +5,4 @@ test-results
 playwright-report
 e2e/artifacts
 __pycache__/
+out

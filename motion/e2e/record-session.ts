@@ -130,6 +130,7 @@ async function main() {
   await pause(400);
 
   await caption("6 · Vibe sliders: no AI, zero tokens — they drive bindings the agent set up");
+  await click(page.getByRole("button", { name: "Vibe" }));
   const bounce = page.locator("#style-bounce");
   const bb = (await bounce.boundingBox())!;
   await dragTo({ x: bb.x + bb.width * 0.5, y: bb.y + bb.height / 2 }, { x: bb.x + bb.width * 0.92, y: bb.y + bb.height / 2 });

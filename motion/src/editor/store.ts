@@ -9,10 +9,23 @@ export type Tab = "assistant" | "inspect" | "json" | "history";
 export type View = "shot" | "split";
 
 export interface Chip { label: string; ops?: Op[]; prompt?: string; hint?: string }
+/** What a pending turn asks for: a scene plan, the global look, one scene's layers, or a free edit. */
+export type TurnKind = "plan" | "setup" | "scene" | "edit";
 export interface Turn {
   id: string;
   role: "user" | "agent" | "system";
   text: string;
+  kind?: TurnKind;
+  /** scene this turn builds (kind "scene") or is scoped to (kind "edit") */
+  sceneId?: string;
+  /** the scene window the agent was given, comp seconds */
+  window?: [number, number];
+  /** a short heading for build turns ("Scene 2 · The drop") */
+  title?: string;
+  /** build turns keep their ops automatically when they finish streaming */
+  autoKeep?: boolean;
+  /** history label for the kept transaction */
+  intent?: string;
   scope?: string[];
   status?: "waiting" | "streaming" | "review" | "kept" | "discarded" | "error" | "info";
   ops?: Op[];
@@ -30,6 +43,25 @@ export interface Preview { turnId: string; ops: Op[]; accepted: boolean[]; doc: 
 
 export interface KeySel { layer: string; channel: string; index: number }
 
+/** The plan → build flow ("director"): global choices and the build queue. */
+export interface Director {
+  /** the user's original idea */
+  idea: string;
+  /** one-line art direction (palette, type, mood) */
+  look: string;
+  /** requested length in seconds; 0 = let the AI decide */
+  length: number;
+  aspect: string;
+  phase: "idle" | "planning" | "ready" | "building" | "paused" | "done";
+  /** scene ids still to build, in order */
+  queue: string[];
+  /** the build turn in flight */
+  turnId: string | null;
+  setupDone: boolean;
+  error?: string;
+}
+export const freshDirector = (): Director => ({ idea: "", look: "", length: 0, aspect: "16:9", phase: "idle", queue: [], turnId: null, setupDone: false });
+
 interface State {
   screen: "start" | "editor";
   doc: Doc;
@@ -44,7 +76,14 @@ interface State {
   view: View;
   expanded: Record<string, boolean>;
   turns: Turn[];
-  agent: { name: string; since: number } | null;
+  agent: { name: string; since: number; provider?: string } | null;
+  director: Director;
+  /** which in-app AI providers have a key on the dev server (null = not checked yet) */
+  providers: Record<string, boolean> | null;
+  /** scene currently being built — shown as status "building" in the display doc */
+  building: string | null;
+  /** scene the composer is scoped to ("refine this scene") */
+  chatScene: string | null;
   aiChanged: Record<string, number>;
   notice: { text: string; kind?: "info" | "error"; id: number } | null;
   exportOpen: boolean;
@@ -56,7 +95,9 @@ interface State {
 
 interface Actions {
   loadDoc(doc: Doc, opts?: { keepHistory?: boolean }): void;
-  commit(ops: Op[], opts: { source: Source; intent?: string }): { ok: boolean; errors: string[]; txn?: Txn };
+  /** `preserve`: land underneath an open AI preview instead of keeping it first (plan edits during a build) */
+  commit(ops: Op[], opts: { source: Source; intent?: string; preserve?: boolean }): { ok: boolean; errors: string[]; txn?: Txn };
+  setDirector(patch: Partial<Director>): void;
   undo(): void;
   redo(): void;
   undoTo(txnId: string): void;
@@ -124,6 +165,10 @@ export const useStore = create<Store>((set, get) => ({
   expanded: {},
   turns: [],
   agent: null,
+  director: freshDirector(),
+  providers: null,
+  building: null,
+  chatScene: null,
   aiChanged: {},
   notice: null,
   exportOpen: false,
@@ -133,13 +178,18 @@ export const useStore = create<Store>((set, get) => ({
 
   loadDoc(doc, opts) {
     playhead.setDuration(doc.comp.dur);
-    set((s) => ({ doc, past: opts?.keepHistory ? s.past : [], future: opts?.keepHistory ? s.future : [], transient: null, preview: null, selection: [], keySel: null, version: s.version + 1 }));
+    set((s) =>
+      opts?.keepHistory
+        ? { doc, transient: null, preview: null, selection: [], keySel: null, version: s.version + 1 }
+        : // a different document: its own history, conversation and plan state
+          { doc, past: [], future: [], transient: null, preview: null, selection: [], keySel: null, version: s.version + 1, turns: [], director: freshDirector(), building: null, chatScene: null },
+    );
   },
 
   commit(ops, opts) {
     const s = get();
     // an unresolved AI preview is kept before a manual edit lands on top of it
-    if (s.preview && opts.source !== "ai") get().keepPreview();
+    if (s.preview && opts.source !== "ai" && !opts.preserve) get().keepPreview();
     const base = get().doc;
     const r = applyTxn(base, ops, opts);
     if (!r.ok || !r.txn) {
@@ -151,7 +201,13 @@ export const useStore = create<Store>((set, get) => ({
     }
     playhead.setDuration(r.doc.comp.dur);
     set((st) => ({ doc: r.doc, past: [...st.past, r.txn!].slice(-300), future: [], transient: null, version: st.version + 1 }));
+    // an open preview is rebuilt on top of the new base so it never shows a stale document
+    const pv = get().preview;
+    if (pv && opts.preserve) set({ preview: { ...pv, ...buildPreview(r.doc, pv.ops, pv.accepted) } });
     return { ok: true, errors: [], txn: r.txn };
+  },
+  setDirector(patch) {
+    set((s) => ({ director: { ...s.director, ...patch } }));
   },
 
   undo() {
@@ -256,7 +312,7 @@ export const useStore = create<Store>((set, get) => ({
       get().patchTurn(pv.turnId, { status: "discarded" });
       return;
     }
-    const r = get().commit(ops, { source: "ai", intent: turn?.text?.split("\n")[0].slice(0, 80) || "AI edit" });
+    const r = get().commit(ops, { source: "ai", intent: turn?.intent ?? (turn?.text?.split("\n")[0].slice(0, 80) || "AI edit") });
     get().patchTurn(pv.turnId, r.ok ? { status: "kept", txnId: r.txn!.id } : { status: "error", text: (turn?.text ?? "") + "\n\n" + r.errors.join("\n") });
   },
   discardPreview() {
@@ -286,11 +342,24 @@ export function opLayers(op: Op, doc: Doc): string[] {
   }
 }
 
+/**
+ * The scene being built shows as `status: "building"`. It is a live overlay, not an op: the build's
+ * own transaction then records planned → done, so one undo returns the scene to "planned".
+ */
+let overlayMemo: { base: Doc; id: string; out: Doc } | null = null;
+function withBuilding(base: Doc, id: string | null): Doc {
+  if (!id || !base.scenes.some((sc) => sc.id === id)) return base;
+  if (overlayMemo && overlayMemo.base === base && overlayMemo.id === id) return overlayMemo.out;
+  const out = { ...base, scenes: base.scenes.map((sc) => (sc.id === id ? { ...sc, status: "building" as const } : sc)) };
+  overlayMemo = { base, id, out };
+  return out;
+}
+
 /** The document every view should draw: an in-flight drag, else an AI preview, else the committed doc. */
 export function useDisplayDoc(): Doc {
-  return useStore((s) => s.transient ?? s.preview?.doc ?? s.doc);
+  return useStore((s) => withBuilding(s.transient ?? s.preview?.doc ?? s.doc, s.building));
 }
 export function displayDoc(): Doc {
   const s = useStore.getState();
-  return s.transient ?? s.preview?.doc ?? s.doc;
+  return withBuilding(s.transient ?? s.preview?.doc ?? s.doc, s.building);
 }

@@ -1,0 +1,29 @@
+/* Timeline: music button, audio lanes (pinned above the camera lane) and the scenes band. */
+.tl-music-btn { max-width: 220px; }
+.tl-music-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-music-btn.has { background: rgba(91, 108, 255, .12); color: #2f3aa8; }
+.tl-music-btn.has:hover { background: rgba(91, 108, 255, .2); }
+.tl-music-n { font: 600 10px var(--mono); opacity: .7; }
+
+.tl-audio { position: relative; border-top: 1px solid var(--line); background: linear-gradient(180deg, rgba(91, 108, 255, .035), transparent 60%); }
+.tl-audio-scroll { max-height: calc(var(--lanes, 1) * 40px); overflow-y: auto; overflow-x: hidden; }
+.tl-audio-grid { display: grid; }
+.tl-audio-names { border-right: 1px solid var(--line); }
+.tl-aname { height: 40px; color: #2f3aa8; border-bottom: 1px solid #f3f2f5; }
+.tl-aname:last-child { border-bottom: 0; }
+.tl-aname.sel { background: rgba(91, 108, 255, .08); }
+.tl-aname.muted { color: var(--faint); }
+.tl-aname.empty { height: 34px; color: var(--muted); }
+.tl-mute { width: 24px; height: 24px; border-radius: 999px; display: grid; place-items: center; color: var(--faint); flex: none; transition: background .15s var(--ease), color .15s var(--ease); }
+.tl-mute:hover { background: var(--raise2); color: var(--text); }
+.tl-mute.on { background: var(--text); color: #fff; }
+.tl-audio-tracks { position: relative; min-width: 0; }
+.tl-audio-tracks canvas { display: block; }
+.tl-audio-empty { display: flex; align-items: center; gap: 6px; height: 26px; margin: 4px 12px; padding: 0 14px; width: calc(100% - 24px); border-radius: 10px; border: 1.5px dashed rgba(91, 108, 255, .35); color: #3b47c4; font-size: 12px; font-weight: 600; background: rgba(91, 108, 255, .04); transition: background .15s var(--ease), border-color .15s var(--ease); }
+.tl-audio-empty:hover { background: rgba(91, 108, 255, .1); border-color: #5b6cff; }
+.tl-audio-empty .faint { font-weight: 500; }
+.tl-audio-head { position: absolute; top: 0; bottom: 0; width: 1.5px; background: #0a9bf0; pointer-events: none; box-shadow: 0 0 6px rgba(10, 155, 240, .4); }
+
+.tl-band { border-bottom: 1px solid var(--line); background: var(--panel); }
+.tl-band canvas { display: block; }
+.tl-band-name { height: auto; font-family: var(--font); font-weight: 600; color: var(--muted); letter-spacing: .01em; }

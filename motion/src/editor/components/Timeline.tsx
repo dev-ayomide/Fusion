@@ -1,17 +1,30 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Doc, Layer } from "../../fmd/schema";
 import { applyTxn, type Op } from "../../fmd/ops";
 import { CATALOG } from "../../fmd/catalog";
 import { activeCamera, behDur, channel } from "../../runtime/evaluate";
-import { useStore, useDisplayDoc } from "../store";
+import { useStore, useDisplayDoc, displayDoc } from "../store";
 import { playhead, fmtTime } from "../playhead";
 import { behColor, BEH_COLORS } from "../edit";
 import { Icon, TYPE_ICON } from "./ui";
 import { GraphEditor } from "./GraphEditor";
 import { cubicOf } from "../../runtime/ease";
+import "./TimelineAudio.css";
+import { MusicPicker, NoteGlyph, SpeakerGlyph } from "./MusicPicker";
+import { startAudioEngine, audioDebug, preview } from "../../audio/engine";
+import { peekBuffer, peakRange, fileDuration, onAudioLoaded, bufferError, retryBuffer } from "../../audio/buffers";
+import { clipLength, gainAt, timing } from "../../audio/schedule";
+import { useMusicUI, openMusic, focusTrack } from "../../audio/ui";
+import { displayName, toggleMute } from "../../audio/actions";
+import { onAssetsChanged } from "../../assets/assets";
 
 const ROW = 30;
 const PAD = 12;
+const LANE = 40; // audio lane height
+const BAND = 26; // scenes band height
+const AUDIO_COL = "#5b6cff";
+const SCENE_COLS = ["#8b5cf6", "#0a9bf0", "#2fbf85", "#f59e0b", "#f0648a", "#14b8a6"];
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
 
 type Row = { kind: "layer"; L: Layer; indent: number } | { kind: "channel"; L: Layer; ch: string };
@@ -240,6 +253,170 @@ function fitCanvas(c: HTMLCanvasElement, w: number, h: number) {
   return ctx;
 }
 
+/* ------------------------------ audio lanes ------------------------------ */
+type AHitKind = "abody" | "aL" | "aR";
+interface AHit { kind: AHitKind; x: number; y: number; w: number; h: number; id: string }
+
+/** One lane per audio track: a clip with its waveform (shaped by the fades), name pill, trim handles. */
+function drawAudio(ctx: CanvasRenderingContext2D, doc: Doc, w: number, win: Win, focus: string | null, hits: AHit[]) {
+  const X = (t: number) => PAD + (t - win.start) * win.pps;
+  const T = (x: number) => (x - PAD) / win.pps + win.start;
+  const H = doc.audio.length * LANE;
+  const step = niceStep(win.pps);
+  for (let t = Math.ceil(win.start / step) * step; X(t) < w; t += step) {
+    ctx.fillStyle = Math.abs(t - Math.round(t)) < 1e-6 ? "#e9e8ec" : "#f3f2f5";
+    ctx.fillRect(Math.round(X(t)), 0, 1, H);
+  }
+  const dur = doc.comp.dur;
+  doc.audio.forEach((raw, i) => {
+    const a = timing(raw);
+    const y = i * LANE;
+    ctx.fillStyle = "#f3f2f5";
+    ctx.fillRect(0, y + LANE - 1, w, 1);
+    const ready = peekBuffer(raw.src);
+    const fileDur = ready?.buf.duration ?? fileDuration(raw.src);
+    const len = fileDur !== null ? clipLength(a, fileDur) : Math.max(0.5, dur - a.at);
+    const x0 = X(a.at), x1 = Math.max(x0 + 6, X(a.at + len));
+    const top = y + 5, h = LANE - 10, mid = top + h / 2;
+    const col = a.muted ? "#a3a0aa" : AUDIO_COL;
+    const focused = focus === raw.id;
+    ctx.fillStyle = hexA(col, a.muted ? 0.07 : focused ? 0.16 : 0.11);
+    rr(ctx, x0, top, x1 - x0, h, 9);
+    ctx.fill();
+    ctx.save();
+    rr(ctx, x0, top, x1 - x0, h, 9);
+    ctx.clip();
+    if (ready && fileDur !== null) {
+      const half = h / 2 - 3;
+      const env = { ...a, volume: 1, muted: false };
+      const vis = Math.min(1, 0.45 + 0.55 * Math.min(1.2, a.volume));
+      for (let px = Math.max(0, Math.floor(x0)); px < Math.min(w, x1); px++) {
+        const t = T(px);
+        const f0 = a.offset + (t - a.at);
+        if (f0 < 0) continue;
+        const [m, r] = peakRange(ready.peaks, f0, f0 + 1 / win.pps);
+        const inComp = t < dur;
+        const g = (inComp ? gainAt(env, t, fileDur, dur) : 0.3) * vis;
+        // gamma so quiet passages still read; rms drawn darker inside the peak envelope
+        const hm = Math.max(0.5, Math.pow(m, 0.6) * half * g), hr = Math.max(0.5, Math.min(Math.pow(m, 0.6), Math.pow(r * 1.4, 0.6)) * half * g);
+        ctx.fillStyle = hexA(col, inComp ? 0.38 : 0.16);
+        ctx.fillRect(px, mid - hm, 1, hm * 2);
+        ctx.fillStyle = hexA(col, inComp ? 0.85 : 0.3);
+        ctx.fillRect(px, mid - hr, 1, hr * 2);
+      }
+      // fade ramps: a thin gain line over the fades
+      const span = { start: a.at, end: Math.min(dur, a.at + len) };
+      const fin = Math.min(a.fadeIn, (span.end - span.start) / 2), fout = Math.min(a.fadeOut, (span.end - span.start) / 2);
+      ctx.strokeStyle = hexA(col, 0.9);
+      ctx.lineWidth = 1.25;
+      if (fin > 0.01) {
+        ctx.beginPath();
+        ctx.moveTo(X(span.start), top + h - 1);
+        ctx.lineTo(X(span.start + fin), top + 1);
+        ctx.stroke();
+      }
+      if (fout > 0.01) {
+        ctx.beginPath();
+        ctx.moveTo(X(span.end - fout), top + 1);
+        ctx.lineTo(X(span.end), top + h - 1);
+        ctx.stroke();
+      }
+    } else {
+      // decoding (or missing): a calm dotted centre line
+      ctx.strokeStyle = hexA(col, 0.45);
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath();
+      ctx.moveTo(x0 + 8, mid);
+      ctx.lineTo(x1 - 8, mid);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+    if (focused) {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.5;
+      rr(ctx, x0 + 0.75, top + 0.75, x1 - x0 - 1.5, h - 1.5, 8.5);
+      ctx.stroke();
+    }
+    // name pill (stays readable over the waveform, sticks to the left edge when scrolled)
+    const err = bufferError(raw.src);
+    const label = `${displayName(raw)}${a.muted ? " · muted" : ""}${err ? " · can't load" : !ready ? " · loading…" : ""}`;
+    ctx.font = "600 10.5px Inter Variable, system-ui, sans-serif";
+    const tw = ctx.measureText(label).width;
+    const lx = Math.max(x0 + 6, Math.min(PAD, x1 - tw - 22));
+    if (x1 - lx > 30) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x0, top, x1 - x0 - 4, h);
+      ctx.clip();
+      ctx.fillStyle = "rgba(255,255,255,.88)";
+      rr(ctx, lx, top + 3, tw + 14, 15, 7.5);
+      ctx.fill();
+      ctx.fillStyle = err ? "#e5484d" : a.muted ? "#8a8691" : "#2f3aa8";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, lx + 7, top + 10.5);
+      ctx.restore();
+    }
+    hits.push({ kind: "abody", x: x0 + 6, y: top, w: Math.max(0, x1 - x0 - 12), h, id: raw.id });
+    hits.push({ kind: "aL", x: x0 - 4, y: top, w: 10, h, id: raw.id });
+    hits.push({ kind: "aR", x: x1 - 6, y: top, w: 10, h, id: raw.id });
+  });
+  ctx.fillStyle = "rgba(25,23,28,.035)";
+  ctx.fillRect(X(dur), 0, Math.max(0, w - X(dur)), H);
+}
+
+/** Scenes band: planned = dashed outline, building = moving stripes, done = solid. */
+function drawScenes(ctx: CanvasRenderingContext2D, doc: Doc, w: number, win: Win, now: number) {
+  const X = (t: number) => PAD + (t - win.start) * win.pps;
+  ctx.font = "600 11px Inter Variable, system-ui, sans-serif";
+  ctx.textBaseline = "middle";
+  doc.scenes.forEach((sc, i) => {
+    const col = SCENE_COLS[i % SCENE_COLS.length];
+    const x0 = X(sc.start) + 1, x1 = X(sc.start + sc.dur) - 1;
+    if (x1 < 0 || x0 > w) return;
+    const top = 4, h = BAND - 8;
+    const st = sc.status ?? "planned";
+    ctx.save();
+    rr(ctx, x0, top, x1 - x0, h, 6);
+    if (st === "done") {
+      ctx.fillStyle = hexA(col, 0.88);
+      ctx.fill();
+    } else if (st === "building") {
+      ctx.fillStyle = hexA(col, 0.14);
+      ctx.fill();
+      ctx.clip();
+      ctx.strokeStyle = hexA(col, 0.38);
+      ctx.lineWidth = 5;
+      const off = ((now / 40) % 14) - 14;
+      for (let x = x0 + off - h; x < x1 + h; x += 14) {
+        ctx.beginPath();
+        ctx.moveTo(x, top + h);
+        ctx.lineTo(x + h, top);
+        ctx.stroke();
+      }
+    } else {
+      ctx.fillStyle = hexA(col, 0.07);
+      ctx.fill();
+      ctx.strokeStyle = hexA(col, 0.8);
+      ctx.lineWidth = 1.25;
+      ctx.setLineDash([4, 3]);
+      rr(ctx, x0 + 0.6, top + 0.6, x1 - x0 - 1.2, h - 1.2, 5.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+    if (x1 - x0 > 26) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x0 + 2, top, x1 - x0 - 6, h);
+      ctx.clip();
+      ctx.fillStyle = st === "done" ? "#fff" : "#19171c";
+      const tag = st === "building" ? " · building" : "";
+      ctx.fillText(`${sc.title}${tag}`, x0 + 8, top + h / 2 + 0.5);
+      ctx.restore();
+    }
+  });
+}
+
 /* ------------------------------------------------------------------ */
 
 export function Timeline() {
@@ -259,6 +436,7 @@ export function Timeline() {
   const [playing, setPlaying] = useState(false);
   const [loop, setLoop] = useState(true);
   const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [audioTip, setAudioTip] = useState<{ x: number; text: string } | null>(null);
   const autoFit = useRef(true);
   const tracksWrap = useRef<HTMLDivElement>(null);
   const namesRef = useRef<HTMLDivElement>(null);
@@ -269,6 +447,14 @@ export function Timeline() {
   const tcRef = useRef<HTMLSpanElement>(null);
   const hits = useRef<Hit[]>([]);
   const camHits = useRef<Hit[]>([]);
+  const audioCanvas = useRef<HTMLCanvasElement>(null);
+  const audioHead = useRef<HTMLDivElement>(null);
+  const bandCanvas = useRef<HTMLCanvasElement>(null);
+  const audioHits = useRef<AHit[]>([]);
+  const [audioTick, setAudioTick] = useState(0);
+  const musicFocus = useMusicUI((s) => s.target);
+  const hasScenes = doc.scenes.length > 0;
+  const audioH = doc.audio.length * LANE;
   const namesW = pro ? 220 : 170;
   const X = (t: number) => PAD + (t - win.start) * win.pps;
   const T = (x: number) => (x - PAD) / win.pps + win.start;
@@ -300,6 +486,51 @@ export function Timeline() {
       if (cam) drawRows(cctx, doc, [{ kind: "layer", L: cam, indent: 0 }], width, win, sel, ai, keySel, camHits.current, true);
     }
   }, [doc, rows, width, win, sel, ai, keySel, cam]);
+
+  // soundtrack: the engine follows the playhead for the life of the page; lanes redraw as audio decodes
+  useEffect(() => {
+    startAudioEngine(displayDoc, (fn) => useStore.subscribe(fn));
+    const offLoaded = onAudioLoaded(() => setAudioTick((n) => n + 1));
+    const offAssets = onAssetsChanged(() => {
+      for (const a of displayDoc().audio) retryBuffer(a.src);
+      setAudioTick((n) => n + 1);
+    });
+    (window as unknown as Record<string, unknown>).__audio = { debug: audioDebug, preview, mix: () => import("../../audio/mix").then((m) => m.mixSoundtrack(useStore.getState().doc)) };
+    return () => {
+      offLoaded();
+      offAssets();
+    };
+  }, []);
+  useEffect(() => {
+    const c = audioCanvas.current;
+    if (!c || !doc.audio.length) return;
+    const ctx = fitCanvas(c, width, audioH);
+    audioHits.current = [];
+    drawAudio(ctx, doc, width, win, musicFocus ?? doc.audio[0]?.id ?? null, audioHits.current);
+  }, [doc, width, win, musicFocus, audioTick, audioH]);
+
+  // scenes band: redrawn with the playhead; a "building" scene animates on its own
+  const drawBand = () => {
+    const c = bandCanvas.current;
+    if (!c || !hasScenes) return;
+    const ctx = fitCanvas(c, width, BAND);
+    drawScenes(ctx, doc, width, win, performance.now());
+    const px = X(playhead.get());
+    ctx.fillStyle = "#0a9bf0";
+    ctx.fillRect(px - 0.75, 0, 1.5, BAND);
+  };
+  const building = doc.scenes.some((sc) => sc.status === "building");
+  useEffect(() => {
+    drawBand();
+    if (!building) return;
+    let raf = 0;
+    const loop = () => {
+      drawBand();
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
 
   // AI glow fades: redraw a few times while it's active
   useEffect(() => {
@@ -346,6 +577,8 @@ export function Timeline() {
         ctx.restore();
       }
       if (headRef.current) headRef.current.style.transform = `translateX(${X(t)}px)`;
+      if (audioHead.current) audioHead.current.style.transform = `translateX(${X(t)}px)`;
+      drawBand();
       if (tcRef.current) tcRef.current.textContent = fmtTime(t, doc.comp.fps);
     };
     drawHead();
@@ -371,6 +604,16 @@ export function Timeline() {
       camY: () => {
         const r = camCanvas.current?.getBoundingClientRect();
         return r ? r.top + ROW / 2 : null;
+      },
+      audioY: (id: string) => {
+        const i = doc.audio.findIndex((a) => a.id === id);
+        const r = audioCanvas.current?.getBoundingClientRect();
+        return i < 0 || !r ? null : r.top + i * LANE + LANE / 2;
+      },
+      audioX: (t: number) => (audioCanvas.current?.getBoundingClientRect().left ?? 0) + X(t),
+      bandY: () => {
+        const r = bandCanvas.current?.getBoundingClientRect();
+        return r ? r.top + BAND / 2 : null;
       },
       pps: win.pps,
     };
@@ -540,6 +783,96 @@ export function Timeline() {
     st.commit([{ op: "key", path: `${L.id}/keys/${row.ch}`, keys: tr }], { source: "you", intent: `Added ${row.ch} key` });
   };
 
+  /* ------------------------------ audio lanes ------------------------------ */
+  const audioHitAt = (e: { clientX: number; clientY: number }, el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    return { x, y, r, hit: [...audioHits.current].reverse().find((h) => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) };
+  };
+  const onAudioDown = (e: React.PointerEvent) => {
+    const el = e.currentTarget as HTMLCanvasElement;
+    const { x, r, hit } = audioHitAt(e, el);
+    if (!hit) return startScrub(e);
+    focusTrack(hit.id);
+    const st = useStore.getState();
+    const base = st.doc;
+    const raw = base.audio.find((a) => a.id === hit.id);
+    if (!raw) return;
+    const a = timing(raw);
+    const fileDur = fileDuration(raw.src);
+    const len = fileDur !== null ? clipLength(a, fileDur) : a.dur ?? base.comp.dur - a.at;
+    const cands = [...snapTimes(base, ""), ...base.scenes.flatMap((sc) => [sc.start, sc.start + sc.dur]), ...base.audio.filter((o) => o.id !== hit.id).map((o) => timing(o).at)];
+    const t0 = T(x);
+    const name = displayName(raw);
+    let ops: Op[] = [];
+    let label = "";
+    el.setPointerCapture(e.pointerId);
+    const move = (ev: PointerEvent) => {
+      const d = T(ev.clientX - r.left) - t0;
+      const free = ev.altKey;
+      const fps = base.comp.fps;
+      if (hit.kind === "abody") {
+        // snap either edge, whichever is closer to something
+        const sAt = snap(a.at + d, cands, fps, free), sEnd = snap(a.at + len + d, cands, fps, free) - len;
+        const at = Math.max(0, r3(Math.abs(sEnd - (a.at + d)) < Math.abs(sAt - (a.at + d)) ? sEnd : sAt));
+        ops = [{ op: "set", path: `audio/${hit.id}/at`, value: at }];
+        label = `${name} starts ${at.toFixed(2)}s`;
+      } else if (hit.kind === "aL") {
+        // trim the head: the music under the playhead stays put, only the clip's start moves
+        const lo = Math.max(0, a.at - a.offset), hi = a.at + len - 0.1;
+        const at = r3(Math.min(hi, Math.max(lo, snap(a.at + d, cands, fps, free))));
+        const dd = at - a.at;
+        ops = [
+          { op: "set", path: `audio/${hit.id}/at`, value: at },
+          { op: "set", path: `audio/${hit.id}/offset`, value: r3(Math.max(0, a.offset + dd)) },
+          { op: "set", path: `audio/${hit.id}/dur`, value: r3(len - dd) },
+        ];
+        label = `trim in → ${at.toFixed(2)}s (file ${(a.offset + dd).toFixed(2)}s)`;
+      } else {
+        const maxEnd = fileDur !== null ? a.at + (fileDur - a.offset) : Infinity;
+        const end = Math.min(maxEnd, Math.max(a.at + 0.1, snap(a.at + len + d, cands, fps, free)));
+        ops = [{ op: "set", path: `audio/${hit.id}/dur`, value: r3(end - a.at) }];
+        label = `${name} ends ${end.toFixed(2)}s`;
+      }
+      const res = applyTxn(base, ops, { source: "you", validate: false });
+      if (res.ok) useStore.getState().setTransient(res.doc);
+      setAudioTip({ x: ev.clientX - r.left, text: label });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setAudioTip(null);
+      const s2 = useStore.getState();
+      s2.setTransient(null);
+      if (ops.length) {
+        const res = s2.commit(ops, { source: "you", intent: label || "Moved music" });
+        if (!res.ok) s2.toast(res.errors[0], "error");
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  const onAudioMove = (e: React.PointerEvent) => {
+    if (e.buttons) return;
+    const el = e.currentTarget as HTMLCanvasElement;
+    const { hit } = audioHitAt(e, el);
+    el.style.cursor = !hit ? "text" : hit.kind === "abody" ? "grab" : "ew-resize";
+  };
+  const onAudioDbl = (e: React.MouseEvent) => {
+    const { hit } = audioHitAt(e, e.currentTarget as HTMLElement);
+    if (hit) openMusic(hit.id);
+  };
+  const sceneAt = (clientX: number, el: HTMLElement) => {
+    const x = clientX - el.getBoundingClientRect().left;
+    return doc.scenes.find((sc) => x >= X(sc.start) && x <= X(sc.start + sc.dur));
+  };
+  const onBandDown = (e: React.PointerEvent) => {
+    const sc = sceneAt(e.clientX, e.currentTarget as HTMLElement);
+    if (!sc) return startScrub(e);
+    playhead.pause();
+    playhead.set(sc.start);
+  };
+
   const onWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
@@ -589,7 +922,7 @@ export function Timeline() {
     return L && ch && L.keys?.[ch] ? { L, ch, index: keySel && keySel.layer === L.id && keySel.channel === ch ? keySel.index : null } : null;
   })();
   return (
-    <section className="timeline" style={{ height, ["--names" as string]: `${namesW}px` }} aria-label="Timeline">
+    <section className="timeline" style={{ height, ["--names" as string]: `${namesW}px`, gridTemplateRows: "6px 44px minmax(0, 1fr) auto auto" }} aria-label="Timeline">
       <div className="tl-resize" onPointerDown={startResize} title="Drag to resize" />
       <div className="tl-bar">
         <button className="play" onClick={() => playhead.toggle()} aria-label={playing ? "Pause" : "Play"} title="Play / pause (Space)">
@@ -600,6 +933,11 @@ export function Timeline() {
         </span>
         <button className={`iconbtn${loop ? " on" : ""}`} onClick={() => setLoop(!loop)} title="Loop playback" aria-label="Loop" style={{ width: 28, height: 28 }}>
           <Icon name="loop" sm />
+        </button>
+        <button className={`chip-toggle tl-music-btn${doc.audio.length ? " has" : ""}`} onClick={() => openMusic()} data-testid="music-button" title="Music: free tracks or your own file">
+          <NoteGlyph size={12} />
+          <span>{doc.audio.length ? displayName(doc.audio[0]) : "Add music"}</span>
+          {doc.audio.length > 1 && <span className="tl-music-n">+{doc.audio.length - 1}</span>}
         </button>
         <div className="tl-legend">
           {Object.entries(BEH_COLORS).map(([k, c]) => (
@@ -631,11 +969,23 @@ export function Timeline() {
         <button className="iconbtn" onClick={() => zoom(1.5)} title="Zoom in" aria-label="Zoom in"><Icon name="zoomin" sm /></button>
         <button className="iconbtn" onClick={fitAll} title="Fit timeline" aria-label="Fit timeline"><Icon name="fit" sm /></button>
       </div>
-      <div style={{ display: "grid", gridTemplateRows: "28px minmax(0,1fr)", minHeight: 0 }}>
+      <div style={{ display: "grid", gridTemplateRows: hasScenes ? `28px ${BAND}px minmax(0,1fr)` : "28px minmax(0,1fr)", minHeight: 0 }}>
         <div className="tl-body" style={{ gridTemplateColumns: `${namesW}px minmax(0,1fr)` }}>
           <div className="tl-ruler-name">{rows.length} layers</div>
           <canvas ref={ruler} onPointerDown={startScrub} style={{ cursor: "col-resize", display: "block", borderBottom: "1px solid var(--line)" }} data-testid="ruler" />
         </div>
+        {hasScenes && (
+          <div className="tl-body tl-band" style={{ gridTemplateColumns: `${namesW}px minmax(0,1fr)` }}>
+            <div className="tl-ruler-name tl-band-name">Scenes · {doc.scenes.length}</div>
+            <canvas
+              ref={bandCanvas}
+              data-testid="scenes-band"
+              onPointerDown={onBandDown}
+              onPointerMove={(e) => ((e.currentTarget as HTMLElement).style.cursor = sceneAt(e.clientX, e.currentTarget as HTMLElement) ? "pointer" : "col-resize")}
+              title="Click a scene to jump to it"
+            />
+          </div>
+        )}
         <div className="tl-body" style={{ gridTemplateColumns: `${namesW}px minmax(0,1fr)` }}>
           <div className="tl-names" ref={namesRef} onScroll={(e) => { if (tracksWrap.current && tracksWrap.current.scrollTop !== (e.target as HTMLElement).scrollTop) tracksWrap.current.scrollTop = (e.target as HTMLElement).scrollTop; }}>
             {rows.map((row) =>
@@ -693,6 +1043,55 @@ export function Timeline() {
           {tip && <div className="vbadge" style={{ position: "absolute", left: namesW + tip.x + 12, top: Math.max(0, tip.y - 30), pointerEvents: "none", color: "var(--text)" }}>{tip.text}</div>}
         </div>
       </div>
+      <div className="tl-audio" style={{ ["--lanes" as string]: Math.max(1, Math.min(3, doc.audio.length)) }} data-testid="audio-section">
+        <div className="tl-audio-scroll">
+          <div className="tl-audio-grid" style={{ gridTemplateColumns: `${namesW}px minmax(0,1fr)` }}>
+            <div className="tl-audio-names">
+              {doc.audio.map((a) => (
+                <div
+                  key={a.id}
+                  className={`tl-name tl-aname${(musicFocus ?? doc.audio[0]?.id) === a.id ? " sel" : ""}${a.muted ? " muted" : ""}`}
+                  onClick={() => openMusic(a.id)}
+                  title="Open music settings"
+                  data-testid={`audio-row-${a.id}`}
+                >
+                  <NoteGlyph size={13} />
+                  <span className="nm">{displayName(a)}</span>
+                  <button
+                    className={`tl-mute${a.muted ? " on" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMute(a.id);
+                    }}
+                    aria-label={a.muted ? `Unmute ${displayName(a)}` : `Mute ${displayName(a)}`}
+                    title={a.muted ? "Unmute" : "Mute"}
+                    data-testid={`audio-mute-${a.id}`}
+                  >
+                    <SpeakerGlyph muted={a.muted} size={13} />
+                  </button>
+                </div>
+              ))}
+              {!doc.audio.length && (
+                <div className="tl-name tl-aname empty" onClick={() => openMusic(null)}>
+                  <NoteGlyph size={13} />
+                  <span className="nm">Music</span>
+                </div>
+              )}
+            </div>
+            <div className="tl-audio-tracks">
+              {doc.audio.length ? (
+                <canvas ref={audioCanvas} data-testid="audio-lanes" onPointerDown={onAudioDown} onPointerMove={onAudioMove} onDoubleClick={onAudioDbl} />
+              ) : (
+                <button className="tl-audio-empty" onClick={() => openMusic(null)} data-testid="audio-empty">
+                  <Icon name="plus" sm /> Add music <span className="faint">· free tracks, or upload your own</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        {doc.audio.length > 0 && <div ref={audioHead} className="tl-audio-head" style={{ left: namesW }} />}
+        {audioTip && <div className="vbadge" style={{ position: "absolute", left: namesW + audioTip.x + 12, top: -30, pointerEvents: "none", color: "var(--text)", zIndex: 3 }}>{audioTip.text}</div>}
+      </div>
       <div className="tl-cam">
         <div className="tl-name" onClick={() => cam && st.select([cam.id])} data-testid="camera-lane">
           <Icon name="camera" sm />
@@ -700,6 +1099,7 @@ export function Timeline() {
         </div>
         <canvas ref={camCanvas} onPointerDown={(e) => onTrackDown(e, "cam")} onPointerMove={(e) => onTrackMove(e, "cam")} />
       </div>
+      {createPortal(<MusicPicker />, document.body)}
     </section>
   );
 }

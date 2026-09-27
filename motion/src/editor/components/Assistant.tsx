@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { describeOp, applyTxn, type Op } from "../../fmd/ops";
 import { useStore, type Turn } from "../store";
 import { sendPrompt, respond, estTokens } from "../bridge";
-import { connectProvider, disconnectProvider, PROVIDERS, type ProviderId } from "../agentProvider";
+import { connectProvider, disconnectProvider, checkProviders, PROVIDERS, PROVIDER_ORDER, type ProviderId } from "../agentProvider";
+import * as director from "../../ai/director";
+import { planSummary } from "../../ai/plan";
 import { Icon } from "./ui";
+import { CheckIcon } from "./ScenePlan";
 
 type StyleKey = "energy" | "bounce" | "depth" | "speed";
 const STYLE: { k: StyleKey; label: string; hint: string }[] = [
@@ -13,10 +16,107 @@ const STYLE: { k: StyleKey; label: string; hint: string }[] = [
   { k: "speed", label: "Speed", hint: "Overall pacing" },
 ];
 
-function StyleBox() {
+const fmtK = (n: number) => (n >= 10000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+
+/* ------------------------------ provider pill ------------------------------ */
+
+function ProviderPill() {
+  const agent = useStore((s) => s.agent);
+  const providers = useStore((s) => s.providers);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    void checkProviders();
+    const off = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    window.addEventListener("mousedown", off);
+    return () => window.removeEventListener("mousedown", off);
+  }, [open]);
+  const none = providers && !Object.values(providers).some(Boolean);
+  return (
+    <div className="pp" ref={ref}>
+      <button className={`pp-btn${agent ? " on" : ""}`} onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open} data-testid="provider-pill" title={agent ? `${agent.name} answers your requests` : "Connect an AI"}>
+        <span className={`dot${agent ? " on" : ""}`} />
+        <span className="pp-name">{agent ? agent.name : providers === null ? "Connecting…" : "No AI connected"}</span>
+        <Icon name="chevdown" sm />
+      </button>
+      {open && (
+        <div className="pp-menu" role="menu">
+          <div className="pp-cap">Model</div>
+          {PROVIDER_ORDER.map((id: ProviderId) => {
+            const p = PROVIDERS[id];
+            const has = !!providers?.[id];
+            const on = agent?.provider === id;
+            return (
+              <button
+                key={id}
+                role="menuitemradio"
+                aria-checked={on}
+                className={`pp-item${on ? " on" : ""}`}
+                disabled={!has}
+                onClick={() => {
+                  connectProvider(id);
+                  setOpen(false);
+                }}
+              >
+                <span className="pp-item-main">
+                  <b>{p.label}</b>
+                  <span>{has ? p.vendor : `Add ${p.env} to motion/.env`}</span>
+                </span>
+                {on && <CheckIcon />}
+              </button>
+            );
+          })}
+          {agent && !agent.provider && (
+            <div className="pp-item on static">
+              <span className="pp-item-main">
+                <b>{agent.name}</b>
+                <span>External agent via the bridge</span>
+              </span>
+              <CheckIcon />
+            </div>
+          )}
+          {agent && (
+            <button
+              className="pp-item muted"
+              onClick={() => {
+                disconnectProvider();
+                setOpen(false);
+              }}
+            >
+              Disconnect
+            </button>
+          )}
+          {none && <div className="pp-note">No API key found. Add one to <code>motion/.env</code> — e.g. <code>ANTHROPIC_API_KEY=…</code> — it's picked up without a restart.</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Friendly setup card when no provider has a key and no agent is connected. */
+function SetupHint() {
+  const agent = useStore((s) => s.agent);
+  const providers = useStore((s) => s.providers);
+  if (agent || !providers || Object.values(providers).some(Boolean)) return null;
+  return (
+    <div className="setup-hint" data-testid="ai-setup-hint">
+      <b>Connect an AI to start creating</b>
+      <p>
+        Add a key to <code>motion/.env</code> and it connects automatically:
+      </p>
+      <pre>ANTHROPIC_API_KEY=sk-ant-…</pre>
+      <p className="faint">
+        DeepSeek (<code>AGENTROUTER_API_KEY</code>) and Mistral (<code>MISTRAL_API_KEY</code>) work too. Or drive the editor from any agent through <code>window.fusion.bridge</code>.
+      </p>
+    </div>
+  );
+}
+
+/* ---------------------------------- vibe ---------------------------------- */
+
+function VibeDrawer() {
   const doc = useStore((s) => s.transient ?? s.preview?.doc ?? s.doc);
-  const mode = useStore((s) => s.mode);
-  const [open, setOpen] = useState(true);
   const bound = (k: StyleKey) => doc.bindings.filter((b) => b.from === `style.${k}`).length;
   const total = doc.bindings.length;
   const live = (k: StyleKey, v: number) => {
@@ -29,180 +129,238 @@ function StyleBox() {
     st.setTransient(null);
     st.commit([{ op: "style", key: k, value: v }], { source: "style", intent: `${k[0].toUpperCase() + k.slice(1)} → ${Math.round(v * 100)}` });
   };
-  return (
-    <div className="style-box" data-testid="style-box">
-      <div className="style-h">
-        <span style={{ color: "var(--text)", fontWeight: 600 }}>Vibe</span>
-        <span>
-          {total ? `drives ${total} settings · no AI needed` : "no style bindings in this project"}
-          {mode === "pro" && (
-            <button className="btn sm ghost" style={{ marginLeft: 6 }} onClick={() => setOpen(!open)} aria-expanded={open}>
-              {open ? "Hide" : "Show"}
-            </button>
-          )}
-        </span>
-      </div>
-      {open &&
-        STYLE.filter((s) => bound(s.k) || s.k !== "speed").map((s) => (
-          <div className="style-row" key={s.k} title={s.hint}>
-            <label htmlFor={`style-${s.k}`}>{s.label}</label>
-            <input
-              id={`style-${s.k}`}
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={doc.style[s.k]}
-              disabled={!bound(s.k)}
-              onChange={(e) => live(s.k, Number(e.target.value))}
-              onPointerUp={(e) => done(s.k, Number((e.target as HTMLInputElement).value))}
-              onKeyUp={(e) => done(s.k, Number((e.target as HTMLInputElement).value))}
-            />
-            <output>{Math.round(doc.style[s.k] * 100)}</output>
-          </div>
-        ))}
-    </div>
-  );
-}
-
-/** Deterministic tweaks — the second change after a draft shouldn't need another prompt. */
-function QuickChips() {
-  const doc = useStore((s) => s.doc);
   const nudge = (k: StyleKey, d: number, label: string) => {
-    if (!doc.bindings.some((b) => b.from === `style.${k}`)) return useStore.getState().toast(`Nothing in this project is bound to ${k} yet — ask the AI instead`);
-    const v = Math.max(0, Math.min(1, Math.round((doc.style[k] + d) * 100) / 100));
-    useStore.getState().commit([{ op: "style", key: k, value: v }], { source: "style", intent: label });
-    useStore.getState().toast(`${label} · 0 AI tokens`);
+    const st = useStore.getState();
+    if (!st.doc.bindings.some((b) => b.from === `style.${k}`)) return st.toast(`Nothing in this project is wired to ${k} yet — ask the AI instead`);
+    const v = Math.max(0, Math.min(1, Math.round((st.doc.style[k] + d) * 100) / 100));
+    st.commit([{ op: "style", key: k, value: v }], { source: "style", intent: label });
+    st.toast(`${label} · no AI call`);
   };
-  const chips: { label: string; run: () => void }[] = [
+  const tweaks: { label: string; run: () => void }[] = [
     { label: "Snappier", run: () => nudge("energy", 0.2, "Snappier") },
     { label: "Calmer", run: () => nudge("energy", -0.2, "Calmer") },
     { label: "Bouncier", run: () => nudge("bounce", 0.25, "Bouncier") },
     { label: "More 3D", run: () => nudge("depth", 0.25, "More 3D") },
-    { label: "+1s longer", run: () => useStore.getState().commit([{ op: "set", path: "comp/dur", delta: 1 }], { source: "you", intent: "+1s longer" }) },
+    { label: "+1s", run: () => useStore.getState().commit([{ op: "set", path: "comp/dur", delta: 1 }], { source: "you", intent: "+1s longer" }) },
   ];
   return (
-    <div className="suggest" aria-label="Quick tweaks">
-      {chips.map((c) => (
-        <button key={c.label} className="chip" onClick={c.run}>
-          {c.label}
-          <span className="z">0 tok</span>
-        </button>
+    <div className="vibe" data-testid="style-box">
+      <div className="vibe-cap">{total ? `Drives ${total} settings directly — instant, no AI call` : "Nothing is wired to these yet — the AI wires them when it builds"}</div>
+      {STYLE.filter((s) => bound(s.k) || s.k !== "speed").map((s) => (
+        <div className="style-row" key={s.k} title={s.hint}>
+          <label htmlFor={`style-${s.k}`}>{s.label}</label>
+          <input
+            id={`style-${s.k}`}
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={doc.style[s.k]}
+            disabled={!bound(s.k)}
+            onChange={(e) => live(s.k, Number(e.target.value))}
+            onPointerUp={(e) => done(s.k, Number((e.target as HTMLInputElement).value))}
+            onKeyUp={(e) => done(s.k, Number((e.target as HTMLInputElement).value))}
+          />
+          <output>{Math.round(doc.style[s.k] * 100)}</output>
+        </div>
       ))}
+      <div className="vibe-tweaks" aria-label="Quick tweaks">
+        {tweaks.map((c) => (
+          <button key={c.label} className="tweak" onClick={c.run}>
+            {c.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
-function DiffCard({ turn }: { turn: Turn }) {
+/* --------------------------------- changes -------------------------------- */
+
+function Changes({ turn }: { turn: Turn }) {
   const mode = useStore((s) => s.mode);
-  const past = useStore((s) => s.past);
+  const lastTxn = useStore((s) => s.past.at(-1)?.id);
+  const [open, setOpen] = useState(false);
   const ops = turn.ops ?? [];
+  if (!ops.length) return null;
   const accepted = turn.accepted ?? ops.map(() => true);
   const reviewing = turn.status === "review" || turn.status === "streaming";
+  const errs = turn.opErrors?.filter(Boolean).length ?? 0;
   const n = accepted.filter((a, i) => a && !turn.opErrors?.[i]).length;
-  if (!ops.length) return null;
+  const build = turn.kind === "scene" || turn.kind === "setup";
+  const added = ops.filter((o) => o.op === "add" || (o.op === "set" && !o.path.includes("/") && typeof o.value === "object" && o.value && "type" in (o.value as object))).length;
+  const label =
+    turn.status === "streaming"
+      ? `Writing ${ops.length} change${ops.length > 1 ? "s" : ""}…`
+      : build && added
+        ? `${added} layer${added > 1 ? "s" : ""} · ${ops.length} changes`
+        : `${ops.length} change${ops.length > 1 ? "s" : ""}`;
   return (
-    <div className="diff" data-testid="diff-card">
-      <div className="diff-h">
-        <span>
-          {ops.length} change{ops.length > 1 ? "s" : ""}
-          {turn.status === "streaming" ? " · streaming" : reviewing ? " · previewing live" : ""}
+    <div className={`changes${open ? " open" : ""}`} data-testid="diff-card">
+      <div className="ch-line">
+        <span className={`ch-icon ${turn.status}`}>{turn.status === "kept" ? <CheckIcon /> : turn.status === "streaming" ? <span className="spin" /> : <Icon name="diamond" sm />}</span>
+        <span className="ch-label">
+          {label}
+          {errs > 0 && turn.status !== "streaming" && <span className="ch-err"> · {errs} skipped</span>}
+          {turn.status === "review" && <span className="faint"> · previewing</span>}
+          {turn.status === "discarded" && <span className="faint"> · discarded</span>}
         </span>
-        {reviewing && ops.length > 1 && <span className="faint">untick to reject a change</span>}
+        <button className="ch-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+          {open ? "Hide" : reviewing && !build ? "Review changes" : "Details"}
+          <Icon name="chevdown" sm className={open ? "flip" : ""} />
+        </button>
       </div>
-      {ops.map((op, i) => (
-        <label key={i} className={`diff-op new${accepted[i] ? "" : " off"}`}>
-          <input type="checkbox" checked={accepted[i]} disabled={!reviewing || turn.status === "streaming"} onChange={() => useStore.getState().togglePreviewOp(i)} aria-label={describeOp(op)} />
-          <div>
-            <div className="d">{describeOp(op)}</div>
-            {mode === "pro" && <div className="raw">{JSON.stringify(op)}</div>}
-            {turn.opErrors?.[i] && <div className="err">{turn.opErrors[i]}</div>}
-          </div>
-        </label>
-      ))}
-      <div className="diff-f">
-        <span className="faint mono" style={{ fontSize: 11 }} title="Estimated tokens for this turn">
-          ≈ {turn.tokens?.in ?? 0} in · {turn.tokens?.out ?? 0} out
-        </span>
-        <span className="spacer" />
-        {turn.status === "review" && (
-          <>
-            <button className="btn sm" onClick={() => useStore.getState().discardPreview()}>
-              Discard
-            </button>
-            <button className="btn sm ai" onClick={() => useStore.getState().keepPreview()} disabled={!n} data-testid="keep">
-              Keep {n === ops.length ? "all" : `${n} of ${ops.length}`}
-            </button>
-          </>
-        )}
-        {turn.status === "kept" && (
-          <span className="status-line ok">
-            ✓ Kept
-            {past.at(-1)?.id === turn.txnId && (
-              <button className="btn sm ghost" onClick={() => useStore.getState().undo()}>
-                Undo
-              </button>
+      {open && (
+        <div className="ch-body">
+          <ol className="ch-ops">
+            {ops.map((op, i) => (
+              <li key={i} className={`diff-op${accepted[i] ? "" : " off"}${turn.opErrors?.[i] ? " bad" : ""}`}>
+                <label>
+                  <input type="checkbox" checked={accepted[i]} disabled={turn.status !== "review"} onChange={() => useStore.getState().togglePreviewOp(i)} aria-label={describeOp(op)} />
+                  <span className="d">{describeOp(op)}</span>
+                </label>
+                {mode === "pro" && <div className="raw">{JSON.stringify(op)}</div>}
+                {turn.opErrors?.[i] && <div className="err">{turn.opErrors[i]}</div>}
+              </li>
+            ))}
+          </ol>
+          <div className="ch-meta">
+            <span className="mono" title="Tokens for this turn (estimated when the agent doesn't report usage)">
+              {fmtK(turn.tokens?.in ?? 0)} in · {fmtK(turn.tokens?.out ?? 0)} out
+            </span>
+            {turn.context && (
+              <details className="ctx">
+                <summary>What the AI saw</summary>
+                <pre>{turn.context}</pre>
+              </details>
             )}
-          </span>
-        )}
-        {turn.status === "discarded" && <span className="status-line">Discarded</span>}
-      </div>
+          </div>
+        </div>
+      )}
+      {turn.status === "review" && (
+        <div className="ch-actions">
+          <button className="btn sm ghost" onClick={() => useStore.getState().discardPreview()}>
+            Discard
+          </button>
+          <button className="btn sm ai" onClick={() => useStore.getState().keepPreview()} disabled={!n} data-testid="keep">
+            Keep {n === ops.length ? "all" : `${n} of ${ops.length}`}
+          </button>
+        </div>
+      )}
+      {turn.status === "kept" && lastTxn === turn.txnId && (
+        <div className="ch-actions subtle">
+          <span className="faint">{build ? "One undo step" : "Kept"}</span>
+          <button className="btn sm ghost" onClick={() => useStore.getState().undo()}>
+            <Icon name="undo" sm /> Undo
+          </button>
+        </div>
+      )}
+      {turn.status === "kept" && lastTxn !== turn.txnId && !build && <span className="sr">Kept</span>}
     </div>
   );
 }
 
-function TurnView({ turn }: { turn: Turn }) {
+function PlanCard({ turn }: { turn: Turn }) {
+  const scenes = useStore((s) => s.doc.scenes);
+  if (turn.status !== "kept" || !scenes.length) return null;
+  return (
+    <div className="plan-card">
+      <div className="plan-card-h">
+        <b>Storyboard ready</b>
+        <span className="faint">{planSummary(scenes)}</span>
+      </div>
+      <ol>
+        {scenes.slice(0, 8).map((s) => (
+          <li key={s.id}>
+            <span>{s.title}</span>
+            <span className="mono faint">{Math.round(s.dur * 10) / 10}s</span>
+          </li>
+        ))}
+      </ol>
+      <div className="faint plan-card-f">Edit any scene on the storyboard, then press Build.</div>
+    </div>
+  );
+}
+
+function Waiting({ turn }: { turn: Turn }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => tick((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const secs = Math.max(0, Math.round((Date.now() - turn.ts) / 1000));
+  const what =
+    turn.kind === "plan" ? "Planning every scene" : turn.kind === "setup" ? "Setting the look — palette, type, camera" : turn.kind === "scene" ? `Designing ${turn.title?.split(" · ")[1] ?? "the scene"}` : turn.status === "streaming" ? "Applying changes" : "Thinking";
+  if (turn.text && !turn.agent) return <div className="notice">{turn.text}</div>;
+  return (
+    <div className="waiting">
+      <span className="shimmer">{what}…</span>
+      {secs >= 3 && <span className="faint mono">{secs}s</span>}
+    </div>
+  );
+}
+
+function TurnView({ turn, latest }: { turn: Turn; latest: boolean }) {
+  const chatScene = useStore((s) => s.doc.scenes.find((x) => x.id === turn.sceneId));
   if (turn.role === "user")
     return (
       <div className="msg-user">
+        {turn.sceneId && chatScene && <div className="scope">↳ {chatScene.title}</div>}
         {turn.text}
         {turn.scope?.length ? <div className="scope">↳ {turn.scope.join(", ")}</div> : null}
       </div>
     );
+  const retry = () => {
+    if (turn.kind === "plan") director.requestPlan();
+    else if (turn.kind === "scene" || turn.kind === "setup") director.startBuild();
+    else {
+      const st = useStore.getState();
+      const u = st.turns[st.turns.indexOf(turn) - 1];
+      if (u?.text) sendPrompt(u.text, { sceneId: turn.sceneId ?? null });
+    }
+  };
   return (
-    <div className="msg-agent" data-testid="agent-turn">
+    <div className={`msg-agent ${turn.kind ?? "edit"}`} data-testid="agent-turn">
       <div className="who">
-        <Icon name="sparkle" sm />
-        {turn.agent ?? "AI"}
-        <span className="tag">{turn.agent === "Pasted" ? "pasted ops" : "edits the document"}</span>
+        <span className="avatar" aria-hidden="true" />
+        <span className="who-name">{turn.agent === "Pasted" ? "Pasted ops" : turn.agent ?? "AI"}</span>
+        {turn.title && <span className="tag">{turn.title}</span>}
       </div>
-      {turn.status === "waiting" && <div className="shimmer">{turn.text || "Thinking…"}</div>}
-      {turn.status === "streaming" && <div className="shimmer">Writing ops…</div>}
-      {turn.status !== "waiting" && turn.text && <div className="agent-text">{turn.text}</div>}
-      <DiffCard turn={turn} />
-      {turn.chips?.length && (turn.status === "kept" || turn.status === "review" || turn.status === "info") ? (
-        <div className="chips">
-          {turn.chips.map((c) => (
+      {(turn.status === "waiting" || (turn.status === "streaming" && !turn.text)) && <Waiting turn={turn} />}
+      {turn.status !== "waiting" && turn.text && <div className={`agent-text${turn.status === "error" ? " error" : ""}`}>{turn.text}</div>}
+      {turn.status === "error" && (
+        <button className="btn sm" onClick={retry}>
+          <Icon name="loop" sm /> Try again
+        </button>
+      )}
+      {turn.kind === "plan" ? <PlanCard turn={turn} /> : <Changes turn={turn} />}
+      {latest && turn.chips?.length && (turn.status === "kept" || turn.status === "review" || turn.status === "info") ? (
+        <div className="followups">
+          {turn.chips.slice(0, 3).map((c) => (
             <button
               key={c.label}
-              className="chip"
-              title={c.hint}
+              className="followup"
+              title={c.hint ?? (c.ops ? "Applies instantly — no AI call" : c.prompt)}
               onClick={() => {
                 if (c.ops) {
                   const st = useStore.getState();
                   if (st.preview) st.keepPreview();
                   const r = st.commit(c.ops, { source: "ai", intent: c.label });
-                  st.toast(r.ok ? `${c.label} · applied without a model call` : r.errors[0], r.ok ? "info" : "error");
+                  st.toast(r.ok ? `${c.label} · applied without an AI call` : r.errors[0], r.ok ? "info" : "error");
                 } else if (c.prompt) sendPrompt(c.prompt);
               }}
             >
               {c.label}
-              {c.ops && <span className="z">0 tok</span>}
+              <Icon name="chevron" sm />
             </button>
           ))}
         </div>
       ) : null}
-      {turn.context && (
-        <details className="ctx">
-          <summary>What the AI saw · ≈{estTokens(turn.context)} tokens (plus a cached system prompt)</summary>
-          <pre>{turn.context}</pre>
-        </details>
-      )}
     </div>
   );
 }
 
-function PasteOps() {
+function PasteOps({ onDone }: { onDone: () => void }) {
   const [text, setText] = useState("");
   const [err, setErr] = useState("");
   const run = async () => {
@@ -215,85 +373,88 @@ function PasteOps() {
       await respond(id, { message: "Review the pasted changes below.", ops, delayMs: 60 });
       setText("");
       setErr("");
+      onDone();
     } catch (e) {
       setErr((e as Error).message);
     }
   };
   return (
-    <details className="paste">
-      <summary>Paste ops from any AI (JSON array or one op per line)</summary>
+    <div className="paste">
       <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder='[{"op":"set","path":"title/size","value":140}]' aria-label="Ops to paste" />
       {err && <div className="warn">{err}</div>}
-      <button className="btn sm" style={{ marginTop: 6 }} disabled={!text.trim()} onClick={run}>
-        Preview ops
-      </button>
-    </details>
+      <div className="paste-f">
+        <span className="faint">A JSON array, or one op per line</span>
+        <button className="btn sm" disabled={!text.trim()} onClick={run}>
+          Preview ops
+        </button>
+      </div>
+    </div>
   );
 }
 
-const EXAMPLES = ["Make the headline bounce in word by word", "Add a subtitle under the headline", "Swap the palette to warm sunset colours", "Push the camera in slowly over the whole video"];
+const EXAMPLES = ["Make the headline bounce in word by word", "Swap the palette to warm sunset colours", "Push the camera in slowly over the whole video"];
 
 export function Assistant() {
   const turns = useStore((s) => s.turns);
-  const agent = useStore((s) => s.agent);
   const selection = useStore((s) => s.selection);
+  const chatSceneId = useStore((s) => s.chatScene);
+  const chatScene = useStore((s) => s.doc.scenes.find((x) => x.id === s.chatScene));
+  const hasScenes = useStore((s) => s.doc.scenes.length > 0);
   const mode = useStore((s) => s.mode);
   const [text, setText] = useState("");
-  const [provider, setProvider] = useState<ProviderId>("agentrouter");
+  const [vibe, setVibe] = useState(false);
+  const [paste, setPaste] = useState(false);
   const msgs = useRef<HTMLDivElement>(null);
   useEffect(() => {
     msgs.current?.scrollTo({ top: msgs.current.scrollHeight, behavior: "smooth" });
   }, [turns]);
+  useEffect(() => {
+    if (chatSceneId && !chatScene) useStore.getState().set("chatScene", null);
+  }, [chatSceneId, chatScene]);
   const send = (t = text) => {
     if (!t.trim()) return;
     sendPrompt(t.trim());
     setText("");
   };
+  const lastAgent = [...turns].reverse().find((t) => t.role === "agent")?.id;
   return (
-    <div className="tabpanel" data-testid="assistant">
-      <div className="agent-state">
-        <span className={`dot${agent ? " on" : ""}`} />
-        {agent ? (
-          <span title="Edits arrive as reviewable ops">
-            <b style={{ color: "var(--text)" }}>{agent.name}</b> connected
-          </span>
-        ) : (
-          <span title="Requests queue until an agent connects">No AI connected</span>
-        )}
-        <div className="spacer" />
-        {agent ? (
-          <button className="btn sm ghost" onClick={disconnectProvider}>Disconnect</button>
-        ) : (
-          <>
-            <select value={provider} onChange={(e) => setProvider(e.target.value as ProviderId)} aria-label="AI provider" style={{ height: 28, fontSize: 12, fontWeight: 550, borderRadius: 999, paddingLeft: 12, minWidth: 104 }}>
-              {Object.entries(PROVIDERS).map(([id, cfg]) => (
-                <option key={id} value={id}>{cfg.label}</option>
-              ))}
-            </select>
-            <button className="btn sm ai" onClick={() => connectProvider(provider)} title={`Calls ${PROVIDERS[provider].label} for every request from now on`}>Connect</button>
-          </>
-        )}
+    <div className="tabpanel assistant" data-testid="assistant">
+      <div className="asst-head">
+        <ProviderPill />
+        <span className="spacer" />
+        <button className={`vibe-btn${vibe ? " on" : ""}`} onClick={() => setVibe(!vibe)} aria-expanded={vibe} title="Energy, bounce and depth sliders — instant, no AI call">
+          <svg className="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+            <circle cx="16" cy="7" r="2" />
+            <circle cx="10" cy="17" r="2" />
+          </svg>
+          Vibe
+          <Icon name="chevdown" sm className={vibe ? "flip" : ""} />
+        </button>
       </div>
-      <StyleBox />
+      {vibe && <VibeDrawer />}
       <div className="msgs" ref={msgs}>
+        <SetupHint />
         {!turns.length && (
           <div className="empty-chat">
-            <h3>Describe the motion you want</h3>
-            <div>The AI edits this project's JSON directly: small, reviewable changes that update the timeline live. Select a layer first to focus it on just that layer.</div>
-            <div className="chips">
+            <span className="orb lg" />
+            <h3>What should it do?</h3>
+            <p>Ask for any change in plain words. The AI edits the project directly — small, reviewable changes you can undo. Select a layer first to focus it.</p>
+            <div className="examples">
               {EXAMPLES.map((e) => (
-                <button key={e} className="chip" onClick={() => send(e)}>
+                <button key={e} className="example" onClick={() => send(e)}>
                   {e}
+                  <Icon name="chevron" sm />
                 </button>
               ))}
             </div>
           </div>
         )}
         {turns.map((t) => (
-          <TurnView key={t.id} turn={t} />
+          <TurnView key={t.id} turn={t} latest={t.id === lastAgent} />
         ))}
       </div>
-      <QuickChips />
+      {paste && mode === "pro" && <PasteOps onDone={() => setPaste(false)} />}
       <form
         className="composer"
         onSubmit={(e) => {
@@ -301,45 +462,57 @@ export function Assistant() {
           send();
         }}
       >
-        <div className="scope-line">
-          {selection.length ? (
-            <>
-              Focus
-              {selection.map((id) => (
+        {(selection.length > 0 || chatScene) && (
+          <div className="scope-line">
+            {chatScene && !selection.length ? (
+              <span className="scope-pill scene">
+                Scene · {chatScene.title}
+                <button type="button" aria-label="Stop refining this scene" onClick={() => useStore.getState().set("chatScene", null)}>
+                  ×
+                </button>
+              </span>
+            ) : (
+              selection.map((id) => (
                 <span className="scope-pill" key={id}>
                   {id}
                   <button type="button" aria-label={`Remove ${id} from focus`} onClick={() => useStore.getState().select(selection.filter((x) => x !== id))}>
                     ×
                   </button>
                 </span>
-              ))}
-              <span className="faint">only these layers' JSON is sent</span>
-            </>
-          ) : (
-            <span>Whole video · the AI sees a one-line-per-layer outline</span>
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        )}
+        <textarea
+          id="prompt"
+          rows={2}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={chatScene ? `Refine “${chatScene.title}”…` : hasScenes ? "Ask for a change — e.g. “make scene 2 punchier”" : "Describe a change…"}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
+          }}
+          aria-label="Message the AI"
+        />
         <div className="composer-row">
-          <textarea
-            id="prompt"
-            rows={2}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Describe a change… e.g. “make the phone spin in and the chips orbit faster”"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            aria-label="Message the AI"
-          />
-          <button className="btn ai" type="submit" disabled={!text.trim()} aria-label="Send">
-            <Icon name="sparkle" sm /> Send
+          {mode === "pro" ? (
+            <button type="button" className="linkbtn" onClick={() => setPaste(!paste)} aria-expanded={paste}>
+              Paste ops from any AI
+            </button>
+          ) : (
+            <span className="faint hint-keys">↵ send · ⇧↵ new line</span>
+          )}
+          <span className="spacer" />
+          <button className="send" type="submit" disabled={!text.trim()} aria-label="Send">
+            <svg className="icon sm" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 19V5M6 11l6-6 6 6" />
+            </svg>
           </button>
         </div>
       </form>
-      {mode === "pro" && <PasteOps />}
     </div>
   );
 }

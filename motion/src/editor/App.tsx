@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "./store";
 import { playhead } from "./playhead";
 import { TopBar, ExportDialog, HelpDialog } from "./components/Shell";
@@ -8,6 +8,9 @@ import { Timeline } from "./components/Timeline";
 import { Inspector } from "./components/Inspector";
 import { Assistant } from "./components/Assistant";
 import { LayersPanel, JsonPanel, HistoryPanel } from "./components/Panels";
+import { Storyboard } from "./components/ScenePlan";
+import { autoConnect } from "./agentProvider";
+import "./assistant.css";
 import { createLayerOps } from "./create";
 import { deleteOps, duplicateOps, easeKeyOps, findLayer } from "./edit";
 import type { Tab } from "./store";
@@ -210,12 +213,46 @@ function Toast() {
   );
 }
 
+/**
+ * Left column. Simple mode: the storyboard appears as soon as there is a plan (or one is being
+ * drafted). Pro mode: Layers, with a Scenes switch once a plan exists.
+ */
+function LeftColumn() {
+  const mode = useStore((s) => s.mode);
+  const hasPlan = useStore((s) => s.doc.scenes.length > 0 || s.director.phase === "planning");
+  const phase = useStore((s) => s.director.phase);
+  const [view, setView] = useState<"layers" | "scenes">("scenes");
+  useEffect(() => {
+    if (phase === "planning" || phase === "building") setView("scenes");
+  }, [phase]);
+  if (mode !== "pro") return hasPlan ? <Storyboard /> : <LayersPanel />;
+  if (!hasPlan) return <LayersPanel />;
+  return (
+    <div className={`leftcol ${view}`}>
+      <div className="seg leftseg" role="group" aria-label="Left panel">
+        <button aria-pressed={view === "scenes"} onClick={() => setView("scenes")}>
+          Scenes
+        </button>
+        <button aria-pressed={view === "layers"} onClick={() => setView("layers")}>
+          Layers
+        </button>
+      </div>
+      {view === "scenes" ? <Storyboard /> : <LayersPanel />}
+    </div>
+  );
+}
+
 export function App() {
   const screen = useStore((s) => s.screen);
   const mode = useStore((s) => s.mode);
   const exportOpen = useStore((s) => s.exportOpen);
   const helpOpen = useStore((s) => s.helpOpen);
+  const board = useStore((s) => s.doc.scenes.length > 0 || s.director.phase === "planning");
   useShortcuts();
+  useEffect(() => {
+    // connect the best AI provider that has a key, with no clicks
+    void autoConnect();
+  }, []);
   if (screen === "start")
     return (
       <>
@@ -224,10 +261,10 @@ export function App() {
       </>
     );
   return (
-    <div className={`app ${mode}`} data-testid="editor">
+    <div className={`app ${mode}${board ? " has-board" : ""}`} data-testid="editor">
       <TopBar />
       <div className="main">
-        <LayersPanel />
+        <LeftColumn />
         <Viewport />
         <RightPanel />
       </div>
