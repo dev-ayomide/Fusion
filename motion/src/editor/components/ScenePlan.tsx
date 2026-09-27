@@ -175,7 +175,7 @@ function Skeleton() {
   return (
     <div className="sc-skeleton" aria-live="polite">
       <div className="sc-planning">
-        <span className="orb" />
+        <span className="spin" aria-hidden="true" />
         <div>
           <b>Drafting your storyboard…</b>
           <div className="faint">Every scene of the video, with timing and a brief you can edit.</div>
@@ -192,11 +192,16 @@ function Skeleton() {
   );
 }
 
+/**
+ * Length, format and look. Collapsed to a one-line summary by default so the scene list keeps
+ * the column's height; opens in place when the user wants to change them.
+ */
 function Settings() {
   const d = useStore((s) => s.director);
   const doc = useStore((s) => s.doc);
   const planning = d.phase === "planning";
   const building = d.phase === "building";
+  const [open, setOpen] = useState(false);
   const [look, setLook] = useState(d.look);
   useEffect(() => setLook(d.look), [d.look]);
   const lookRef = useRef<HTMLTextAreaElement>(null);
@@ -204,8 +209,24 @@ function Settings() {
   const aspect = aspectOf(doc.comp.w, doc.comp.h);
   const total = sceneTotal(doc.scenes);
   const anyBuilt = doc.scenes.some((s) => s.status === "done");
+  const lengthLabel = d.length && LENGTHS.includes(d.length) ? `${d.length}s` : total ? `${fmt(total)}s` : "Auto";
+  if (!open)
+    return (
+      <button className="sb-summary" onClick={() => setOpen(true)} aria-expanded={false} data-testid="board-settings">
+        <span className="sb-summary-tags">
+          <span>{lengthLabel}</span>
+          <span>{aspect}</span>
+        </span>
+        <span className="sb-summary-look">{d.look.trim() || "Look: your call"}</span>
+        <Icon name="chevdown" sm />
+      </button>
+    );
   return (
     <div className="sb-settings">
+      <button className="sb-summary open" onClick={() => setOpen(false)} aria-expanded={true} data-testid="board-settings">
+        <span className="sb-summary-look">Length, format &amp; look</span>
+        <Icon name="chevdown" sm className="flip" />
+      </button>
       <div className="sb-row">
         <label className="sb-field">
           <span>Length</span>
@@ -281,7 +302,7 @@ function BuildBar() {
     return (
       <div className="sb-build" data-testid="build-progress">
         <div className="sb-build-line">
-          <span className="orb sm" />
+          <span className="spin" aria-hidden="true" />
           <span className="grow">
             {finishing ? (
               <>Finishing <b>scene {idx + 1}</b>, then pausing…</>
@@ -317,8 +338,12 @@ function BuildBar() {
     <div className="sb-build">
       {d.phase === "paused" && d.error && <div className="sb-error">{d.error}</div>}
       {remaining > 0 ? (
-        <button className="btn ai lg" data-testid="build-video" onClick={() => director.startBuild()}>
-          <Icon name="sparkle" sm />
+        <button
+          className="btn primary lg"
+          data-testid="build-video"
+          onClick={() => director.startBuild()}
+          title={built ? "Built scenes stay as they are." : "The look is set first, then each scene is built in order. You can keep editing queued scenes while it works."}
+        >
           {d.phase === "paused" ? "Resume build" : built ? `Build ${remaining} remaining scene${remaining > 1 ? "s" : ""}` : "Build video"}
           <span className="btn-sub">
             {remaining} scene{remaining > 1 ? "s" : ""} · {fmt(sceneTotal(scenes.filter((s) => s.status !== "done")))}s
@@ -336,7 +361,6 @@ function BuildBar() {
           <span className="btn-sub">{fmt(sceneTotal(scenes))}s</span>
         </button>
       )}
-      {remaining > 0 && <div className="sb-hint">{built ? "Built scenes stay as they are." : "The look is set first, then each scene is built in order. Keep editing queued scenes while it works."}</div>}
     </div>
   );
 }
@@ -345,12 +369,11 @@ function PlanFromIdea() {
   const [idea, setIdea] = useState("");
   return (
     <div className="sb-empty">
-      <div className="orb lg" />
       <h3>Plan a video</h3>
       <p>Describe the idea — the AI proposes every scene with timing and a brief. You edit the storyboard, then build it scene by scene.</p>
       <textarea rows={3} value={idea} onChange={(e) => setIdea(e.target.value)} placeholder="e.g. A 20-second launch film for Orbit, a habit tracker — calm, premium, lots of depth" aria-label="Video idea" />
-      <button className="btn ai" disabled={!idea.trim()} onClick={() => director.requestPlan(idea.trim())}>
-        <Icon name="sparkle" sm /> Plan scenes
+      <button className="btn primary" disabled={!idea.trim()} onClick={() => director.requestPlan(idea.trim())}>
+        Plan scenes
       </button>
     </div>
   );

@@ -263,8 +263,10 @@ export function App() {
   return (
     <div className={`app ${mode}${board ? " has-board" : ""}`} data-testid="editor">
       <TopBar />
+      {/* with a storyboard, the left column runs the full height beside the viewport and timeline */}
+      {board && <LeftColumn />}
       <div className="main">
-        <LeftColumn />
+        {!board && <LeftColumn />}
         <Viewport />
         <RightPanel />
       </div>

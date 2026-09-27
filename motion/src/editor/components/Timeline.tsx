@@ -971,7 +971,7 @@ export function Timeline() {
             </button>
           </>
         )}
-        <span className="faint" style={{ fontSize: 11.5 }}>
+        <span className="faint" style={{ fontSize: 11.5, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {pro ? "Drag bars, clips and keys · edges trim · Alt = no snap" : "Drag bars to retime · Pro mode for keyframes"}
         </span>
         <button className="iconbtn" onClick={() => zoom(1 / 1.5)} title="Zoom out (⌘ + wheel)" aria-label="Zoom out"><Icon name="zoomout" sm /></button>

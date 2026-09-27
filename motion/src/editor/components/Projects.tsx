@@ -96,8 +96,8 @@ function ProjectCard({ p, index }: { p: ProjectMeta; index: number }) {
             <span>This can’t be undone.</span>
           </p>
           <div>
-            <button className="lp-btn ghost sm" onClick={() => setConfirming(false)}>Cancel</button>
-            <button ref={confirmBtn} className="lp-btn danger sm" onClick={() => void deleteProject(p.id)} data-testid="project-delete-confirm">
+            <button className="btn sm" onClick={() => setConfirming(false)}>Cancel</button>
+            <button ref={confirmBtn} className="btn sm danger" onClick={() => void deleteProject(p.id)} data-testid="project-delete-confirm">
               Delete
             </button>
           </div>
@@ -118,14 +118,12 @@ export function ProjectsSection({ onNew }: { onNew: () => void }) {
   const shown = all ? projects : projects.slice(0, PAGE);
   return (
     <section className="lp-sec lp-projects" id="videos" aria-labelledby="videos-h" data-testid="projects">
-      <div className="lp-sec-head row">
-        <div>
-          <span className="lp-kicker">Library</span>
-          <h2 id="videos-h">
-            Your videos <span className="lp-count mono">{projects.length}</span>
-          </h2>
-        </div>
-        <p className="lp-note">Saved automatically in this browser. Double-click a name to rename.</p>
+      <div className="sec-head flush pj-head">
+        <span className="eyebrow">Library</span>
+        <h2 id="videos-h">
+          Your videos <span className="pj-count mono">{projects.length}</span>
+        </h2>
+        <p>Saved automatically in this browser. Double-click a name to rename.</p>
       </div>
       <div className="pj-grid">
         <button className="pj-new" onClick={onNew} data-testid="project-new">
@@ -138,7 +136,7 @@ export function ProjectsSection({ onNew }: { onNew: () => void }) {
         ))}
       </div>
       {projects.length > PAGE && (
-        <button className="lp-link" onClick={() => setAll(!all)}>
+        <button className="btn pj-more" onClick={() => setAll(!all)}>
           {all ? "Show fewer" : `Show all ${projects.length} videos`}
         </button>
       )}
