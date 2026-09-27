@@ -122,6 +122,8 @@ Scenes should import from `@/components` (path alias configured).
   by default. `AGENT_MODEL` overrides the model id.
 - **Client** (`client/.env`, never commit): `VITE_API_PROXY_TARGET` is **required** — the Vite dev
   server throws on startup without it (see `client/vite.config.ts`).
+- **Motion** (`motion/.env`, never commit): `ANTHROPIC_API_KEY`, `AGENTROUTER_API_KEY` or `MISTRAL_API_KEY`; the
+  editor auto-connects the first one present (proxied by `motion/vite.config.ts`, never sent to the browser).
 
 ## Key Conventions
 
