@@ -325,7 +325,7 @@ export function StartScreen() {
         <h1>
           Motion graphics
           <br />
-          you can talk to.
+          you can <i>talk to.</i>
         </h1>
         <p className="lede">
           Describe the video you want. An AI builds it as a real, editable timeline — then you steer it with words, sliders, or keyframes. Every change is a diff you can keep or throw away.
@@ -399,7 +399,7 @@ export function StartScreen() {
       <section className="lp-sec" id="how">
         <div className="sec-head rv">
           <span className="eyebrow">Animation, accelerated</span>
-          <h2>From idea to motion in seconds</h2>
+          <h2>From idea to <i>motion</i> in seconds</h2>
           <p><b>Skip the blank canvas.</b> Start with a sentence, review what the AI changed, then fine-tune anything by hand.</p>
         </div>
         <div className="stack">
@@ -447,7 +447,7 @@ export function StartScreen() {
       <section className="lp-sec" id="features">
         <div className="sec-head flush rv">
           <span className="eyebrow">Creative range</span>
-          <h2>Pro tools.<br />Zero learning curve.</h2>
+          <h2>Pro tools.<br /><i>Zero</i> learning curve.</h2>
           <p><b>Everything a motion designer reaches for</b>, arranged so a first-timer can make something beautiful in minutes.</p>
         </div>
         <div className="bento">
@@ -525,7 +525,7 @@ export function StartScreen() {
       <section className="lp-sec" id="templates">
         <div className="sec-head rv">
           <span className="eyebrow lav">Templates</span>
-          <h2>Never start from scratch</h2>
+          <h2>Never start from <i>scratch</i></h2>
           <p><b>Every template is plain JSON</b> you can reshape with a sentence — open one and ask the AI to make it yours.</p>
         </div>
         <div className="tpl-grid">
@@ -544,7 +544,7 @@ export function StartScreen() {
       {/* ---------------------------- final CTA ---------------------------- */}
       <section className="lp-sec">
         <div className="final rv">
-          <h2>Make something<br />that moves.</h2>
+          <h2>Make something<br />that <i>moves.</i></h2>
           <p>Free, in your browser, in the next thirty seconds.</p>
           <div className="final-actions">
             <button className="btn primary big" onClick={toPrompt}><Icon name="sparkle" sm /> Start with a prompt</button>

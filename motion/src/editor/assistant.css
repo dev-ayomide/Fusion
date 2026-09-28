@@ -136,7 +136,7 @@
 .setup-hint pre { margin: 2px 0; font: 12px var(--mono); background: var(--text); color: #f4f3f6; padding: 9px 12px; border-radius: 10px; }
 
 .empty-chat { margin: auto 0; display: grid; gap: 10px; justify-items: start; color: var(--muted); padding: 8px 4px 16px; }
-.empty-chat h3 { margin: 6px 0 0; color: var(--text); font: 750 21px/1.15 var(--display); letter-spacing: -0.03em; }
+.empty-chat h3 { margin: 6px 0 0; color: var(--text); font: 400 27px/1.1 var(--serif); letter-spacing: -0.01em; }
 .empty-chat p { margin: 0; line-height: 1.55; font-size: 12.5px; }
 .examples { display: grid; gap: 6px; width: 100%; margin-top: 6px; }
 .example { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; padding: 10px 10px 10px 13px; border-radius: 12px; border: 1px solid var(--line2); background: var(--panel); color: var(--text); font-size: 12.5px; font-weight: 500; transition: border-color .15s var(--ease), background .15s var(--ease); }
@@ -169,7 +169,7 @@
 .panel.board { border-right: 1px solid var(--line); }
 .leftcol .panel.board { border-right: 0; }
 .sb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 14px 12px 8px 16px; flex: none; }
-.sb-head h2 { margin: 0; font: 750 17px/1.1 var(--display); letter-spacing: -.02em; }
+.sb-head h2 { margin: 0; font: 400 24px/1 var(--serif); letter-spacing: -.01em; }
 .sb-meta { margin-top: 4px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .sb-settings { padding: 2px 12px 12px; display: grid; gap: 10px; border-bottom: 1px solid var(--line); flex: none; max-height: 45%; overflow: auto; }
 .sb-summary { flex: none; display: flex; align-items: center; gap: 8px; margin: 0 12px 10px; padding: 7px 8px 7px 8px; border-radius: 10px; background: var(--raise); text-align: left; font-size: 12px; color: var(--muted); min-width: 0; transition: background .15s var(--ease); }
@@ -247,6 +247,6 @@
 .sb-error { font-size: 12px; color: var(--danger); background: rgba(229, 72, 77, .06); border-radius: 10px; padding: 7px 10px; }
 
 .sb-empty { display: grid; gap: 10px; justify-items: start; padding: 18px 6px; }
-.sb-empty h3 { margin: 6px 0 0; font: 750 19px/1.15 var(--display); letter-spacing: -.02em; }
+.sb-empty h3 { margin: 6px 0 0; font: 400 25px/1.1 var(--serif); letter-spacing: -.01em; }
 .sb-empty p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
 .sb-empty textarea { width: 100%; resize: none; font-size: 12.5px; line-height: 1.5; border-radius: 12px; background: var(--panel); border-color: var(--line2); }
