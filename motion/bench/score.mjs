@@ -231,6 +231,47 @@ function roll(I, t0, t1, vol = 1) { // snare roll that accelerates into t1
 const chordAt = (t, anchor) => CHORDS[((Math.floor((t - anchor) / 2) % 4) + 4) % 4];
 
 const SCORES = {
+  /* ---- 03 EVERYTHING MOVES: 120 BPM; spark 0–4, kinetic 4–8, dimension 8–12, worlds 12–16, finale 16–21 */
+  s03: { dur: 21, build(I) {
+    // spark: a low pad, a heartbeat on the beat, the prompt typing, everything winding up into the flash
+    I.pad(0, 2, CHORDS[0].map((n) => n - 12), 0.9, 800); I.pad(2, 2, CHORDS[3].map((n) => n - 12), 0.9, 1100);
+    for (const t of range(0.5, 3.6, 0.5)) I.sub(t, 0.55 + t * 0.1);
+    for (let i = 0; i < 28; i++) I.tick(0.5 + i * 0.05, 0.5, 3000);
+    [76, 81, 84, 88].forEach((n, i) => I.bell(1.0 + i * 0.25, n, 0.5, (i - 1.5) * 0.3));
+    for (let i = 0; i < 40; i++) I.tick(2.6 + i * 0.03, 0.3 + i * 0.01, 1800);
+    I.riser(1.8, 4.0, 1.1); I.swell(4.0, 1.4, 1); roll(I, 3.0, 4.0, 0.9);
+    // kinetic: one hit per word, a 16th-note stutter, the tunnel
+    I.impact(4.0, 1.1);
+    [4.0, 4.5, 5.0, 5.5].forEach((t, i) => { I.kick(t, 1); I.clap(t, 0.7); I.whoosh(t - 0.08, 0.22, 0.7, true); I.bass(t, 0.4, [33, 29, 36, 31][i] + 12, 1); });
+    I.impact(6.0, 0.9); I.kick(6.0, 1); I.bass(6.0, 0.9, 33 + 12, 1); I.pad(6.0, 0.5, CHORDS[0], 0.7, 2600);
+    for (let i = 0; i < 8; i++) { const t = 6.5 + i * 0.125; I.snare(t, 0.7); I.pluck(t, 69 + [0, 7, 12, 3, 15, 10, 19, 24][i], 0.8, (i % 2 ? 0.4 : -0.4), 14); if (i % 2 === 0) I.kick(t, 0.8); }
+    I.whoosh(7.45, 0.55, 1.1, true); roll(I, 7.5, 8.0, 1); I.riser(7.2, 8.0, 0.8);
+    // dimension: the groove proper, arps, a whoosh as the torus hits the lens
+    I.impact(8.0, 1.1);
+    groove(I, 8, 12, 8, { arp: 0.8 });
+    for (const t of [8, 10]) I.pad(t, 2, chordAt(t, 8), 0.6);
+    [8.5, 9.0, 9.5, 10.0].forEach((t, i) => I.bell(t, [81, 84, 88, 93][i], 0.5, (i - 1.5) * 0.4));
+    I.whoosh(11.5, 0.5, 1.2, true); I.swell(12.0, 0.8, 0.8);
+    // worlds: breakdown at night, bells for the aurora; dawn brings a light pulse under the app
+    I.impact(12.0, 0.8);
+    for (const t of [12, 13]) I.pad(t, 1, chordAt(t, 12).map((n) => n + 12), 0.7, 2200);
+    for (const t of range(12.25, 14, 0.25)) I.bell(t, [76, 79, 81, 84, 88, 84, 81][Math.round((t - 12.25) * 4) % 7], 0.35, Math.sin(t * 3) * 0.5);
+    I.whoosh(13.75, 0.5, 0.9, true); I.swell(14.0, 0.8, 0.7);
+    groove(I, 14, 16, 14, { kick: 0.6, clap: 0.4, bass: 0.7, hat: 0.5, arp: 0.55 });
+    I.pad(14, 2, chordAt(14, 14).map((n) => n + 12), 0.5, 2000);
+    for (let i = 0; i < 25; i++) I.tick(14.45 + i * 0.03, 0.4, 2800);
+    for (let i = 0; i < 50; i++) I.tick(15.1 + i * 0.022, 0.25, 2200);
+    I.riser(15.0, 16.0, 0.9); roll(I, 15.5, 16.0, 0.8);
+    // finale: the vortex spins up, cuts dead on the collapse, one sentence typed in silence, the last hit
+    I.impact(16.0, 1.1);
+    groove(I, 16, 17.5, 16, { arp: 0.7 });
+    I.riser(16.2, 17.5, 1.2); I.swell(17.5, 1.3, 1);
+    I.sub(17.5, 1); I.pad(17.5, 2, [45, 52, 57], 0.35, 600);
+    for (let i = 0; i < 45; i++) I.tick(17.65 + i * 0.035, 0.5, 2600 + (i % 3) * 300);
+    I.riser(18.6, 19.5, 0.7); I.swell(19.5, 0.9, 0.9);
+    I.impact(19.5, 1.2); I.kick(19.5, 1); I.bass(19.5, 1.2, 33 + 12, 0.9);
+    I.pad(19.5, 1.5, CHORDS[0], 0.8, 1800); I.bell(19.5, 81, 1); I.bell(19.5, 88, 0.7, 0.3); I.bell(19.75, 93, 0.5, -0.3);
+  } },
   /* ---- 02 SOLSTICE: 120 BPM from t=0; night 0–4, drop 4–8, sun 8–12, dawn 12–16, finale 16–21 */
   s02: { dur: 21, build(I) {
     I.pad(0, 2, CHORDS[0].map((n) => n - 12), 0.9, 900); I.pad(2, 2, CHORDS[1].map((n) => n - 12), 0.9, 1100);

@@ -685,7 +685,7 @@ const report = [];
 const jobs = [
   ...Object.entries(SONGS).map(([name, s]) => ({ name, s, kind: "library" })),
   // the two showcase reels' scores, mastered the same way so they sit at library loudness
-  ...["s01", "s02"].map((k) => ({ name: `showcase-${k}`, s: { title: k === "s01" ? "Type a Sentence (score)" : "Solstice (score)", mood: ["showcase", "score"], bpm: 120, dur: SCORES[k].dur, score: k, desc: "Scored to the matching showcase reel." }, kind: "showcase" })),
+  ...["s01", "s02", "s03"].map((k) => ({ name: `showcase-${k}`, s: { title: { s01: "Type a Sentence (score)", s02: "Solstice (score)", s03: "Everything Moves (score)" }[k], mood: ["showcase", "score"], bpm: 120, dur: SCORES[k].dur, score: k, desc: "Scored to the matching showcase reel." }, kind: "showcase" })),
 ];
 for (const { name, s, kind } of jobs) {
   if (only.length && !only.includes(name)) { const p = prev.find((x) => x.name === name); if (p) tracks.push(p); continue; }

@@ -1,0 +1,3342 @@
+{
+ "v": 1,
+ "name": "Showcase 03 — Everything moves",
+ "comp": {
+  "w": 1920,
+  "h": 1080,
+  "fps": 30,
+  "dur": 21,
+  "bg": "$void",
+  "cam": "cam",
+  "env": "city",
+  "motionBlur": {
+   "angle": 240,
+   "samples": 10
+  },
+  "post": {
+   "bloom": 0.9,
+   "bloomThreshold": 1,
+   "vignette": 0.3,
+   "grain": 0.05,
+   "contrast": 0.08,
+   "saturation": 0.06
+  }
+ },
+ "brand": {
+  "font": "Inter Variable",
+  "colors": {
+   "void": "#060509",
+   "ink": "#f7f4ff",
+   "lav": "#b593ff",
+   "violet": "#6d3cff",
+   "cyan": "#01b2fd",
+   "lime": "#f5ff63",
+   "hot": "#ff3d6e",
+   "deep": "#140b33",
+   "cream": "#fff6e8",
+   "muted": "#8c86a3"
+  }
+ },
+ "assets": {},
+ "bindings": [],
+ "style": {
+  "energy": 1,
+  "bounce": 0.55,
+  "depth": 0.9,
+  "speed": 0.75
+ },
+ "markers": [
+  {
+   "id": "kin",
+   "t": 4,
+   "label": "Kinetic type"
+  },
+  {
+   "id": "dim",
+   "t": 8,
+   "label": "3D"
+  },
+  {
+   "id": "worlds",
+   "t": 12,
+   "label": "Worlds"
+  },
+  {
+   "id": "fin",
+   "t": 16,
+   "label": "Finale"
+  }
+ ],
+ "layers": [
+  {
+   "id": "cam",
+   "type": "camera",
+   "fov": 35,
+   "pos": [
+    0,
+    0,
+    1713
+   ],
+   "keys": {
+    "pos.z": [
+     [
+      0,
+      2100
+     ],
+     [
+      3.95,
+      1480,
+      "expoIn"
+     ],
+     [
+      4,
+      1713,
+      "hold"
+     ],
+     [
+      8,
+      2300,
+      "hold"
+     ],
+     [
+      11.7,
+      1760,
+      "easy"
+     ],
+     [
+      12,
+      1713,
+      "hold"
+     ],
+     [
+      16,
+      1640,
+      "easy"
+     ],
+     [
+      16,
+      1713,
+      "hold"
+     ],
+     [
+      21,
+      1560,
+      "easy"
+     ]
+    ],
+    "pos.y": [
+     [
+      0,
+      0
+     ],
+     [
+      12,
+      -240,
+      "hold"
+     ],
+     [
+      15.9,
+      90,
+      "easy"
+     ],
+     [
+      16,
+      0,
+      "hold"
+     ]
+    ],
+    "rot.z": [
+     [
+      0,
+      0
+     ],
+     [
+      8,
+      -5,
+      "hold"
+     ],
+     [
+      11.7,
+      3,
+      "easy"
+     ],
+     [
+      12,
+      0,
+      "hold"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "breath",
+     "use": "shake",
+     "at": 0,
+     "dur": 4,
+     "amp": 5,
+     "freq": 0.4
+    },
+    {
+     "id": "punch",
+     "use": "shake",
+     "at": 4,
+     "dur": 4,
+     "amp": 20,
+     "freq": 3
+    },
+    {
+     "id": "orbit",
+     "use": "shake",
+     "at": 8,
+     "dur": 4,
+     "amp": 9,
+     "freq": 1
+    },
+    {
+     "id": "air",
+     "use": "shake",
+     "at": 12,
+     "dur": 4,
+     "amp": 6,
+     "freq": 0.5
+    },
+    {
+     "id": "still",
+     "use": "shake",
+     "at": 16,
+     "dur": 5,
+     "amp": 4,
+     "freq": 0.4
+    }
+   ]
+  },
+  {
+   "id": "a-bg",
+   "type": "gradient",
+   "kind": "radial",
+   "colors": [
+    "#1c1045",
+    "#0a0716",
+    "$void"
+   ],
+   "noise": 0.06,
+   "out": 4
+  },
+  {
+   "id": "a-dust",
+   "type": "cloner",
+   "name": "Dust",
+   "mode": "grid",
+   "n": 240,
+   "cols": 20,
+   "gap": 150,
+   "pos": [
+    0,
+    0,
+    -700
+   ],
+   "out": 4,
+   "depth": true,
+   "billboard": true,
+   "motionBlur": false,
+   "child": {
+    "kind": "shape",
+    "shape": "ellipse",
+    "w": 5,
+    "colors": [
+     "$lav",
+     "$ink",
+     "$cyan"
+    ]
+   },
+   "reveal": {
+    "dur": 1.2,
+    "at": 0
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.004
+    },
+    {
+     "id": "drift",
+     "type": "noise",
+     "amp": [
+      60,
+      60,
+      260
+     ],
+     "freq": 0.18
+    }
+   ],
+   "keys": {
+    "opacity": [
+     [
+      0,
+      0.55
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      1
+     ],
+     [
+      3.95,
+      1.9,
+      "expoIn"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "a-halo",
+   "type": "cloner",
+   "name": "Tick halo",
+   "mode": "radial",
+   "n": 96,
+   "r": 170,
+   "orient": true,
+   "pos": [
+    0,
+    40,
+    0
+   ],
+   "out": 4,
+   "child": {
+    "kind": "shape",
+    "shape": "rect",
+    "w": 4,
+    "h": 30,
+    "radius": 2,
+    "fill": "$lav"
+   },
+   "reveal": {
+    "dur": 0.5,
+    "bounce": 0.2,
+    "at": 0.2
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.006
+    }
+   ],
+   "keys": {
+    "r": [
+     [
+      0,
+      140
+     ],
+     [
+      2.6,
+      270,
+      "easy"
+     ],
+     [
+      3.8,
+      40,
+      "expoIn"
+     ]
+    ],
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      3.85,
+      280,
+      "expoIn"
+     ]
+    ],
+    "opacity": [
+     [
+      3.4,
+      1
+     ],
+     [
+      3.8,
+      0
+     ]
+    ]
+   }
+  },
+  {
+   "id": "a-dots",
+   "type": "cloner",
+   "name": "Colour dots",
+   "mode": "radial",
+   "n": 32,
+   "r": 360,
+   "pos": [
+    0,
+    40,
+    0
+   ],
+   "out": 4,
+   "child": {
+    "kind": "shape",
+    "shape": "ellipse",
+    "w": 9,
+    "colors": [
+     "$lav",
+     "$cyan",
+     "$lime",
+     "$hot"
+    ]
+   },
+   "reveal": {
+    "dur": 0.6,
+    "bounce": 0.4,
+    "at": 0.5
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.02
+    }
+   ],
+   "keys": {
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      3.85,
+      -200,
+      "expoIn"
+     ]
+    ],
+    "r": [
+     [
+      0,
+      360
+     ],
+     [
+      3.8,
+      30,
+      "expoIn"
+     ]
+    ],
+    "opacity": [
+     [
+      3.4,
+      1
+     ],
+     [
+      3.8,
+      0
+     ]
+    ]
+   }
+  },
+  {
+   "id": "a-tiles",
+   "type": "cloner",
+   "name": "Tile ring",
+   "mode": "radial",
+   "n": 12,
+   "r": 580,
+   "orient": true,
+   "pos": [
+    0,
+    40,
+    0
+   ],
+   "out": 4,
+   "child": {
+    "kind": "shape",
+    "shape": "rect",
+    "w": 44,
+    "h": 44,
+    "radius": 13,
+    "colors": [
+     "$lav",
+     "$cyan",
+     "$lime",
+     "$hot"
+    ]
+   },
+   "reveal": {
+    "dur": 0.5,
+    "bounce": 0.5,
+    "at": 1
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.05
+    },
+    {
+     "id": "bob",
+     "type": "wave",
+     "amp": [
+      0,
+      0,
+      80
+     ],
+     "freq": 1,
+     "phase": 0.5
+    }
+   ],
+   "keys": {
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      3.85,
+      150,
+      "expoIn"
+     ]
+    ],
+    "r": [
+     [
+      0,
+      580
+     ],
+     [
+      3.8,
+      60,
+      "expoIn"
+     ]
+    ],
+    "opacity": [
+     [
+      3.4,
+      1
+     ],
+     [
+      3.8,
+      0
+     ]
+    ]
+   }
+  },
+  {
+   "id": "a-core",
+   "type": "mesh",
+   "name": "Spark",
+   "geom": "sphere",
+   "material": "emissive",
+   "color": "$lav",
+   "size": 60,
+   "pos": [
+    0,
+    40,
+    0
+   ],
+   "out": 4,
+   "keys": {
+    "size": [
+     [
+      0,
+      1
+     ],
+     [
+      0.4,
+      64,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      3,
+      100,
+      "easy"
+     ],
+     [
+      3.98,
+      5400,
+      "expoIn"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "beat",
+     "use": "pulse",
+     "at": 0.5,
+     "dur": 3,
+     "amp": 0.16,
+     "period": 0.5
+    }
+   ]
+  },
+  {
+   "id": "a-prompt",
+   "type": "text",
+   "name": "Prompt",
+   "text": "> make something impossible_",
+   "size": 38,
+   "font": "JetBrains Mono Variable",
+   "weight": 500,
+   "color": "$ink",
+   "pos": [
+    0,
+    -250,
+    0
+   ],
+   "out": 3.6,
+   "spans": [
+    {
+     "text": ">",
+     "color": "$lav"
+    },
+    {
+     "text": "impossible",
+     "color": "$lime"
+    }
+   ],
+   "beh": [
+    {
+     "id": "type",
+     "use": "typewriter",
+     "at": 0.5,
+     "by": "char",
+     "stagger": 0.05
+    }
+   ],
+   "keys": {
+    "opacity": [
+     [
+      3.15,
+      1
+     ],
+     [
+      3.5,
+      0
+     ]
+    ],
+    "blur": [
+     [
+      3.15,
+      0
+     ],
+     [
+      3.5,
+      18
+     ]
+    ]
+   }
+  },
+  {
+   "id": "a-tl",
+   "type": "text",
+   "text": "PROMPT → MOTION",
+   "size": 20,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$muted",
+   "tracking": 4,
+   "align": "left",
+   "pos": [
+    -880,
+    480,
+    0
+   ],
+   "out": 4,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 1,
+     "stagger": 0.03
+    }
+   ]
+  },
+  {
+   "id": "a-tr",
+   "type": "text",
+   "text": "1920 × 1080 · 30 FPS · LIVE",
+   "size": 20,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$muted",
+   "tracking": 4,
+   "align": "right",
+   "pos": [
+    880,
+    480,
+    0
+   ],
+   "out": 4,
+   "spans": [
+    {
+     "text": "LIVE",
+     "color": "$hot"
+    }
+   ],
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 1.3,
+     "stagger": 0.03
+    }
+   ]
+  },
+  {
+   "id": "a-flash",
+   "type": "adjust",
+   "name": "Flash",
+   "in": 3.88,
+   "out": 4.55,
+   "fadeColor": "$ink",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.12,
+      1,
+      "in"
+     ],
+     [
+      0.67,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "k0-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$lime",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 4,
+   "out": 4.5,
+   "motionBlur": false
+  },
+  {
+   "id": "k0-w",
+   "type": "text",
+   "text": "EVERY",
+   "size": 400,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$void",
+   "tracking": -8,
+   "in": 4,
+   "out": 4.5,
+   "keys": {
+    "scale": [
+     [
+      0,
+      2.8
+     ],
+     [
+      0.18,
+      1,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      0.5,
+      1.06
+     ]
+    ],
+    "rot.z": [
+     [
+      0,
+      -10
+     ],
+     [
+      0.22,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "k0-n",
+   "type": "text",
+   "text": "01",
+   "size": 22,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$void",
+   "align": "left",
+   "pos": [
+    -880,
+    480,
+    20
+   ],
+   "in": 4,
+   "out": 4.5
+  },
+  {
+   "id": "k1-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$void",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 4.5,
+   "out": 5,
+   "motionBlur": false
+  },
+  {
+   "id": "k1-w",
+   "type": "text",
+   "text": "IDEA",
+   "size": 470,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$lav",
+   "tracking": -8,
+   "in": 4.5,
+   "out": 5,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      -1500
+     ],
+     [
+      0.2,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      0.5,
+      40
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "k1-n",
+   "type": "text",
+   "text": "02",
+   "size": 22,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$lav",
+   "align": "left",
+   "pos": [
+    -880,
+    480,
+    20
+   ],
+   "in": 4.5,
+   "out": 5
+  },
+  {
+   "id": "k2-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$hot",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 5,
+   "out": 5.5,
+   "motionBlur": false
+  },
+  {
+   "id": "k2-w",
+   "type": "text",
+   "text": "deserves",
+   "size": 380,
+   "font": "Instrument Serif",
+   "weight": 400,
+   "color": "$cream",
+   "tracking": -8,
+   "in": 5,
+   "out": 5.5,
+   "keys": {
+    "tracking": [
+     [
+      0,
+      120
+     ],
+     [
+      0.3,
+      -4,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      1.35
+     ],
+     [
+      0.3,
+      1,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      0.5,
+      1.05
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "k2-n",
+   "type": "text",
+   "text": "03",
+   "size": 22,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$cream",
+   "align": "left",
+   "pos": [
+    -880,
+    480,
+    20
+   ],
+   "in": 5,
+   "out": 5.5
+  },
+  {
+   "id": "k3-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$cyan",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 5.5,
+   "out": 6,
+   "motionBlur": false
+  },
+  {
+   "id": "k3-w",
+   "type": "text",
+   "text": "TO",
+   "size": 640,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$void",
+   "tracking": -8,
+   "in": 5.5,
+   "out": 6,
+   "keys": {
+    "pos.y": [
+     [
+      0,
+      720
+     ],
+     [
+      0.24,
+      0,
+      "spring(0.3,0.5)"
+     ]
+    ],
+    "scale": [
+     [
+      0.24,
+      1
+     ],
+     [
+      0.5,
+      1.08
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "k3-n",
+   "type": "text",
+   "text": "04",
+   "size": 22,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$void",
+   "align": "left",
+   "pos": [
+    -880,
+    480,
+    20
+   ],
+   "in": 5.5,
+   "out": 6
+  },
+  {
+   "id": "k4-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$void",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 6,
+   "out": 7,
+   "motionBlur": false
+  },
+  {
+   "id": "k4-w",
+   "type": "text",
+   "text": "MOVE.",
+   "size": 440,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$ink",
+   "tracking": 4,
+   "in": 6,
+   "out": 7,
+   "keys": {
+    "rot.x": [
+     [
+      0,
+      -90
+     ],
+     [
+      0.26,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "scale": [
+     [
+      0.26,
+      1
+     ],
+     [
+      1,
+      1.1,
+      "easyIn"
+     ]
+    ],
+    "blur": [
+     [
+      0,
+      26
+     ],
+     [
+      0.14,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "k4-n",
+   "type": "text",
+   "text": "05",
+   "size": 22,
+   "font": "JetBrains Mono Variable",
+   "weight": 700,
+   "color": "$ink",
+   "align": "left",
+   "pos": [
+    -880,
+    480,
+    20
+   ],
+   "in": 6,
+   "out": 7
+  },
+  {
+   "id": "k4-bar",
+   "type": "shape",
+   "shape": "rect",
+   "w": 1300,
+   "h": 24,
+   "radius": 12,
+   "fill": "$lime",
+   "pos": [
+    0,
+    -250,
+    10
+   ],
+   "in": 6.25,
+   "out": 6.5,
+   "keys": {
+    "scale": [
+     [
+      0,
+      0.02
+     ],
+     [
+      0.2,
+      1,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "pos.x": [
+     [
+      0,
+      -650
+     ],
+     [
+      0.2,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "ks0-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$lav",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 6.5,
+   "out": 6.625,
+   "motionBlur": false
+  },
+  {
+   "id": "ks0-w",
+   "type": "text",
+   "text": "MOVE",
+   "size": 300,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$void",
+   "tracking": -4,
+   "pos": [
+    -120,
+    60,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    -4
+   ],
+   "in": 6.5,
+   "out": 6.625,
+   "keys": {
+    "scale": [
+     [
+      0,
+      1.25
+     ],
+     [
+      0.125,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "ks1-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$void",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 6.625,
+   "out": 6.75,
+   "motionBlur": false
+  },
+  {
+   "id": "ks1-w",
+   "type": "text",
+   "text": "move",
+   "size": 390,
+   "font": "Instrument Serif",
+   "weight": 400,
+   "color": "$lime",
+   "tracking": -4,
+   "pos": [
+    0,
+    -60,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    5
+   ],
+   "in": 6.625,
+   "out": 6.75,
+   "keys": {
+    "scale": [
+     [
+      0,
+      1.25
+     ],
+     [
+      0.125,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "ks2-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$lime",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 6.75,
+   "out": 6.875,
+   "motionBlur": false
+  },
+  {
+   "id": "ks2-w",
+   "type": "text",
+   "text": "MOVE",
+   "size": 480,
+   "font": "JetBrains Mono Variable",
+   "weight": 800,
+   "color": "$void",
+   "tracking": -4,
+   "pos": [
+    120,
+    60,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    -6
+   ],
+   "in": 6.75,
+   "out": 6.875,
+   "keys": {
+    "scale": [
+     [
+      0,
+      1.25
+     ],
+     [
+      0.125,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "ks3-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$hot",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 6.875,
+   "out": 7,
+   "motionBlur": false
+  },
+  {
+   "id": "ks3-w",
+   "type": "text",
+   "text": "move",
+   "size": 300,
+   "font": "Permanent Marker",
+   "weight": 400,
+   "color": "$cream",
+   "tracking": -4,
+   "pos": [
+    -120,
+    -60,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    7
+   ],
+   "in": 6.875,
+   "out": 7,
+   "keys": {
+    "scale": [
+     [
+      0,
+      1.25
+     ],
+     [
+      0.125,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "ks4-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$cyan",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 7,
+   "out": 7.125,
+   "motionBlur": false
+  },
+  {
+   "id": "ks4-w",
+   "type": "text",
+   "text": "MOVE",
+   "size": 390,
+   "font": "Playfair Display Variable",
+   "weight": 900,
+   "color": "$void",
+   "tracking": -4,
+   "pos": [
+    0,
+    60,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    -8
+   ],
+   "in": 7,
+   "out": 7.125,
+   "keys": {
+    "scale": [
+     [
+      0,
+      1.25
+     ],
+     [
+      0.125,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "ks5-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$ink",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 7.125,
+   "out": 7.25,
+   "motionBlur": false
+  },
+  {
+   "id": "ks5-w",
+   "type": "text",
+   "text": "move",
+   "size": 480,
+   "font": "Inter Tight Variable",
+   "weight": 300,
+   "color": "$violet",
+   "tracking": -4,
+   "pos": [
+    120,
+    -60,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    9
+   ],
+   "in": 7.125,
+   "out": 7.25,
+   "keys": {
+    "scale": [
+     [
+      0,
+      1.25
+     ],
+     [
+      0.125,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "ks6-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$violet",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 7.25,
+   "out": 7.375,
+   "motionBlur": false
+  },
+  {
+   "id": "ks6-w",
+   "type": "text",
+   "text": "MOVE",
+   "size": 300,
+   "font": "Bricolage Grotesque Variable",
+   "weight": 800,
+   "color": "$lime",
+   "tracking": -4,
+   "pos": [
+    -120,
+    60,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    -10
+   ],
+   "in": 7.25,
+   "out": 7.375,
+   "keys": {
+    "scale": [
+     [
+      0,
+      1.25
+     ],
+     [
+      0.125,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "ks7-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$void",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 7.375,
+   "out": 7.5,
+   "motionBlur": false
+  },
+  {
+   "id": "ks7-w",
+   "type": "text",
+   "text": "move",
+   "size": 390,
+   "font": "Instrument Serif",
+   "weight": 400,
+   "color": "$hot",
+   "tracking": -4,
+   "pos": [
+    0,
+    -60,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    11
+   ],
+   "in": 7.375,
+   "out": 7.5,
+   "keys": {
+    "scale": [
+     [
+      0,
+      1.25
+     ],
+     [
+      0.125,
+      1,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "kt-p",
+   "type": "shape",
+   "shape": "rect",
+   "w": 2900,
+   "h": 1650,
+   "fill": "$void",
+   "pos": [
+    0,
+    0,
+    -400
+   ],
+   "in": 7.5,
+   "out": 8,
+   "motionBlur": false
+  },
+  {
+   "id": "kt-tunnel",
+   "type": "cloner",
+   "name": "Type tunnel",
+   "mode": "linear",
+   "n": 16,
+   "gap": 520,
+   "rot": [
+    0,
+    90,
+    0
+   ],
+   "depth": true,
+   "billboard": true,
+   "in": 7.5,
+   "out": 8,
+   "child": {
+    "kind": "text",
+    "text": "MOVE.",
+    "w": 220,
+    "colors": [
+     "$lav",
+     "$cyan",
+     "$lime",
+     "$hot"
+    ]
+   },
+   "fx": [
+    {
+     "id": "spiral",
+     "type": "wave",
+     "amp": [
+      0,
+      260,
+      260
+     ],
+     "freq": 0.6,
+     "phase": 0.55
+    }
+   ],
+   "keys": {
+    "pos.z": [
+     [
+      0,
+      -3200
+     ],
+     [
+      0.5,
+      2600,
+      "expoIn"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "k-strobe",
+   "type": "adjust",
+   "name": "Strobe",
+   "in": 7.75,
+   "out": 8,
+   "fadeColor": "$ink",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.0625,
+      0.7,
+      "hold"
+     ],
+     [
+      0.125,
+      0,
+      "hold"
+     ],
+     [
+      0.1875,
+      0.85,
+      "hold"
+     ],
+     [
+      0.25,
+      1,
+      "hold"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d-bg",
+   "type": "gradient",
+   "kind": "radial",
+   "colors": [
+    "#2a1470",
+    "#0c0820",
+    "$void"
+   ],
+   "noise": 0.05,
+   "in": 8,
+   "out": 12
+  },
+  {
+   "id": "d-word",
+   "type": "text",
+   "text": "DIMENSION",
+   "size": 330,
+   "font": "Inter Tight Variable",
+   "weight": 900,
+   "color": "$violet",
+   "opacity": 0.4,
+   "pos": [
+    0,
+    0,
+    -520
+   ],
+   "blur": 4,
+   "in": 8,
+   "out": 12,
+   "motionBlur": false,
+   "keys": {
+    "tracking": [
+     [
+      0,
+      220
+     ],
+     [
+      4,
+      -12,
+      "easy"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d-ring",
+   "type": "cloner",
+   "name": "Light ring",
+   "mode": "radial",
+   "n": 100,
+   "r": 780,
+   "rot": [
+    72,
+    0,
+    0
+   ],
+   "depth": true,
+   "billboard": true,
+   "in": 8,
+   "out": 12,
+   "child": {
+    "kind": "shape",
+    "shape": "ellipse",
+    "w": 13,
+    "colors": [
+     "$lav",
+     "$cyan",
+     "$lime"
+    ]
+   },
+   "reveal": {
+    "dur": 0.5,
+    "at": 0.1
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.005
+    },
+    {
+     "id": "ripple",
+     "type": "wave",
+     "amp": [
+      0,
+      0,
+      50
+     ],
+     "freq": 0.8,
+     "phase": 0.3
+    }
+   ],
+   "keys": {
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      150
+     ]
+    ],
+    "r": [
+     [
+      0,
+      200
+     ],
+     [
+      0.9,
+      780,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d-torus",
+   "type": "mesh",
+   "name": "Chrome torus",
+   "geom": "torus",
+   "material": "chrome",
+   "color": "#e4e1f0",
+   "size": 560,
+   "pos": [
+    0,
+    30,
+    0
+   ],
+   "in": 8,
+   "out": 12,
+   "depth": true,
+   "keys": {
+    "rot.x": [
+     [
+      0,
+      70
+     ],
+     [
+      4,
+      -30
+     ]
+    ],
+    "rot.y": [
+     [
+      0,
+      -90
+     ],
+     [
+      4,
+      250
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      0
+     ],
+     [
+      0.8,
+      1,
+      "spring(0.8,0.45)"
+     ]
+    ],
+    "pos.z": [
+     [
+      3.45,
+      0
+     ],
+     [
+      3.98,
+      1500,
+      "expoIn"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "bob",
+     "use": "float",
+     "at": 0.8,
+     "amp": 18,
+     "period": 2
+    }
+   ]
+  },
+  {
+   "id": "d-rig",
+   "type": "group",
+   "name": "Orbit rig",
+   "pos": [
+    0,
+    30,
+    0
+   ],
+   "rot": [
+    16,
+    0,
+    0
+   ],
+   "in": 8,
+   "out": 12,
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      320
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d-gold",
+   "type": "mesh",
+   "geom": "coin",
+   "material": "gold",
+   "color": "#ffc44d",
+   "size": 230,
+   "parent": "d-rig",
+   "in": 8,
+   "pos": [
+    580,
+    0,
+    0
+   ],
+   "depth": true,
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      720
+     ]
+    ],
+    "scale": [
+     [
+      0.5,
+      0
+     ],
+     [
+      0.9,
+      1,
+      "spring(0.6,0.5)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d-glass",
+   "type": "mesh",
+   "geom": "sphere",
+   "material": "metal",
+   "color": "#8b6bff",
+   "roughness": 0.16,
+   "size": 250,
+   "parent": "d-rig",
+   "in": 8,
+   "pos": [
+    0,
+    0,
+    580
+   ],
+   "depth": true,
+   "keys": {
+    "scale": [
+     [
+      1,
+      0
+     ],
+     [
+      1.4,
+      1,
+      "spring(0.6,0.5)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d-pear",
+   "type": "mesh",
+   "geom": "balloon",
+   "material": "foil",
+   "color": "$hot",
+   "size": 240,
+   "parent": "d-rig",
+   "in": 8,
+   "pos": [
+    -580,
+    0,
+    0
+   ],
+   "depth": true,
+   "keys": {
+    "rot.y": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      -360
+     ]
+    ],
+    "scale": [
+     [
+      1.5,
+      0
+     ],
+     [
+      1.9,
+      1,
+      "spring(0.6,0.5)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d-box",
+   "type": "mesh",
+   "geom": "box",
+   "material": "plastic",
+   "color": "$lime",
+   "size": 150,
+   "parent": "d-rig",
+   "in": 8,
+   "pos": [
+    0,
+    0,
+    -580
+   ],
+   "depth": true,
+   "keys": {
+    "rot.x": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      400
+     ]
+    ],
+    "rot.y": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      300
+     ]
+    ],
+    "scale": [
+     [
+      2,
+      0
+     ],
+     [
+      2.4,
+      1,
+      "spring(0.6,0.5)"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d-title",
+   "type": "text",
+   "text": "Real depth.",
+   "size": 140,
+   "font": "Instrument Serif",
+   "color": "$ink",
+   "align": "left",
+   "pos": [
+    -840,
+    -300,
+    200
+   ],
+   "in": 9,
+   "out": 11.6,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typeUp",
+     "at": 0,
+     "by": "char",
+     "stagger": 0.04,
+     "dist": 60
+    }
+   ],
+   "keys": {
+    "blur": [
+     [
+      0,
+      16
+     ],
+     [
+      0.4,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "d-sub",
+   "type": "text",
+   "text": "chrome · gold · glass · foil  —  lit and rendered live",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 500,
+   "color": "$muted",
+   "align": "left",
+   "pos": [
+    -835,
+    -390,
+    200
+   ],
+   "in": 9.5,
+   "out": 11.6,
+   "spans": [
+    {
+     "text": "chrome · gold · glass · foil",
+     "color": "$lime"
+    }
+   ],
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 0,
+     "stagger": 0.02
+    }
+   ]
+  },
+  {
+   "id": "d-flash",
+   "type": "adjust",
+   "name": "Flash",
+   "in": 11.88,
+   "out": 12.5,
+   "fadeColor": "$cream",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.12,
+      1,
+      "in"
+     ],
+     [
+      0.62,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "w-night",
+   "type": "sky",
+   "top": "#05061a",
+   "horizon": "#2a1a5e",
+   "stars": 1,
+   "clouds": 0.1,
+   "cloudScale": 1.4,
+   "drift": 0.03,
+   "mountains": true,
+   "mountainHeight": 0.95,
+   "hills": "#04040c",
+   "hillHeight": 0.22,
+   "seed": 11,
+   "in": 12,
+   "out": 14.3
+  },
+  {
+   "id": "w-aur0",
+   "type": "shape",
+   "shape": "ellipse",
+   "w": 1300,
+   "h": 180,
+   "fill": "$lime",
+   "pos": [
+    -520,
+    330,
+    -300
+   ],
+   "rot": [
+    0,
+    0,
+    -6
+   ],
+   "blur": 110,
+   "opacity": 0.45,
+   "in": 12,
+   "out": 14.3,
+   "motionBlur": false,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      -640
+     ],
+     [
+      2.3,
+      -380,
+      "easy"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0.2
+     ],
+     [
+      0.6,
+      0.5,
+      "easy"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "breathe",
+     "use": "pulse",
+     "at": 0,
+     "amp": 0.12,
+     "period": 1
+    },
+    {
+     "id": "float",
+     "use": "float",
+     "at": 0,
+     "amp": 30,
+     "period": 2
+    }
+   ]
+  },
+  {
+   "id": "w-aur1",
+   "type": "shape",
+   "shape": "ellipse",
+   "w": 1100,
+   "h": 180,
+   "fill": "$violet",
+   "pos": [
+    380,
+    380,
+    -300
+   ],
+   "rot": [
+    0,
+    0,
+    8
+   ],
+   "blur": 110,
+   "opacity": 0.45,
+   "in": 12,
+   "out": 14.3,
+   "motionBlur": false,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      260
+     ],
+     [
+      2.3,
+      520,
+      "easy"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0.2
+     ],
+     [
+      0.6,
+      0.5,
+      "easy"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "breathe",
+     "use": "pulse",
+     "at": 1.3,
+     "amp": 0.12,
+     "period": 1.25
+    },
+    {
+     "id": "float",
+     "use": "float",
+     "at": 0,
+     "amp": 30,
+     "period": 2.5
+    }
+   ]
+  },
+  {
+   "id": "w-aur2",
+   "type": "shape",
+   "shape": "ellipse",
+   "w": 900,
+   "h": 180,
+   "fill": "$cyan",
+   "pos": [
+    0,
+    280,
+    -300
+   ],
+   "rot": [
+    0,
+    0,
+    -6
+   ],
+   "blur": 110,
+   "opacity": 0.45,
+   "in": 12,
+   "out": 14.3,
+   "motionBlur": false,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      -120
+     ],
+     [
+      2.3,
+      140,
+      "easy"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0.2
+     ],
+     [
+      0.6,
+      0.5,
+      "easy"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "breathe",
+     "use": "pulse",
+     "at": 2.1,
+     "amp": 0.12,
+     "period": 1.5
+    },
+    {
+     "id": "float",
+     "use": "float",
+     "at": 0,
+     "amp": 30,
+     "period": 3
+    }
+   ]
+  },
+  {
+   "id": "w-aur3",
+   "type": "shape",
+   "shape": "ellipse",
+   "w": 700,
+   "h": 180,
+   "fill": "$hot",
+   "pos": [
+    700,
+    300,
+    -300
+   ],
+   "rot": [
+    0,
+    0,
+    8
+   ],
+   "blur": 110,
+   "opacity": 0.45,
+   "in": 12,
+   "out": 14.3,
+   "motionBlur": false,
+   "keys": {
+    "pos.x": [
+     [
+      0,
+      580
+     ],
+     [
+      2.3,
+      840,
+      "easy"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0.2
+     ],
+     [
+      0.6,
+      0.5,
+      "easy"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "breathe",
+     "use": "pulse",
+     "at": 0.7,
+     "amp": 0.12,
+     "period": 1.75
+    },
+    {
+     "id": "float",
+     "use": "float",
+     "at": 0,
+     "amp": 30,
+     "period": 3.5
+    }
+   ]
+  },
+  {
+   "id": "w-line",
+   "type": "text",
+   "text": "Any world.",
+   "size": 190,
+   "font": "Instrument Serif",
+   "color": "$cream",
+   "pos": [
+    0,
+    120,
+    0
+   ],
+   "in": 12.25,
+   "out": 14,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typeUp",
+     "at": 0,
+     "by": "word",
+     "stagger": 0.25,
+     "dist": 50,
+     "dur": 0.6
+    }
+   ],
+   "keys": {
+    "blur": [
+     [
+      0,
+      18
+     ],
+     [
+      0.6,
+      0,
+      "out"
+     ],
+     [
+      1.4,
+      0
+     ],
+     [
+      1.75,
+      24,
+      "in"
+     ]
+    ],
+    "tracking": [
+     [
+      1.2,
+      0
+     ],
+     [
+      1.75,
+      40,
+      "easyIn"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "w-coord",
+   "type": "text",
+   "text": "68.2°N  ·  00:14  ·  AURORA",
+   "size": 24,
+   "font": "JetBrains Mono Variable",
+   "weight": 600,
+   "color": "$cyan",
+   "tracking": 4,
+   "pos": [
+    0,
+    -40,
+    0
+   ],
+   "in": 12.6,
+   "out": 14,
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 0,
+     "stagger": 0.03
+    }
+   ]
+  },
+  {
+   "id": "w-day",
+   "type": "sky",
+   "top": "#3b6fd6",
+   "horizon": "#ffc38a",
+   "clouds": 0.45,
+   "cloudScale": 1.2,
+   "drift": 0.06,
+   "mountains": true,
+   "mountainHeight": 1.1,
+   "hills": "#1b2a3a",
+   "grass": "#1d2638",
+   "hillHeight": 0.3,
+   "seed": 4,
+   "in": 14,
+   "out": 16,
+   "keys": {
+    "sun": [
+     [
+      0,
+      0.35
+     ],
+     [
+      2,
+      0.9,
+      "easy"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "w-dissolve",
+   "type": "adjust",
+   "name": "Cloud dissolve",
+   "in": 13.75,
+   "out": 14.3,
+   "fadeColor": "#ffe2c0",
+   "dissolve": 0.7,
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.25,
+      1,
+      "in"
+     ],
+     [
+      0.55,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "w-app",
+   "type": "html",
+   "name": "The editor",
+   "w": 1080,
+   "h": 560,
+   "radius": 32,
+   "pos": [
+    0,
+    70,
+    120
+   ],
+   "in": 14.05,
+   "out": 16,
+   "depth": true,
+   "glass": {
+    "blur": 46,
+    "tint": "#0b0820",
+    "amount": 0.86,
+    "rim": 0.9
+   },
+   "shadow": {
+    "x": 0,
+    "y": -40,
+    "blur": 90,
+    "color": "#0b0a1f",
+    "opacity": 0.4
+   },
+   "vars": {
+    "a": 0,
+    "b": 0,
+    "c": 0,
+    "d": 0,
+    "e": 0,
+    "n": 0
+   },
+   "keys": {
+    "rot.x": [
+     [
+      0,
+      -75
+     ],
+     [
+      0.6,
+      0,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0
+     ],
+     [
+      0.2,
+      1
+     ]
+    ],
+    "vars.a": [
+     [
+      0.55,
+      0
+     ],
+     [
+      1.15,
+      330,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "vars.b": [
+     [
+      0.7000000000000001,
+      0
+     ],
+     [
+      1.2999999999999998,
+      300,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "vars.c": [
+     [
+      0.8500000000000001,
+      0
+     ],
+     [
+      1.45,
+      360,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "vars.d": [
+     [
+      1,
+      0
+     ],
+     [
+      1.5999999999999999,
+      330,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "vars.e": [
+     [
+      1.15,
+      0
+     ],
+     [
+      1.75,
+      380,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "vars.n": [
+     [
+      0.5,
+      0
+     ],
+     [
+      1.9,
+      83,
+      "expoOut"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "sway",
+     "use": "sway",
+     "at": 0.6,
+     "deg": 7,
+     "period": 3.2
+    },
+    {
+     "id": "bob",
+     "use": "float",
+     "at": 0.6,
+     "amp": 10,
+     "period": 2.2
+    }
+   ],
+   "html": "<div style='width:1080px;height:560px;font-family:Inter Variable;color:#f7f4ff;display:flex;flex-direction:column'><div style='height:64px;display:flex;align-items:center;gap:12px;padding:0 28px;border-bottom:1px solid rgba(255,255,255,.14)'><div style='width:26px;height:26px;border-radius:8px;background:conic-gradient(from 200deg,#b593ff,#01b2fd,#f5ff63,#b593ff);box-shadow:inset 0 0 0 6px #1a1533'></div><div style='font-weight:650;font-size:19px'>Fusion Motion</div><div style='opacity:.5;font-size:19px'>/ Everything moves</div><div style='margin-left:auto;font:600 15px JetBrains Mono Variable;opacity:.8'>{{n}} layers</div><div style='background:#f7f4ff;color:#140b33;font-weight:700;font-size:16px;padding:9px 18px;border-radius:999px'>Export</div></div><div style='margin:26px 28px 0;height:84px;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16)'></div><div style='margin:26px 28px 0;display:grid;gap:14px'><div style='display:flex;align-items:center;gap:16px'><div style='width:110px;font:600 15px JetBrains Mono Variable;opacity:.75'>Spark</div><div style='flex:1;height:34px;border-radius:12px;background:rgba(255,255,255,.06);position:relative'><div style='position:absolute;left:0px;top:0;height:34px;width:{{a}}px;border-radius:12px;background:#b593ff'></div></div></div><div style='display:flex;align-items:center;gap:16px'><div style='width:110px;font:600 15px JetBrains Mono Variable;opacity:.75'>Kinetic</div><div style='flex:1;height:34px;border-radius:12px;background:rgba(255,255,255,.06);position:relative'><div style='position:absolute;left:150px;top:0;height:34px;width:{{b}}px;border-radius:12px;background:#f5ff63'></div></div></div><div style='display:flex;align-items:center;gap:16px'><div style='width:110px;font:600 15px JetBrains Mono Variable;opacity:.75'>Dimension</div><div style='flex:1;height:34px;border-radius:12px;background:rgba(255,255,255,.06);position:relative'><div style='position:absolute;left:300px;top:0;height:34px;width:{{c}}px;border-radius:12px;background:#01b2fd'></div></div></div><div style='display:flex;align-items:center;gap:16px'><div style='width:110px;font:600 15px JetBrains Mono Variable;opacity:.75'>Worlds</div><div style='flex:1;height:34px;border-radius:12px;background:rgba(255,255,255,.06);position:relative'><div style='position:absolute;left:450px;top:0;height:34px;width:{{d}}px;border-radius:12px;background:#ff3d6e'></div></div></div><div style='display:flex;align-items:center;gap:16px'><div style='width:110px;font:600 15px JetBrains Mono Variable;opacity:.75'>Finale</div><div style='flex:1;height:34px;border-radius:12px;background:rgba(255,255,255,.06);position:relative'><div style='position:absolute;left:600px;top:0;height:34px;width:{{e}}px;border-radius:12px;background:#6d3cff'></div></div></div></div></div>"
+  },
+  {
+   "id": "w-ask",
+   "type": "text",
+   "text": "make something impossible",
+   "size": 32,
+   "font": "JetBrains Mono Variable",
+   "weight": 500,
+   "color": "$ink",
+   "align": "left",
+   "pos": [
+    -480,
+    212,
+    140
+   ],
+   "in": 14.45,
+   "out": 16,
+   "spans": [
+    {
+     "text": "impossible",
+     "color": "$lime"
+    }
+   ],
+   "beh": [
+    {
+     "id": "type",
+     "use": "typewriter",
+     "at": 0,
+     "stagger": 0.03
+    }
+   ]
+  },
+  {
+   "id": "w-cap",
+   "type": "text",
+   "text": "one prompt  →  a plan  →  every layer, built by AI",
+   "size": 26,
+   "font": "JetBrains Mono Variable",
+   "weight": 600,
+   "color": "$ink",
+   "pos": [
+    0,
+    -330,
+    160
+   ],
+   "in": 15.1,
+   "out": 16,
+   "spans": [
+    {
+     "text": "built by AI",
+     "color": "$lime"
+    }
+   ],
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 0,
+     "stagger": 0.022
+    }
+   ]
+  },
+  {
+   "id": "w-flash",
+   "type": "adjust",
+   "name": "Flash",
+   "in": 15.88,
+   "out": 16.4,
+   "fadeColor": "$ink",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.12,
+      1,
+      "in"
+     ],
+     [
+      0.52,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-bg",
+   "type": "gradient",
+   "kind": "radial",
+   "colors": [
+    "#241059",
+    "#0a0716",
+    "$void"
+   ],
+   "noise": 0.06,
+   "in": 16,
+   "out": 17.5
+  },
+  {
+   "id": "f-vortex0",
+   "type": "cloner",
+   "name": "Vortex 1",
+   "mode": "radial",
+   "n": 64,
+   "r": 920,
+   "orient": true,
+   "in": 16,
+   "out": 17.5,
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "child": {
+    "kind": "shape",
+    "shape": "rect",
+    "w": 34,
+    "h": 14,
+    "radius": 7,
+    "colors": [
+     "$lav",
+     "$cyan",
+     "$lime",
+     "$hot"
+    ]
+   },
+   "reveal": {
+    "dur": 0.35,
+    "at": 0
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.004
+    },
+    {
+     "id": "w",
+     "type": "wave",
+     "amp": [
+      0,
+      0,
+      90
+     ],
+     "freq": 1.2,
+     "phase": 0.4
+    }
+   ],
+   "keys": {
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      1.5,
+      360,
+      "expoIn"
+     ]
+    ],
+    "r": [
+     [
+      0,
+      920
+     ],
+     [
+      0.6,
+      736,
+      "easy"
+     ],
+     [
+      1.5,
+      0,
+      "expoIn"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-vortex1",
+   "type": "cloner",
+   "name": "Vortex 2",
+   "mode": "radial",
+   "n": 46,
+   "r": 660,
+   "orient": true,
+   "in": 16,
+   "out": 17.5,
+   "pos": [
+    0,
+    0,
+    40
+   ],
+   "child": {
+    "kind": "shape",
+    "shape": "rect",
+    "w": 28,
+    "h": 12,
+    "radius": 6,
+    "colors": [
+     "$cyan",
+     "$lime",
+     "$lav"
+    ]
+   },
+   "reveal": {
+    "dur": 0.35,
+    "at": 0
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.006
+    },
+    {
+     "id": "w",
+     "type": "wave",
+     "amp": [
+      0,
+      0,
+      90
+     ],
+     "freq": 1.2,
+     "phase": 0.4
+    }
+   ],
+   "keys": {
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      1.5,
+      -480,
+      "expoIn"
+     ]
+    ],
+    "r": [
+     [
+      0,
+      660
+     ],
+     [
+      0.6,
+      528,
+      "easy"
+     ],
+     [
+      1.5,
+      0,
+      "expoIn"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-vortex2",
+   "type": "cloner",
+   "name": "Vortex 3",
+   "mode": "radial",
+   "n": 30,
+   "r": 420,
+   "orient": true,
+   "in": 16,
+   "out": 17.5,
+   "pos": [
+    0,
+    0,
+    80
+   ],
+   "child": {
+    "kind": "shape",
+    "shape": "rect",
+    "w": 22,
+    "h": 10,
+    "radius": 5,
+    "colors": [
+     "$lav",
+     "$cyan",
+     "$lime",
+     "$hot"
+    ]
+   },
+   "reveal": {
+    "dur": 0.35,
+    "at": 0
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.01
+    },
+    {
+     "id": "w",
+     "type": "wave",
+     "amp": [
+      0,
+      0,
+      90
+     ],
+     "freq": 1.2,
+     "phase": 0.4
+    }
+   ],
+   "keys": {
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      1.5,
+      600,
+      "expoIn"
+     ]
+    ],
+    "r": [
+     [
+      0,
+      420
+     ],
+     [
+      0.6,
+      336,
+      "easy"
+     ],
+     [
+      1.5,
+      0,
+      "expoIn"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-core",
+   "type": "mesh",
+   "geom": "sphere",
+   "material": "emissive",
+   "color": "$ink",
+   "size": 40,
+   "in": 16,
+   "out": 17.6,
+   "keys": {
+    "size": [
+     [
+      0,
+      0
+     ],
+     [
+      0.4,
+      60,
+      "cubic(0.16,1,0.3,1)"
+     ],
+     [
+      1.3,
+      90,
+      "easy"
+     ],
+     [
+      1.5,
+      6,
+      "expoIn"
+     ]
+    ]
+   },
+   "beh": [
+    {
+     "id": "beat",
+     "use": "pulse",
+     "at": 0.4,
+     "dur": 1,
+     "amp": 0.2,
+     "period": 0.5
+    }
+   ]
+  },
+  {
+   "id": "f-sentence",
+   "type": "text",
+   "text": "this entire video was made from one sentence.",
+   "size": 58,
+   "font": "JetBrains Mono Variable",
+   "weight": 500,
+   "color": "$ink",
+   "in": 17.55,
+   "out": 19.45,
+   "spans": [
+    {
+     "text": "one sentence.",
+     "color": "$lav"
+    }
+   ],
+   "beh": [
+    {
+     "id": "type",
+     "use": "typewriter",
+     "at": 0.1,
+     "stagger": 0.035
+    }
+   ],
+   "keys": {
+    "blur": [
+     [
+      1.7,
+      0
+     ],
+     [
+      1.9,
+      14
+     ]
+    ],
+    "opacity": [
+     [
+      1.7,
+      1
+     ],
+     [
+      1.9,
+      0
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-hit",
+   "type": "adjust",
+   "name": "Flash",
+   "in": 19.38,
+   "out": 19.95,
+   "fadeColor": "$lav",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.12,
+      1,
+      "in"
+     ],
+     [
+      0.5700000000000001,
+      0,
+      "out"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-glow",
+   "type": "gradient",
+   "kind": "radial",
+   "colors": [
+    "#241059",
+    "#0a0716",
+    "$void"
+   ],
+   "noise": 0.06,
+   "in": 19.45
+  },
+  {
+   "id": "f-ring",
+   "type": "cloner",
+   "mode": "radial",
+   "n": 72,
+   "r": 520,
+   "orient": true,
+   "in": 19.45,
+   "pos": [
+    0,
+    30,
+    -80
+   ],
+   "child": {
+    "kind": "shape",
+    "shape": "rect",
+    "w": 4,
+    "h": 36,
+    "radius": 2,
+    "colors": [
+     "$lav",
+     "$cyan",
+     "$lime",
+     "$hot"
+    ]
+   },
+   "reveal": {
+    "dur": 0.4,
+    "at": 0.05
+   },
+   "fx": [
+    {
+     "id": "lag",
+     "type": "delay",
+     "step": 0.004
+    }
+   ],
+   "keys": {
+    "spin": [
+     [
+      0,
+      0
+     ],
+     [
+      1.6,
+      40
+     ]
+    ],
+    "r": [
+     [
+      0,
+      200
+     ],
+     [
+      0.6,
+      520,
+      "cubic(0.16,1,0.3,1)"
+     ]
+    ],
+    "opacity": [
+     [
+      0,
+      0.8
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-logo",
+   "type": "text",
+   "text": "Fusion Motion",
+   "size": 200,
+   "font": "Inter Tight Variable",
+   "weight": 700,
+   "color": "$ink",
+   "tracking": -6,
+   "pos": [
+    0,
+    40,
+    50
+   ],
+   "in": 19.5,
+   "spans": [
+    {
+     "text": "Motion",
+     "font": "Instrument Serif",
+     "weight": 400,
+     "color": "$lav",
+     "size": 220
+    }
+   ],
+   "beh": [
+    {
+     "id": "in",
+     "use": "cascade",
+     "at": 0,
+     "by": "char",
+     "stagger": 0.03,
+     "dist": 120
+    }
+   ],
+   "keys": {
+    "blur": [
+     [
+      0,
+      22
+     ],
+     [
+      0.5,
+      0,
+      "out"
+     ]
+    ],
+    "scale": [
+     [
+      0,
+      1.1
+     ],
+     [
+      1.5,
+      1,
+      "easy"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f-tag",
+   "type": "text",
+   "text": "describe it  ·  watch it move",
+   "size": 30,
+   "font": "JetBrains Mono Variable",
+   "weight": 500,
+   "color": "$muted",
+   "tracking": 2,
+   "pos": [
+    0,
+    -120,
+    50
+   ],
+   "in": 19.95,
+   "spans": [
+    {
+     "text": "watch it move",
+     "color": "$lime"
+    }
+   ],
+   "beh": [
+    {
+     "id": "in",
+     "use": "typewriter",
+     "at": 0,
+     "stagger": 0.03
+    }
+   ]
+  },
+  {
+   "id": "f-end",
+   "type": "adjust",
+   "name": "Fade out",
+   "in": 20.65,
+   "fadeColor": "$void",
+   "keys": {
+    "fade": [
+     [
+      0,
+      0
+     ],
+     [
+      0.35,
+      1,
+      "in"
+     ]
+    ]
+   }
+  }
+ ],
+ "audio": [
+  {
+   "id": "score",
+   "src": "lib://music/showcase-s03",
+   "name": "Everything moves (score)",
+   "at": 0,
+   "offset": 0,
+   "volume": 1,
+   "fadeIn": 0,
+   "fadeOut": 0
+  }
+ ]
+}

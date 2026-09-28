@@ -3,7 +3,8 @@
  * landing prompt → the agent proposes a scene plan (storyboard) → the user tweaks one scene's brief →
  * Build → the look is set, then the five acts build one by one (ops streaming live, each one undo
  * step) → playback → Pro timeline → in-browser MP4 export. The agent ("Claude Opus 5.5") answers
- * through window.fusion.bridge with the SOLSTICE acts from fixtures/showcase/s02-solstice.fmd.json.
+ * through window.fusion.bridge with the acts of a showcase doc: REEL=s02 (SOLSTICE, the default) or
+ * REEL=s03 (Everything moves, the pitch opener) — see REELS below.
  *   STOP_AFTER=<n scenes> ends early (no playback of the whole piece, no export) — for smoke tests.
  * Captured with the CDP screencast (sharper than Playwright's recorder), assembled with ffmpeg.
  *   npx tsx e2e/record-build.ts [outDir]      (dev server on :5180; FFMPEG or Remotion's bundled ffmpeg)
@@ -15,18 +16,28 @@ import { execFileSync } from "node:child_process";
 
 const OUT = path.resolve(process.argv[2] ?? "out/recording");
 const BASE = process.env.BASE_URL ?? "http://localhost:5180";
-const DOC = JSON.parse(fs.readFileSync(path.resolve("fixtures/showcase/s02-solstice.fmd.json"), "utf8"));
 const W = 1920, H = 1080;
 const FRAMES = path.join(OUT, "frames");
 fs.rmSync(FRAMES, { recursive: true, force: true });
 fs.mkdirSync(FRAMES, { recursive: true });
 
-const AGENT = "Claude Opus 5.5";
-const PROMPT = "A 21-second hype promo for SOLSTICE, a midnight-sun music festival in Lofoten, Norway. Open on an arctic night with a breathing aurora and the line “The sun never sets.” 120 BPM — every cut on the beat.";
-const LOOK = "Arctic night into midnight sun: void #07060a, sun #ff5a1f, amber #ffb000, magenta #ff2e88, cream #fff4e0, ice #9ad7ff. Inter Tight 900 slams + Instrument Serif. Cut on the beat.";
-const TWEAK = " Each name gets its own plate colour and its own entrance.";
-/** The five acts. `ids` picks each act's layers from the showcase doc (the bridge prefixes them with the scene id). */
-const SCENES: { title: string; dur: number; brief: string; reply: string; ids: (id: string) => boolean }[] = [
+type Scene = { title: string; dur: number; brief: string; reply: string; ids: (id: string) => boolean };
+type Reel = {
+  doc: string; slug: string; name: string; prompt: string; look: string; plan: string; setup: string;
+  /** optional: type into one scene's brief before building, to show the storyboard is editable */
+  tweak?: { scene: string; text: string };
+  /** the five acts; `ids` picks each act's layers from the showcase doc (the bridge prefixes them with the scene id) */
+  scenes: Scene[];
+};
+const REELS: Record<string, Reel> = {
+  s02: {
+    doc: "fixtures/showcase/s02-solstice.fmd.json", slug: "solstice", name: "SOLSTICE — festival promo",
+    prompt: "A 21-second hype promo for SOLSTICE, a midnight-sun music festival in Lofoten, Norway. Open on an arctic night with a breathing aurora and the line “The sun never sets.” 120 BPM — every cut on the beat.",
+    look: "Arctic night into midnight sun: void #07060a, sun #ff5a1f, amber #ffb000, magenta #ff2e88, cream #fff4e0, ice #9ad7ff. Inter Tight 900 slams + Instrument Serif. Cut on the beat.",
+    plan: "SOLSTICE in five acts on a 120 BPM grid: the arctic night, the drop, the sun machine, dawn, and the sunrise finale — every cut lands on a beat.",
+    setup: "The look: a near-black arctic base, sun-orange and amber accents, cream type; 1080p/30 with motion blur, bloom, grain and a sunset HDRI; one shared camera that shakes harder on every act.",
+    tweak: { scene: "The drop", text: " Each name gets its own plate colour and its own entrance." },
+    scenes: [
   {
     title: "Arctic night", dur: 4,
     brief: "A starfield over snow peaks, aurora bands breathing out of phase, coordinates typing in, and “The sun never sets.” rising word by word — then it stretches into a cream flash on the drop.",
@@ -57,7 +68,54 @@ const SCENES: { title: string; dur: number; brief: string; reply: string; ids: (
     reply: "Finale: the horizon line draws out, the sun and its rays rise inside a mask behind it, SOLSTICE cascades in letter by letter, the ticket line types on, one last flash at 20 s, fade to black.",
     ids: (id) => id.startsWith("f-"),
   },
-];
+],
+  },
+  s03: {
+    doc: "fixtures/showcase/s03-everything-moves.fmd.json", slug: "everything-moves", name: "Everything moves — pitch opener",
+    prompt: "Make a 21-second, 120 BPM pitch opener that shows everything Fusion Motion can do — a spark, kinetic type on every beat, real 3D, whole worlds and the app itself — and ends by revealing that the entire video was made from one sentence.",
+    look: "Fusion's own palette on a near-black void: lavender #b593ff, cyan #01b2fd, lime #f5ff63, hot pink #ff3d6e, violet #6d3cff, ink #f7f4ff. Inter Tight 900 slams, Instrument Serif accents, JetBrains Mono for prompts. Cut on the beat.",
+    plan: "Five acts on a 120 BPM grid — spark, kinetic type, real 3D, worlds (with the editor itself), and a collapse into the reveal. Every cut lands on a beat.",
+    setup: "The look: Fusion's lavender, cyan, lime and hot pink on a near-black void; 1080p/30 with motion blur, bloom, grain and a city HDRI; one shared camera with a different handheld energy per act.",
+    scenes: [
+      {
+        title: "Spark", dur: 4,
+        brief: "A point of light in the dark, the prompt typing in, three rings of ticks, dots and tiles winding up around it until the light swallows the frame on the drop.",
+        reply: "Act 1 — the spark: dust drifting in depth, a pulsing core on the beat, the prompt typing in, three rings winding up and collapsing, then the light swallows the frame into a flash at 4.0 s.",
+        ids: (id) => id.startsWith("a-"),
+      },
+      {
+        title: "Kinetic", dur: 4,
+        brief: "EVERY · IDEA · deserves · TO · MOVE. — one word per beat on hard-cut colour plates, a 16th-note stutter of MOVE in eight typefaces, then a tunnel of type through the lens.",
+        reply: "Five words on five beats, each with its own plate and entrance; eight 16th-note slices of MOVE in eight typefaces; a spiralling tunnel of type through the lens; a strobe into the next act.",
+        ids: (id) => id.startsWith("k"),
+      },
+      {
+        title: "Dimension", dur: 4,
+        brief: "A chrome torus inside a ring of light; gold, metal, foil and plastic objects pop onto an orbit on the beat; “Real depth.” types up; the torus rushes the lens.",
+        reply: "Real 3D: a chrome torus in a rippling ring of light, four PBR objects popping onto a tilted orbit on consecutive beats, DIMENSION tracking behind, and the torus rushing the lens into a flash.",
+        ids: (id) => id.startsWith("d-"),
+      },
+      {
+        title: "Worlds", dur: 4,
+        brief: "An aurora night over mountains with “Any world.”, a cloud dissolve into dawn, and the editor itself as a frosted card: the prompt, the scene bars filling in, the layer count rolling.",
+        reply: "An aurora night over the peaks, a cloud dissolve into dawn, then the editor as a frosted-glass card flipping up: the prompt typing, five scene bars filling on the beat and the layer count rolling up.",
+        ids: (id) => id.startsWith("w-"),
+      },
+      {
+        title: "Finale", dur: 5,
+        brief: "Everything collapses into a vortex and one point; in the silence, “this entire video was made from one sentence.” types on; the last hit lands the Fusion Motion lockup.",
+        reply: "The finale: three counter-rotating vortex rings collapse into a single point, the sentence types on in the silence, and the last hit lands the Fusion Motion lockup before the fade.",
+        ids: (id) => id.startsWith("f-"),
+      },
+    ],
+  },
+};
+const REEL = REELS[process.env.REEL ?? "s02"];
+if (!REEL) throw new Error(`unknown REEL (have ${Object.keys(REELS).join(", ")})`);
+const DOC = JSON.parse(fs.readFileSync(path.resolve(REEL.doc), "utf8"));
+const DUR: number = DOC.comp.dur;
+const AGENT = "Claude Opus 5.5";
+const PROMPT = REEL.prompt, LOOK = REEL.look, SCENES = REEL.scenes;
 const STOP_AFTER = Number(process.env.STOP_AFTER ?? 0);
 
 const OVERLAY = `(() => {
@@ -157,7 +215,7 @@ async function main() {
   if (plan.kind !== "plan") throw new Error(`expected a plan turn, got ${plan.kind}`);
   await pause(1800);
   await answer(plan.turnId, {
-    message: "SOLSTICE in five acts on a 120 BPM grid: the arctic night, the drop, the sun machine, dawn, and the sunrise finale — every cut lands on a beat.",
+    message: REEL.plan,
     plan: { look: LOOK, scenes: SCENES.map(({ title, dur, brief }) => ({ title, dur, brief })) },
   });
   await page.getByTestId("scene-s5").waitFor();
@@ -165,15 +223,20 @@ async function main() {
   await caption("3 · The whole video as a scene plan — every scene, its timing and an editable brief");
   await pause(3200);
 
-  await caption("4 · Tweak any scene before building — here, the drop");
-  const brief = page.getByLabel("Brief for The drop");
-  await click(brief);
-  // caret to the very end of the brief (End only reaches the end of the visual line)
-  await brief.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(el.value.length, el.value.length));
-  await page.keyboard.type(TWEAK, { delay: 22 });
-  await pause(500);
-  await click(page.locator(".sb-head h2"));
-  await pause(900);
+  if (REEL.tweak) {
+    await caption(`4 · Tweak any scene before building — here, ${REEL.tweak.scene.toLowerCase()}`);
+    const brief = page.getByLabel(`Brief for ${REEL.tweak.scene}`);
+    await click(brief);
+    // caret to the very end of the brief (End only reaches the end of the visual line)
+    await brief.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(el.value.length, el.value.length));
+    await page.keyboard.type(REEL.tweak.text, { delay: 22 });
+    await pause(500);
+    await click(page.locator(".sb-head h2"));
+    await pause(900);
+  } else {
+    await caption("4 · Every scene's brief stays editable — this one is built exactly as planned");
+    await pause(2200);
+  }
 
   await caption("5 · Build — the look is set once, then each scene is built in order");
   await click(page.getByTestId("build-video"));
@@ -184,11 +247,12 @@ async function main() {
       const { id: camId, ...cam } = DOC.layers.find((l: { id: string }) => l.id === "cam");
       await pause(1400);
       await answer(p.turnId, {
-        message: "The look: a near-black arctic base, sun-orange and amber accents, cream type; 1080p/30 with motion blur, bloom, grain and a sunset HDRI; one shared camera that shakes harder on every act.",
+        message: REEL.setup,
         ops: [
           // clear the blank canvas first: its layers use the old palette
           ...existing.layers.map((l) => ({ op: "del", path: l.id })),
-          { op: "set", path: "name", value: "SOLSTICE — festival promo" },
+          { op: "set", path: "name", value: REEL.name },
+          ...(DOC.audio?.length ? [{ op: "set", path: "audio", value: DOC.audio }] : []),
           { op: "set", path: "brand", value: DOC.brand },
           { op: "set", path: "style", value: DOC.style },
           { op: "set", path: "markers", value: DOC.markers },
@@ -211,7 +275,7 @@ async function main() {
     await scrollChat();
     await pause(700);
     const t0 = SCENES.slice(0, i).reduce((a, s) => a + s.dur, 0);
-    await play(Math.max(0, t0 - 0.2), Math.min(21, t0 + S.dur + 0.3));
+    await play(Math.max(0, t0 - 0.2), Math.min(DUR, t0 + S.dur + 0.3));
     await pause(400);
     if (STOP_AFTER && i + 1 >= STOP_AFTER) break;
     if (i === SCENES.length - 1) break;
@@ -229,8 +293,9 @@ async function main() {
   await caption("11 · Pro mode: the same document as layers, keyframes and behaviour clips");
   await click(page.getByRole("group", { name: "Editor mode" }).getByRole("button", { name: "Pro" }));
   await pause(2500);
-  await caption("The whole piece — 75 layers, one JSON document, playing live in the browser");
-  await play(0, 21);
+  const nLayers = (await fusion<{ layers: unknown[] }>("(f) => f.doc()")).layers.length;
+  await caption(`The whole piece — ${nLayers} layers, one JSON document, playing live in the browser`);
+  await play(0, DUR);
   await pause(600);
 
   await caption("12 · Export: every frame rendered in the browser by the same renderer (sped up here)");
@@ -240,7 +305,12 @@ async function main() {
   await click(page.getByTestId("export-dialog").getByRole("button", { name: "1080p" }));
   await click(page.getByTestId("export-run"));
   mark("EXPORT_START");
-  await page.getByTestId("export-info").waitFor({ timeout: 1_800_000 });
+  // a software-rendered export can take a long time: show a few seconds of progress, then stop
+  // capturing until it finishes (the assembly squashes the wait to ~4 s either way)
+  await pause(4000);
+  await cdp.send("Page.stopScreencast");
+  await page.getByTestId("export-info").waitFor({ timeout: 4 * 3_600_000 });
+  await cdp.send("Page.startScreencast", { format: "jpeg", quality: 90, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
   mark("EXPORT_END");
   await caption("Done — a frame-perfect 1080p MP4, and the project stays fully editable");
   await pause(3500);
@@ -252,7 +322,7 @@ async function main() {
     for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
     return { b64: btoa(bin), codec: r.codec, width: r.width, height: r.height, frames: r.frames, ms: r.ms, ext: r.ext };
   });
-  fs.writeFileSync(path.join(OUT, `solstice-in-browser-export${info.ext}`), Buffer.from(info.b64, "base64"));
+  fs.writeFileSync(path.join(OUT, `${REEL.slug}-in-browser-export${info.ext}`), Buffer.from(info.b64, "base64"));
   await cdp.send("Page.stopScreencast");
   const end = Date.now() / 1000;
   await browser.close();
@@ -271,7 +341,7 @@ async function main() {
   fs.writeFileSync(path.join(FRAMES, "list.txt"), list);
   const rc = path.resolve("../node_modules/@remotion/compositor-darwin-arm64");
   const ff = process.env.FFMPEG ?? (fs.existsSync(path.join(rc, "ffmpeg")) ? path.join(rc, "ffmpeg") : "ffmpeg");
-  execFileSync(ff, ["-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", path.join(FRAMES, "list.txt"), "-r", "30", "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-movflags", "+faststart", path.join(OUT, "solstice-build-session.mp4")],
+  execFileSync(ff, ["-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", path.join(FRAMES, "list.txt"), "-r", "30", "-pix_fmt", "yuv420p", "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-movflags", "+faststart", path.join(OUT, `${REEL.slug}-build-session.mp4`)],
     { env: { ...process.env, DYLD_LIBRARY_PATH: rc } });
   console.log("frames", shots.length, "marks", marks, "export", info.codec, info.width, info.height, info.frames, (info.ms / 1000).toFixed(1) + "s");
   console.log("errors", errors.length ? errors : "none");
