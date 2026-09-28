@@ -4,6 +4,7 @@ import { devMode } from "./devMode";
 import { useStore } from "./store";
 import { playhead } from "./playhead";
 import { TopBar, ExportDialog, HelpDialog } from "./components/Shell";
+import { Icon } from "./components/ui";
 import { StartScreen } from "./components/Landing";
 import { Viewport } from "./components/Viewport";
 import { Timeline } from "./components/Timeline";
@@ -248,12 +249,46 @@ function LeftColumn() {
   );
 }
 
+type MobilePane = "panel" | "timeline" | "scenes";
+
+/**
+ * Phones only (CSS hides it elsewhere): the preview stays on top and this bar picks what fills the
+ * space below it, instead of squeezing the desktop's side panels and timeline onto a small screen.
+ */
+function MobileTabs({ pane, setPane, board }: { pane: MobilePane; setPane: (p: MobilePane) => void; board: boolean }) {
+  const tab = useStore((s) => s.tab);
+  const pending = useStore((s) => s.turns.filter((t) => t.status === "review").length);
+  const open = (t: Tab) => {
+    useStore.getState().setTab(t);
+    setPane("panel");
+  };
+  const items: { id: string; label: string; icon: string; on: boolean; go: () => void }[] = [
+    { id: "chat", label: "Assistant", icon: "sparkle", on: pane === "panel" && tab === "assistant", go: () => open("assistant") },
+    { id: "edit", label: "Edit", icon: "select", on: pane === "panel" && tab === "inspect", go: () => open("inspect") },
+    ...(board ? [{ id: "scenes", label: "Scenes", icon: "frame", on: pane === "scenes", go: () => setPane("scenes") }] : []),
+    { id: "timeline", label: "Timeline", icon: "graph", on: pane === "timeline", go: () => setPane("timeline") },
+    { id: "history", label: "History", icon: "undo", on: pane === "panel" && tab === "history", go: () => open("history") },
+  ];
+  return (
+    <nav className="mtabs" aria-label="Editor sections">
+      {items.map((it) => (
+        <button key={it.id} aria-pressed={it.on} onClick={it.go} data-testid={`mtab-${it.id}`}>
+          <Icon name={it.icon} sm />
+          <span>{it.label}</span>
+          {it.id === "chat" && pending > 0 && <i className="mtabs-dot" />}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 export function App() {
   const screen = useStore((s) => s.screen);
   const mode = useStore((s) => s.mode);
   const exportOpen = useStore((s) => s.exportOpen);
   const helpOpen = useStore((s) => s.helpOpen);
   const board = useStore((s) => s.doc.scenes.length > 0 || s.director.phase === "planning");
+  const [pane, setPane] = useState<MobilePane>("panel");
   useShortcuts();
   useEffect(() => {
     // connect the best AI provider that has a key, with no clicks
@@ -267,7 +302,7 @@ export function App() {
       </>
     );
   return (
-    <div className={`app ${mode}${board ? " has-board" : ""}`} data-testid="editor">
+    <div className={`app ${mode}${board ? " has-board" : ""} m-${pane === "scenes" && !board ? "panel" : pane}`} data-testid="editor">
       <TopBar />
       {/* with a storyboard, the left column runs the full height beside the viewport and timeline */}
       {board && <LeftColumn />}
@@ -277,6 +312,7 @@ export function App() {
         <RightPanel />
       </div>
       <Timeline />
+      <MobileTabs pane={pane} setPane={setPane} board={board} />
       {exportOpen && <ExportDialog />}
       {helpOpen && <HelpDialog />}
       <Toast />

@@ -45,7 +45,7 @@ export function TopBar() {
       </div>
       <button className="iconbtn" onClick={() => st.set("helpOpen", true)} title="Keyboard shortcuts (?)" aria-label="Shortcuts"><Icon name="help" /></button>
       <button className="btn primary" onClick={() => st.set("exportOpen", true)} data-testid="export-open">
-        <Icon name="export" sm /> Export
+        <Icon name="export" sm /> <span className="btn-label">Export</span>
       </button>
     </header>
   );

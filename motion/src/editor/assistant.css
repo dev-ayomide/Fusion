@@ -250,3 +250,55 @@
 .sb-empty h3 { margin: 6px 0 0; font: 400 25px/1.1 var(--serif); letter-spacing: -.01em; }
 .sb-empty p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
 .sb-empty textarea { width: 100%; resize: none; font-size: 12.5px; line-height: 1.5; border-radius: 12px; background: var(--panel); border-color: var(--line2); }
+
+/* ================================================================== *
+ * Phones: preview on top, one section below it, a tab bar at the     *
+ * bottom (MobileTabs in App.tsx). Desktop layout is untouched.       *
+ * ================================================================== */
+.mtabs { display: none; }
+@media (max-width: 760px) {
+  html, body, #root { height: 100dvh; }
+  .app, .app.has-board { display: flex; flex-direction: column; height: 100dvh; grid-template-columns: none; }
+  .app > .topbar { flex: none; height: 52px; order: 0; gap: 4px; padding: 0 8px 0 6px; }
+  .app .tb-home-label, .app .tb-sep, .app .topbar [aria-label="Shortcuts"], .app .tb-save { display: none; }
+  .app .projname { width: auto; min-width: 0; flex: 1 1 60px; font-size: 13.5px; padding: 5px 6px; }
+  .app .topbar .spacer { display: none; }
+  .app .topbar .seg button { padding: 4px 9px; font-size: 12px; }
+  .app .topbar .btn.primary { padding: 0 11px; height: 34px; }
+  .app .topbar .btn-label { display: none; }
+  .app .topbar .iconbtn { width: 32px; height: 32px; }
+
+  .app > .main, .app.has-board > .main { order: 1; flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; grid-template-columns: none; }
+  .app .main > .left, .app .main > .leftcol { display: none; }
+  .app .viewport { flex: none; height: min(calc(56.25vw + 74px), 46dvh); border-bottom: 1px solid var(--line); }
+  .app .main > .panel.right { flex: 1 1 auto; min-height: 0; border-left: 0; }
+  .app .panel.right > .tabs { display: none; }
+
+  .app > .board, .app > .leftcol, .app.has-board > .board, .app.has-board > .leftcol { order: 2; display: none; flex: 1 1 auto; min-height: 0; border-right: 0; }
+  .app > .timeline { order: 2; display: none; height: auto !important; flex: 1 1 auto; min-height: 0; border-top: 0; --names: 112px !important; }
+  .app.m-timeline > .main > .panel.right, .app.m-scenes > .main > .panel.right { display: none; }
+  .app.m-timeline > .main, .app.m-scenes > .main { flex: none; }
+  .app.m-timeline > .timeline { display: grid; }
+  .app.m-scenes > .board, .app.m-scenes > .leftcol { display: flex; }
+  .app > .timeline { grid-template-rows: 0 44px minmax(0, 1fr) auto auto !important; }
+  .app .tl-resize { overflow: hidden; pointer-events: none; }
+  .app .tl-legend, .app .tl-bar .hint, .app .tl-bar .faint, .app .tl-audio .faint { display: none; }
+  .app .tl-bar { gap: 6px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; }
+  .app .tl-name { font-size: 12px; padding: 0 8px; }
+
+  /* the add-toolbar floats over the preview: keep it inside the screen */
+  .app .dock { bottom: 8px; max-width: calc(100% - 12px); padding: 4px; gap: 0; }
+  .app .dock .div { margin: 0 2px; }
+  .app .dock .iconbtn { width: 32px; height: 32px; flex: none; }
+  .app .dock .ask { height: 32px; padding: 0 12px; }
+
+  .mtabs { order: 3; flex: none; display: flex; justify-content: space-around; gap: 2px; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--line); }
+  .mtabs button { position: relative; flex: 1; display: grid; justify-items: center; gap: 3px; padding: 6px 2px 5px; border-radius: 12px; font-size: 11px; font-weight: 550; color: var(--muted); background: none; border: 0; }
+  .mtabs button[aria-pressed="true"] { color: var(--text); background: var(--raise); }
+  .mtabs button[aria-pressed="true"] .icon { color: var(--ai); }
+  .mtabs-dot { position: absolute; top: 5px; right: calc(50% - 16px); width: 7px; height: 7px; border-radius: 50%; background: var(--ai); }
+
+  /* dialogs fit the screen */
+  .dialog { padding: 18px; border-radius: 20px; max-height: calc(100dvh - 24px); overflow: auto; }
+  .dialog .row { grid-template-columns: 1fr; gap: 6px; }
+}

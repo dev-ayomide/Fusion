@@ -334,7 +334,7 @@ export function StartScreen() {
               ))}
             </div>
             <div className="spacer" />
-            <span className="faint" style={{ fontSize: 12 }}>⌘↵</span>
+            <span className="faint kbd-hint" style={{ fontSize: 12 }}>⌘↵</span>
             <button className="btn ai" onClick={begin} disabled={!text.trim() && !files.length && !brand} data-testid="start-create">
               <Icon name="sparkle" sm /> Create with AI
             </button>
@@ -365,7 +365,7 @@ export function StartScreen() {
             <button className="btn sm primary" onClick={() => void openFromLibrary(recent.id)} data-testid="resume">Continue</button>
           </div>
         )}
-        <p className="hero-fine">Free to try · Nothing to install · No design skills needed</p>
+        <p className="hero-fine">Free to try · Nothing to install</p>
       </header>
 
       <ProjectsSection onNew={toPrompt} />
@@ -380,7 +380,6 @@ export function StartScreen() {
           <div><b>1 min</b><span>from one sentence to your first video</span></div>
           <div><b>{behCount}</b><span>ready-made animations, one click each</span></div>
           <div><b>4K</b><span>sharp video downloads, ready to post</span></div>
-          <div><b>0</b><span>design skills needed</span></div>
         </div>
       </section>
 
