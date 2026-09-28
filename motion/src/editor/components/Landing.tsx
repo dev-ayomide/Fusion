@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import "../landing.css";
 import { TEMPLATES } from "../../templates";
 import { Stage } from "../../render/stage";
@@ -8,7 +8,7 @@ import { relativeTime, renderDocThumb } from "../projects";
 import { openDoc, startProject } from "../startFlow";
 import { ProjectsSection, openFromLibrary, useProjects } from "./Projects";
 import { CATALOG } from "../../fmd/catalog";
-import { LAYER_TYPES, type Doc } from "../../fmd/schema";
+import type { Doc } from "../../fmd/schema";
 import { behColor } from "../edit";
 import { Icon, TYPE_ICON } from "./ui";
 
@@ -114,46 +114,15 @@ function LiveStage({ doc, onTime }: { doc: Doc; onTime: (t: number) => void }) {
   return <canvas ref={ref} className="live-canvas" />;
 }
 
-/** Tiny tokenizer for the static code samples: comments, keys, strings, numbers. */
-function Code({ src }: { src: string }) {
-  const out: ReactNode[] = [];
-  const re = /(\/\/[^\n]*)|("(?:[^"\\]|\\.)*")(\s*:)?|\b([a-zA-Z_]\w*)(?=\s*:)|(-?\b\d+(?:\.\d+)?\b)/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src))) {
-    if (m.index > last) out.push(src.slice(last, m.index));
-    const k = out.length;
-    if (m[1]) out.push(<span key={k} className="tok-c">{m[1]}</span>);
-    else if (m[2]) out.push(<span key={k} className={m[3] ? "tok-k" : "tok-s"}>{m[2]}</span>, m[3] ?? "");
-    else if (m[4]) out.push(<span key={k} className="tok-k">{m[4]}</span>);
-    else out.push(<span key={k} className="tok-n">{m[5]}</span>);
-    last = re.lastIndex;
-  }
-  out.push(src.slice(last));
-  return <>{out}</>;
-}
+/** Bar heights (%) for the music tile's waveform. */
+const WAVE = [30, 55, 42, 70, 88, 60, 36, 50, 76, 94, 68, 44, 58, 82, 64, 40, 52, 72, 46, 28];
 
-const OPS_SAMPLE = `{ "op": "set", "path": "title/beh/in",
-  "value": { "use": "bounceIn", "at": 0 } }
-{ "op": "set", "path": "cta/fill", "value": "$accent" }
-{ "op": "key", "path": "phone/keys/rot.y",
-  "keys": [[0, -25], [1.2, 0, "out"]] }`;
-
-const BRIDGE_SAMPLE = `// connect any agent to the open editor
-const f = window.fusion;
-f.bridge.connect("my-agent");
-
-const [turn] = f.bridge.pending();
-// turn.outline → the scene, one line per layer
-
-await f.bridge.respond(turn.turnId, {
-  message: "Word-by-word bounce, 20% bigger.",
-  ops: [
-    { op: "set", path: "title/beh/in",
-      value: { use: "bounceIn", at: 0 } },
-    { op: "set", path: "title/size", delta: 24 },
-  ],
-});`;
+const USE_CASES = [
+  "Announce our new dark mode",
+  "A 15-second promo for my bakery’s new menu",
+  "Show off the new checkout in our app",
+  "A teaser for our podcast’s next season",
+];
 
 const SHOWCASE = ["launch", "kinetic", "logo"] as const;
 
@@ -173,7 +142,7 @@ function Showcase() {
       <div className="win">
         <div className="win-bar">
           <i /><i /><i />
-          <span className="win-title">{doc.name}.fmd.json</span>
+          <span className="win-title">{doc.name}</span>
           <span className="win-pill"><Icon name="sparkle" sm /> AI connected</span>
         </div>
         <div className="win-body">
@@ -307,7 +276,7 @@ export function StartScreen() {
           <div className="lp-links">
             <button onClick={() => go("how")}>How it works</button>
             <button onClick={() => go("features")}>Features</button>
-            <button onClick={() => go("developers")}>Developers</button>
+            <button onClick={() => go("for-you")}>Who it’s for</button>
             <button onClick={() => go("templates")}>Templates</button>
           </div>
           <div className="spacer" />
@@ -319,8 +288,8 @@ export function StartScreen() {
 
       {/* ---------------------------- hero ---------------------------- */}
       <header className="lp-hero">
-        <button className="badge-pill" onClick={() => go("developers")}>
-          <b>New</b> AI agents that edit your timeline <span className="lav">Learn more</span>
+        <button className="badge-pill" onClick={() => go("how")}>
+          <b>New</b> Make a launch video in about a minute <span className="lav">See how</span>
         </button>
         <h1>
           Motion graphics
@@ -328,7 +297,7 @@ export function StartScreen() {
           you can <i>talk to.</i>
         </h1>
         <p className="lede">
-          Describe the video you want. An AI builds it as a real, editable timeline — then you steer it with words, sliders, or keyframes. Every change is a diff you can keep or throw away.
+          Describe the video you want and watch it come to life. Then change anything, from the words to the colours to the timing, just by asking. Don’t like a change? Undo it in one click.
         </p>
         <div className="prompt-card">
           <textarea
@@ -376,7 +345,7 @@ export function StartScreen() {
             <button className="btn sm primary" onClick={() => void openFromLibrary(recent.id)} data-testid="resume">Continue</button>
           </div>
         )}
-        <p className="hero-fine">Free · Runs entirely in your browser · Nothing is uploaded</p>
+        <p className="hero-fine">Free to try · Nothing to install · No design skills needed</p>
       </header>
 
       <ProjectsSection onNew={toPrompt} />
@@ -388,55 +357,55 @@ export function StartScreen() {
       {/* ---------------------------- numbers ---------------------------- */}
       <section className="lp-sec">
         <div className="stats rv">
-          <div><b>{behCount}</b><span>motion behaviours, one click each</span></div>
-          <div><b>{LAYER_TYPES.length}</b><span>layer types, from text to PBR 3D</span></div>
-          <div><b>4K</b><span>MP4 &amp; WebM, rendered locally</span></div>
-          <div><b>0</b><span>uploads — your work never leaves the tab</span></div>
+          <div><b>1 min</b><span>from one sentence to your first video</span></div>
+          <div><b>{behCount}</b><span>ready-made animations, one click each</span></div>
+          <div><b>4K</b><span>sharp video downloads, ready to post</span></div>
+          <div><b>0</b><span>design skills needed</span></div>
         </div>
       </section>
 
       {/* ---------------------------- how it works ---------------------------- */}
       <section className="lp-sec" id="how">
         <div className="sec-head rv">
-          <span className="eyebrow">Animation, accelerated</span>
+          <span className="eyebrow">How it works</span>
           <h2>From idea to <i>motion</i> in seconds</h2>
-          <p><b>Skip the blank canvas.</b> Start with a sentence, review what the AI changed, then fine-tune anything by hand.</p>
+          <p><b>Skip the blank page.</b> Start with a sentence, check what changed, then tweak anything you like.</p>
         </div>
         <div className="stack">
           <article className="stack-card lav" style={{ "--i": 0 } as CSSProperties}>
             <div className="stack-copy">
               <span className="mark">1 · Describe it</span>
-              <p>Type what you want in plain English. The AI writes it straight into a live timeline — layers, entrances, camera moves — while you watch it play.</p>
+              <p>Type what you want in plain words. Fusion builds your video in front of you: the text, the motion, the camera, all of it.</p>
             </div>
             <div className="stack-art">
               <div className="mock-chat">
                 <div className="mock-user">Make the headline bounce in word by word</div>
                 <div className="mock-agent">
-                  <span className="mock-who"><Icon name="sparkle" sm /> DeepSeek</span>
-                  Word-by-word bounce on the headline, 0.1s stagger.
+                  <span className="mock-who"><Icon name="sparkle" sm /> Fusion</span>
+                  Done. Each word of the headline now bounces in, one after another.
                 </div>
               </div>
             </div>
           </article>
           <article className="stack-card cyan" style={{ "--i": 1 } as CSSProperties}>
             <div className="stack-copy">
-              <span className="mark">2 · Review every change</span>
-              <p>Nothing lands silently. Each AI turn arrives as a readable diff — untick anything you don't like, keep the rest, undo the whole turn in one step.</p>
+              <span className="mark">2 · Change anything</span>
+              <p>Ask for changes the same way. You see every change before it’s kept, so keep what you like, skip the rest, and undo anything in one click.</p>
             </div>
             <div className="stack-art">
               <div className="mock-diff">
-                <div className="mock-diff-h">3 changes · previewing live</div>
-                <label><input type="checkbox" defaultChecked /> title: Bounce in animation</label>
-                <label><input type="checkbox" defaultChecked /> Set title › size to 132</label>
-                <label className="off"><input type="checkbox" /> Set title › color to orange</label>
+                <div className="mock-diff-h">3 changes · preview</div>
+                <label><input type="checkbox" defaultChecked /> Headline bounces in</label>
+                <label><input type="checkbox" defaultChecked /> Headline is bigger</label>
+                <label className="off"><input type="checkbox" /> Headline turns orange</label>
                 <div className="mock-diff-f"><span className="btn sm">Discard</span><span className="btn sm primary">Keep 2 of 3</span></div>
               </div>
             </div>
           </article>
           <article className="stack-card lime" style={{ "--i": 2 } as CSSProperties}>
             <div className="stack-copy">
-              <span className="mark">3 · Refine &amp; ship</span>
-              <p>Drop into the timeline for keyframes, easing curves and 3D — then export a crisp MP4 or WebM up to 4K, rendered frame-by-frame on your machine.</p>
+              <span className="mark">3 · Download &amp; share</span>
+              <p>Fine-tune by hand if you want to, then download a sharp video, up to 4K, ready for your launch post, website or pitch.</p>
             </div>
             <div className="stack-art big-num">4K</div>
           </article>
@@ -446,9 +415,9 @@ export function StartScreen() {
       {/* ---------------------------- features bento ---------------------------- */}
       <section className="lp-sec" id="features">
         <div className="sec-head flush rv">
-          <span className="eyebrow">Creative range</span>
-          <h2>Pro tools.<br /><i>Zero</i> learning curve.</h2>
-          <p><b>Everything a motion designer reaches for</b>, arranged so a first-timer can make something beautiful in minutes.</p>
+          <span className="eyebrow">Features</span>
+          <h2>Pro results.<br /><i>Zero</i> learning curve.</h2>
+          <p><b>Everything you need to make something beautiful</b>, simple enough that your first video takes minutes.</p>
         </div>
         <div className="bento">
           <div className="tile rv">
@@ -460,38 +429,42 @@ export function StartScreen() {
                 <i className="mini-head" />
               </div>
             </div>
-            <h3><span className="hl">A real timeline</span></h3>
-            <p>Drag bars to retime, clips to shift, edges to trim. Keyframes, Easy Ease and a proper graph editor when you want them.</p>
+            <h3><span className="hl">Everything on one timeline</span></h3>
+            <p>See every scene laid out in order. Drag to change when things happen and how long they last.</p>
           </div>
           <div className="tile rv">
             <div className="tile-art"><VibeDemo /></div>
             <h3><span className="new">new</span><span className="hl">Vibe sliders</span></h3>
-            <p>Energy, bounce and depth are wired to every relevant setting in your project. Drag once, and the whole video changes character.</p>
+            <p>Want it calmer, or more playful? Drag one slider and the whole video changes its feel.</p>
           </div>
           <div className="tile rv">
             <div className="tile-art">
               <div className="cube-scene"><div className="cube">{["f", "b", "l", "r", "t", "d"].map((s) => <i key={s} className={s} />)}</div></div>
             </div>
-            <h3><span className="hl">Real 3D, not fake depth</span></h3>
-            <p>Phones and browsers as extruded devices, PBR meshes under studio HDRIs, and a real camera you can dolly, truck and orbit.</p>
+            <h3><span className="hl">Real 3D, built in</span></h3>
+            <p>Put your app on a phone or laptop in 3D, add shiny objects, and move the camera around them.</p>
           </div>
           <div className="tile rv">
             <div className="tile-art">
-              <div className="keys">
-                {[["F9", "Easy Ease"], ["J K", "Prev / next key"], ["U", "Reveal animated"], ["⇧F3", "Graph editor"]].map(([k, l]) => (
-                  <div key={k}><kbd>{k}</kbd><span>{l}</span></div>
-                ))}
+              <div className="wave" aria-hidden="true">
+                {WAVE.map((h, k) => <i key={k} style={{ height: `${h}%` }} />)}
               </div>
             </div>
-            <h3><span className="hl">After Effects muscle memory</span></h3>
-            <p>The shortcuts you already know work here. Comp motion blur, adjustment layers, effect controls — all in a browser tab.</p>
+            <h3><span className="hl">Music that fits</span></h3>
+            <p>Pick a free track or upload your own. It plays in time with your video and comes with the download.</p>
           </div>
           <div className="tile wide rv">
-            <div className="tile-art code-art">
-              <pre><Code src={OPS_SAMPLE} /></pre>
+            <div className="tile-art saved-art" aria-hidden="true">
+              {TEMPLATES.filter((t) => t.id !== "blank").map((t) => (
+                <div key={t.id} className="saved-card">
+                  <div className="saved-thumb" style={{ backgroundImage: thumbs[t.id] ? `url(${thumbs[t.id]})` : undefined }} />
+                  <b>{t.title}</b>
+                  <span>Saved just now</span>
+                </div>
+              ))}
             </div>
-            <h3><span className="hl">Everything is one JSON document</span></h3>
-            <p>Your whole video is plain, readable JSON — people and AI edit it through the same tiny set of operations. Diff it, version it, generate it.</p>
+            <h3><span className="hl">Your videos save themselves</span></h3>
+            <p>Every video is saved as you go. Close the tab, come back later, and pick up right where you left off.</p>
           </div>
         </div>
       </section>
@@ -499,25 +472,32 @@ export function StartScreen() {
       {/* ---------------------------- statement ---------------------------- */}
       <section className="lp-sec">
         <blockquote className="statement rv">
-          The AI doesn't hand you a video you can't change. It hands you a <span className="scribble">timeline</span>.
+          Most AI tools hand you a video you can’t change. Fusion gives you one you <span className="scribble">can</span>.
         </blockquote>
       </section>
 
-      {/* ---------------------------- developers ---------------------------- */}
-      <section className="lp-sec" id="developers">
+      {/* ---------------------------- who it's for ---------------------------- */}
+      <section className="lp-sec" id="for-you">
         <div className="dev rv">
           <div className="dev-copy">
-            <span className="eyebrow dark">For developers &amp; agents</span>
-            <h2>An editor your agent already understands.</h2>
-            <p>Fusion Motion exposes the whole editor on <code>window.fusion</code>. Any model reads a compact outline of the scene and answers with ops — the same ops a person makes, streamed into a reviewable diff.</p>
+            <span className="eyebrow dark">Who it’s for</span>
+            <h2>For anyone with something to <i>launch</i>.</h2>
+            <p>No designer, no agency, no weeks of back and forth. If you can describe it, you can make it.</p>
             <ul>
-              <li><Icon name="diamond" sm /> One-line-per-layer outline, about 10 tokens a layer</li>
-              <li><Icon name="diamond" sm /> Scoped context — only the selected layers' JSON is sent</li>
-              <li><Icon name="diamond" sm /> One AI turn is one undo step</li>
-              <li><Icon name="diamond" sm /> Bring any provider — Mistral and DeepSeek built in</li>
+              <li><Icon name="diamond" sm /> Founders announcing a new product or feature</li>
+              <li><Icon name="diamond" sm /> Marketers who need a video for every launch</li>
+              <li><Icon name="diamond" sm /> Small businesses showing off what’s new</li>
+              <li><Icon name="diamond" sm /> Creators making clips for social media</li>
             </ul>
           </div>
-          <pre className="dev-code"><Code src={BRIDGE_SAMPLE} /></pre>
+          <div className="dev-prompts" aria-label="Things people ask Fusion to make">
+            {USE_CASES.map((u) => (
+              <button key={u} className="dev-prompt" onClick={() => { setText(u); toPrompt(); }}>
+                <span>{u}</span>
+                <Icon name="chevron" sm />
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -526,7 +506,7 @@ export function StartScreen() {
         <div className="sec-head rv">
           <span className="eyebrow lav">Templates</span>
           <h2>Never start from <i>scratch</i></h2>
-          <p><b>Every template is plain JSON</b> you can reshape with a sentence — open one and ask the AI to make it yours.</p>
+          <p><b>Start from a template</b> and make it yours with a sentence. Change the words, colours and timing in seconds.</p>
         </div>
         <div className="tpl-grid">
           {TEMPLATES.map((t) => (
@@ -564,16 +544,17 @@ export function StartScreen() {
               <b>Product</b>
               <button onClick={() => go("how")}>How it works</button>
               <button onClick={() => go("features")}>Features</button>
+              <button onClick={() => go("for-you")}>Who it’s for</button>
               <button onClick={() => go("templates")}>Templates</button>
             </div>
             <div>
-              <b>Build</b>
-              <button onClick={() => go("developers")}>Agent bridge</button>
+              <b>Get started</b>
+              <button onClick={toPrompt}>Start with a prompt</button>
               <button onClick={openEditor}>Open editor</button>
             </div>
           </div>
         </div>
-        <div className="lp-foot-base">© 2026 Fusion Motion · Rendered with Three.js, entirely on your machine</div>
+        <div className="lp-foot-base">© 2026 Fusion Motion</div>
       </footer>
     </div>
   );

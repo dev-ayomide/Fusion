@@ -96,7 +96,10 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
       const x0 = X(a), x1 = X(b);
       const top = y + 4, h = ROW - 8;
       const pill = h / 2;
-      ctx.fillStyle = camLane ? "rgba(255,154,61,.18)" : isSel ? "rgba(10,155,240,.14)" : "#efeef2";
+      // behaviour clips (computed first: the whole bar takes the colour of the layer's main animation)
+      const { clips, lanes } = clipLanes(doc, L);
+      const main = clips.find((c) => !c.loop) ?? clips[0];
+      ctx.fillStyle = camLane ? "rgba(255,154,61,.18)" : main ? hexA(behColor(main.bh.use), 0.62) : isSel ? "rgba(10,155,240,.14)" : "#efeef2";
       rr(ctx, x0, top, x1 - x0, h, pill);
       ctx.fill();
       if (isSel) {
@@ -110,17 +113,20 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
         hits.push({ kind: "barL", x: x0 - 4, y: top, w: 10, h, id: L.id });
         hits.push({ kind: "barR", x: x1 - 6, y: top, w: 10, h, id: L.id });
       }
-      // behavior clips
-      const { clips, lanes } = clipLanes(doc, L);
       const lh = (h - 4) / lanes;
       for (const c of clips) {
         const cx0 = X(c.t0), cx1 = X(c.t1);
         const cy = top + 2 + c.lane * lh;
         const col = behColor(c.bh.use);
         const cr = (lh - 1) / 2;
-        ctx.fillStyle = hexA(col, c.loop ? 0.16 : 0.9);
+        ctx.fillStyle = hexA(col, c.loop ? 0.16 : 1);
         rr(ctx, cx0 + 1, cy + 0.5, Math.max(4, cx1 - cx0 - 2), lh - 1, cr);
         ctx.fill();
+        // a light divider where the animation ends, so its edge is still easy to find and drag
+        if (!c.loop && cx1 < x1 - 6) {
+          ctx.fillStyle = "rgba(255,255,255,.85)";
+          ctx.fillRect(cx1 - 1.5, cy + 3, 1.5, lh - 6);
+        }
         if (c.loop) {
           ctx.strokeStyle = hexA(col, 0.75);
           ctx.setLineDash([3, 3]);
@@ -134,7 +140,7 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
           ctx.beginPath();
           ctx.rect(cx0, cy, cx1 - cx0 - 4, lh);
           ctx.clip();
-          ctx.fillStyle = c.loop ? col : "#19171c";
+          ctx.fillStyle = "#19171c";
           ctx.font = `600 ${lh > 14 ? 11 : 9.5}px Inter Variable, system-ui, sans-serif`;
           ctx.fillText(CATALOG[c.bh.use]?.label ?? c.bh.use, cx0 + 9, cy + lh / 2 + 0.5);
           ctx.restore();
