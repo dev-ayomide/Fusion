@@ -134,3 +134,22 @@ export function easeKeyOps(doc: Doc, k: { layer: string; channel: string; index:
   for (const key of next) if (key[2] === "linear") key.length = 2;
   return [{ op: "key", path: `${L.id}/keys/${k.channel}`, keys: next }];
 }
+
+/**
+ * The moment a layer has fully appeared: its start plus its entrance and text animations. Used to
+ * move the playhead after adding something, so what you just added is on screen.
+ */
+export function revealTime(doc: Doc, id: string): number | null {
+  const L = findLayer(doc, id);
+  if (!L) return null;
+  let end = 0;
+  for (const b of L.beh ?? []) {
+    const spec = CATALOG[b.use];
+    if (!spec || (spec.group !== "Enter" && spec.group !== "Text")) continue;
+    // letter-by-letter entrances take longer the more text there is
+    const stagger = Number((b as Record<string, unknown>).stagger ?? spec.params.stagger?.default ?? 0) || 0;
+    const units = L.type === "text" ? Math.min(60, L.text.replace(/\s+/g, "").length) : 0;
+    end = Math.max(end, (b.at ?? 0) + ((b.dur as number | undefined) ?? spec.dur) + stagger * units + 0.4);
+  }
+  return Math.min(Math.max(0, (L.out ?? doc.comp.dur) - 0.05), (L.in ?? 0) + end);
+}

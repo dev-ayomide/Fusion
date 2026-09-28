@@ -17,7 +17,7 @@ function brand(doc: Doc, want: string, fallbackIdx = 0): string {
  */
 export function createLayerOps(doc: Doc, kind: NewKind, t: number, extra: { asset?: string; pos?: [number, number, number] } = {}): { ops: Op[]; id: string } {
   const at = r2(Math.min(Math.max(0, t), Math.max(0, doc.comp.dur - 0.5)));
-  const pos = extra.pos ?? [0, 0, 0];
+  const pos = extra.pos ?? freeSpot(doc, at);
   const after = frontAfter(doc);
   let stem: string = kind;
   let layer: Record<string, unknown>;
@@ -83,4 +83,17 @@ export function createLayerOps(doc: Doc, kind: NewKind, t: number, extra: { asse
   const id = uniqueId(doc, stem);
   // backgrounds go to the back; everything else lands in front
   return { ops: [{ op: "add", id, after: kind === "sky" ? null : after, layer }], id };
+}
+
+/** Spots tried for a new layer, centre first; the first one nothing on screen is sitting on wins. */
+const SPOTS: [number, number][] = [[0, 0], [0, -180], [0, 180], [-460, 0], [460, 0], [-460, -220], [460, -220], [-460, 220], [460, 220], [0, -340], [0, 340]];
+const CONTENT = new Set(["text", "shape", "image", "device", "cloner", "html", "path", "mesh", "group"]);
+
+/** A position for a new layer that doesn't land on top of something already on screen at `t`. */
+export function freeSpot(doc: Doc, t: number): [number, number, number] {
+  const taken = doc.layers
+    .filter((L) => CONTENT.has(L.type) && !L.parent && (L.in ?? 0) <= t + 0.01 && (L.out ?? doc.comp.dur) > t)
+    .map((L) => [L.pos?.[0] ?? 0, L.pos?.[1] ?? 0]);
+  const spot = SPOTS.find(([x, y]) => taken.every(([tx, ty]) => Math.hypot(tx - x, ty - y) > 120)) ?? SPOTS[0];
+  return [spot[0], spot[1], 0];
 }

@@ -135,13 +135,17 @@ export function NumField({ value, onCommit, onScrub, onScrubEnd, step = 1, min, 
 }
 
 /* ---------------------------- colour field --------------------------- */
+/** Friendly names for brand colours (the document refers to them as $accent, $ink…). */
+const COLOUR_NAMES: Record<string, string> = { accent: "Accent", ink: "Text", paper: "Background", sky: "Sky", sun: "Sun" };
+export const colourName = (k: string) => COLOUR_NAMES[k] ?? k.charAt(0).toUpperCase() + k.slice(1).replace(/-/g, " ");
+
 export function ColorField({ doc, value, onChange, allowNone }: { doc: Doc; value: string | undefined; onChange: (v: string | undefined) => void; allowNone?: boolean }) {
   const resolved = value?.startsWith("$") ? doc.brand.colors[value.slice(1)] : value;
   const custom = value && !value.startsWith("$");
   return (
     <div className="color">
       {Object.entries(doc.brand.colors).map(([k, c]) => (
-        <button key={k} className={`swatch${value === "$" + k ? " sel" : ""}`} style={{ background: c }} title={`Brand: ${k} (${c})`} aria-label={`Brand color ${k}`} onClick={() => onChange("$" + k)} />
+        <button key={k} className={`swatch${value === "$" + k ? " sel" : ""}`} style={{ background: c }} title={`${colourName(k)} colour`} aria-label={`Brand color ${k}`} onClick={() => onChange("$" + k)} />
       ))}
       <label className={`swatch${custom ? " sel" : ""}`} title="Custom colour" style={{ background: custom ? resolved : "conic-gradient(#f55,#fd5,#5f8,#5cf,#85f,#f55)" }}>
         <input type="color" value={resolved ?? "#ffffff"} onChange={(e) => onChange(e.target.value.toLowerCase())} aria-label="Custom colour" />
@@ -151,7 +155,7 @@ export function ColorField({ doc, value, onChange, allowNone }: { doc: Doc; valu
           None
         </button>
       )}
-      <span className="mono faint" style={{ fontSize: 11 }}>{value ?? "none"}</span>
+      <span className="faint" style={{ fontSize: 11.5 }}>{!value ? "None" : value.startsWith("$") ? colourName(value.slice(1)) : "Custom"}</span>
     </div>
   );
 }

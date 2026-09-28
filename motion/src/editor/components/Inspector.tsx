@@ -11,7 +11,7 @@ import { importAsset, assetUrl } from "../../assets/assets";
 import { useStore, useDisplayDoc } from "../store";
 import { playhead } from "../playhead";
 import { setChannelOps, toggleKeyOps, ownerOf, keyIndexAt, localTime, uniqueBehId, duplicateOps, deleteOps, behColor } from "../edit";
-import { Icon, NumField, ColorField, Seg, TYPE_ICON } from "./ui";
+import { Icon, NumField, ColorField, Seg, TYPE_ICON, colourName } from "./ui";
 
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
 
@@ -47,10 +47,12 @@ function Section({ title, children, right }: { title: string; children: ReactNod
 }
 
 /* ------------------------- keyable property row ----------------------- */
-function PropRow({ doc, L, ch, label, step = 1, min, max, precision = 2, pro }: { doc: Doc; L: Layer; ch: string; label: string; step?: number; min?: number; max?: number; precision?: number; pro: boolean }) {
+function PropRow({ doc, L, ch, label, step = 1, min, max, precision = 2, pro, percent }: { doc: Doc; L: Layer; ch: string; label: string; step?: number; min?: number; max?: number; precision?: number; pro: boolean; percent?: boolean }) {
   const t = playhead.get();
   const local = localTime(doc, L, t);
   const value = trackValue(doc, L, ch, local);
+  // shown as a percentage (100% = 1) where that's how people think about it: size and opacity
+  const k = percent ? 100 : 1;
   const track = L.keys?.[ch];
   const keyed = !!track?.length;
   const atKey = keyed && keyIndexAt(track, local, doc.comp.fps) >= 0;
@@ -76,20 +78,40 @@ function PropRow({ doc, L, ch, label, step = 1, min, max, precision = 2, pro }: 
       <label title={owner ? `${label} is animated by "${owner}"; this is its resting value` : label}>{label}</label>
       <div className="vals">
         <NumField
-          value={value}
-          step={step}
-          min={min}
-          max={max}
-          precision={precision}
+          value={value * k}
+          step={step * k}
+          min={min === undefined ? undefined : min * k}
+          max={max === undefined ? undefined : max * k}
+          precision={percent ? 0 : precision}
           className={`${keyed ? "keyed" : ""}${owner ? " driven" : ""}`}
           title={`${L.id} ${ch}`}
-          onScrub={(v) => preview(ops(v))}
-          onScrubEnd={(v) => commit(ops(v), `Set ${L.id} ${ch}`)}
-          onCommit={(v) => commit(ops(v), `Set ${L.id} ${ch}`)}
+          onScrub={(v) => preview(ops(v / k))}
+          onScrubEnd={(v) => commit(ops(v / k), `Set ${L.id} ${ch}`)}
+          onCommit={(v) => commit(ops(v / k), `Set ${L.id} ${ch}`)}
         />
+        {percent && <span className="faint unit">%</span>}
       </div>
     </div>
   );
+}
+
+/**
+ * Move a layer one step forward (+1, drawn later) or backward (-1) among its siblings. Backgrounds
+ * (gradient, sky) and the camera stay where they are, so nothing slips behind the background.
+ */
+function restackOp(doc: Doc, id: string, dir: 1 | -1): Op | null {
+  const L = doc.layers.find((l) => l.id === id);
+  if (!L) return null;
+  const fixed = (l: Layer) => l.type === "gradient" || l.type === "sky" || l.type === "camera";
+  const sibs = doc.layers.filter((l) => (l.parent ?? null) === (L.parent ?? null) && !fixed(l));
+  const i = sibs.findIndex((l) => l.id === id);
+  if (dir === 1) {
+    const next = sibs[i + 1];
+    return next ? { op: "ord", id, after: next.id } : null;
+  }
+  if (i <= 0) return null;
+  const before = sibs[i - 2] ?? doc.layers.filter((l) => fixed(l) && l.type !== "camera").at(-1);
+  return { op: "ord", id, after: before ? before.id : null };
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -353,66 +375,14 @@ function LayerInspector({ doc, L, pro }: { doc: Doc; L: Layer; pro: boolean }) {
   const [exprText, setExprText] = useState("");
   const id = L.id;
   const set = (k: string, v: unknown, intent?: string) => commit([{ op: "set", path: `${id}/${k}`, value: v }], intent ?? `Set ${id} ${k}`);
-  const P = (ch: string, label: string, step = 1, extra: Partial<{ min: number; max: number; precision: number }> = {}) => <PropRow doc={doc} L={L} ch={ch} label={label} step={step} pro={pro} {...extra} />;
+  const P = (ch: string, label: string, step = 1, extra: Partial<{ min: number; max: number; precision: number; percent: boolean }> = {}) => <PropRow doc={doc} L={L} ch={ch} label={label} step={step} pro={pro} {...extra} />;
   const [textDraft, setTextDraft] = useState(L.type === "text" ? L.text : "");
   useEffect(() => {
     if (L.type === "text") setTextDraft(L.text);
   }, [L]);
 
-  return (
-    <div className="insp" data-testid="inspector">
-      <div className="insp-head">
-        <span className="tbadge"><Icon name={TYPE_ICON[L.type]} sm /></span>
-        <input aria-label="Layer name" defaultValue={L.name ?? L.id} key={L.id + (L.name ?? "")} onBlur={(e) => e.target.value !== (L.name ?? L.id) && set("name", e.target.value, `Renamed ${id}`)} onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} />
-        <button className="iconbtn" title="Duplicate (⌘D)" aria-label="Duplicate" onClick={() => {
-          const d = duplicateOps(doc, id);
-          if (d && commit(d.ops, `Duplicated ${id}`)) useStore.getState().select([d.newId]);
-        }}><Icon name="copy" sm /></button>
-        <button className="iconbtn" title="Delete (⌫)" aria-label="Delete layer" onClick={() => commit(deleteOps(doc, [id]), `Deleted ${id}`) && useStore.getState().select([])}><Icon name="trash" sm /></button>
-      </div>
-      <div className="hint mono" style={{ marginTop: -8 }}>id: {id} · {L.type}</div>
-
-      {L.type !== "gradient" && (
-        <Section title="Timing">
-          <Field label="Starts at">
-            <NumField value={L.in ?? 0} step={0.05} min={0} onCommit={(v) => set("in", r3(v), `${id} starts at ${v}s`)} />
-          </Field>
-          <Field label="Ends at">
-            <NumField value={L.out ?? doc.comp.dur} step={0.05} min={0.05} onCommit={(v) => set("out", r3(v), `${id} ends at ${v}s`)} />
-          </Field>
-        </Section>
-      )}
-
-      {!["gradient", "sky", "adjust"].includes(L.type) && (
-        <Section title="Transform">
-          {P("pos.x", "Position X")}
-          {P("pos.y", "Position Y")}
-          {pro && P("pos.z", "Depth Z", 5)}
-          {L.type !== "camera" && P("scale", "Scale", 0.01, { precision: 3 })}
-          {P("rot.z", "Rotation", 1)}
-          {pro && P("rot.x", "Tilt X", 1)}
-          {pro && P("rot.y", "Turn Y", 1)}
-          {L.type !== "camera" && P("opacity", "Opacity", 0.01, { min: 0, max: 1, precision: 2 })}
-          {pro && L.type !== "camera" && (
-            <Field label="3D depth sort">
-              <Seg value={(L.depth ?? (L.type === "device" || L.type === "cloner")) ? "on" : "off"} options={[{ v: "off", l: "Flat" }, { v: "on", l: "3D" }]} onChange={(v) => set("depth", v === "on")} />
-            </Field>
-          )}
-          {pro && (
-            <Field label="Parent">
-              <select value={L.parent ?? ""} onChange={(e) => (e.target.value ? set("parent", e.target.value, `Parented ${id}`) : commit([{ op: "del", path: `${id}/parent` }], `Unparented ${id}`))} aria-label="Parent">
-                <option value="">None</option>
-                {doc.layers.filter((x) => x.id !== id && x.type !== "gradient" && x.type !== "camera").map((x) => (
-                  <option key={x.id} value={x.id}>{x.id}</option>
-                ))}
-              </select>
-            </Field>
-          )}
-        </Section>
-      )}
-
-      {L.type === "text" && (
-        <Section title="Text">
+  const textSection = L.type === "text" && (
+<Section title="Text">
           <textarea
             id="insp-text"
             aria-label="Text content"
@@ -450,7 +420,68 @@ function LayerInspector({ doc, L, pro }: { doc: Doc; L: Layer; pro: boolean }) {
           </Field>
           {pro && P("tracking", "Tracking", 0.5)}
         </Section>
+  );
+
+  return (
+    <div className="insp" data-testid="inspector">
+      <div className="insp-head">
+        <span className="tbadge"><Icon name={TYPE_ICON[L.type]} sm /></span>
+        <input aria-label="Layer name" defaultValue={L.name ?? L.id} key={L.id + (L.name ?? "")} onBlur={(e) => e.target.value !== (L.name ?? L.id) && set("name", e.target.value, `Renamed ${id}`)} onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} />
+        <button className="iconbtn" title="Duplicate (⌘D)" aria-label="Duplicate" onClick={() => {
+          const d = duplicateOps(doc, id);
+          if (d && commit(d.ops, `Duplicated ${id}`)) useStore.getState().select([d.newId]);
+        }}><Icon name="copy" sm /></button>
+        {L.type !== "gradient" && L.type !== "camera" && L.type !== "sky" && (
+          <>
+            <button className="iconbtn" title="Bring forward" aria-label="Bring forward" disabled={!restackOp(doc, id, 1)} onClick={() => { const o = restackOp(doc, id, 1); if (o) commit([o], `Brought ${id} forward`); }}><Icon name="chevdown" sm className="flip" /></button>
+            <button className="iconbtn" title="Send backward" aria-label="Send backward" disabled={!restackOp(doc, id, -1)} onClick={() => { const o = restackOp(doc, id, -1); if (o) commit([o], `Sent ${id} backward`); }}><Icon name="chevdown" sm /></button>
+          </>
+        )}
+        <button className="iconbtn" title="Delete (⌫)" aria-label="Delete layer" onClick={() => commit(deleteOps(doc, [id]), `Deleted ${id}`) && useStore.getState().select([])}><Icon name="trash" sm /></button>
+      </div>
+      {pro && <div className="hint mono" style={{ marginTop: -8 }}>id: {id} · {L.type}</div>}
+      {!pro && textSection}
+
+      {L.type !== "gradient" && (
+        <Section title="Timing">
+          <Field label="Starts at">
+            <NumField value={L.in ?? 0} step={0.05} min={0} onCommit={(v) => set("in", r3(v), `${id} starts at ${v}s`)} />
+          </Field>
+          <Field label="Ends at">
+            <NumField value={L.out ?? doc.comp.dur} step={0.05} min={0.05} onCommit={(v) => set("out", r3(v), `${id} ends at ${v}s`)} />
+          </Field>
+        </Section>
       )}
+
+      {!["gradient", "sky", "adjust"].includes(L.type) && (
+        <Section title="Transform">
+          {P("pos.x", "Position X")}
+          {P("pos.y", "Position Y")}
+          {pro && P("pos.z", "Depth Z", 5)}
+          {L.type !== "camera" && P("scale", "Size", 0.01, { min: 0, percent: true })}
+          {P("rot.z", "Rotation", 1)}
+          {pro && P("rot.x", "Tilt X", 1)}
+          {pro && P("rot.y", "Turn Y", 1)}
+          {L.type !== "camera" && P("opacity", "Opacity", 0.01, { min: 0, max: 1, percent: true })}
+          {pro && L.type !== "camera" && (
+            <Field label="3D depth sort">
+              <Seg value={(L.depth ?? (L.type === "device" || L.type === "cloner")) ? "on" : "off"} options={[{ v: "off", l: "Flat" }, { v: "on", l: "3D" }]} onChange={(v) => set("depth", v === "on")} />
+            </Field>
+          )}
+          {pro && (
+            <Field label="Parent">
+              <select value={L.parent ?? ""} onChange={(e) => (e.target.value ? set("parent", e.target.value, `Parented ${id}`) : commit([{ op: "del", path: `${id}/parent` }], `Unparented ${id}`))} aria-label="Parent">
+                <option value="">None</option>
+                {doc.layers.filter((x) => x.id !== id && x.type !== "gradient" && x.type !== "camera").map((x) => (
+                  <option key={x.id} value={x.id}>{x.id}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+        </Section>
+      )}
+
+      {pro && textSection}
 
       {L.type === "shape" && (
         <Section title="Shape">
@@ -705,6 +736,7 @@ const SIZES = [
 ];
 function CompInspector({ doc }: { doc: Doc }) {
   const [newColor, setNewColor] = useState("");
+  const pro = useStore((s) => s.mode) === "pro";
   const size = SIZES.find((s) => s.w === doc.comp.w && s.h === doc.comp.h)?.v ?? "custom";
   const set = (path: string, v: unknown, intent: string) => commit([{ op: "set", path, value: v }], intent);
   return (
@@ -731,7 +763,7 @@ function CompInspector({ doc }: { doc: Doc }) {
         </Field>
         <Field label="Background"><ColorField doc={doc} value={doc.comp.bg} onChange={(v) => v && set("comp/bg", v, "Background colour")} /></Field>
       </Section>
-      <Section title="Brand">
+      <Section title="Colours & font">
         <Field label="Font">
           <select value={doc.brand.font} onChange={(e) => set("brand/font", e.target.value, `Brand font ${e.target.value}`)} aria-label="Brand font">
             {FONT_NAMES.map((f) => <option key={f} value={f}>{f.replace(" Variable", "")}</option>)}
@@ -740,7 +772,7 @@ function CompInspector({ doc }: { doc: Doc }) {
         {Object.entries(doc.brand.colors).map(([k, c]) => (
           <div className="prow nokey" key={k}>
             <span />
-            <label className="mono">${k}</label>
+            <label>{colourName(k)}</label>
             <div className="vals" style={{ alignItems: "center", gap: 8 }}>
               <label className="swatch" style={{ background: c, flex: "none" }}>
                 <input type="color" value={c} aria-label={`Brand colour ${k}`} onChange={(e) => set(`brand/colors/${k}`, e.target.value.toLowerCase(), `Brand ${k} → ${e.target.value}`)} />
@@ -749,11 +781,11 @@ function CompInspector({ doc }: { doc: Doc }) {
             </div>
           </div>
         ))}
-        <div style={{ display: "flex", gap: 6 }}>
+        {pro && <div style={{ display: "flex", gap: 6 }}>
           <input placeholder="new colour name" value={newColor} onChange={(e) => setNewColor(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} style={{ flex: 1 }} aria-label="New brand colour name" />
           <button className="btn sm" disabled={!/^[a-z]/.test(newColor) || newColor in doc.brand.colors} onClick={() => { set(`brand/colors/${newColor}`, "#ffffff", `Brand colour ${newColor}`); setNewColor(""); }}>Add</button>
-        </div>
-        <div className="hint">Layers use brand colours by name ($accent), so changing one here re-themes the whole video.</div>
+        </div>}
+        <div className="hint">Change a colour here and everything that uses it updates.</div>
       </Section>
     </div>
   );

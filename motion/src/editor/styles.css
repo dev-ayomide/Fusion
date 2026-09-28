@@ -174,16 +174,17 @@ input[type="range"] { accent-color: var(--text); width: 100%; padding: 0; backgr
 /* assistant, storyboard and AI flow styles live in assistant.css */
 
 /* inspector */
-.insp { padding: 14px 16px 22px; display: grid; gap: 14px; align-content: start; }
+.insp { padding: 14px 16px 22px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; min-width: 0; }
 .insp-head { display: flex; align-items: center; gap: 8px; }
-.insp-head input { flex: 1; font-weight: 650; font-size: 14px; background: none; padding: 4px 7px; }
+.insp-head input { flex: 1; min-width: 0; font-weight: 650; font-size: 14px; background: none; padding: 4px 7px; }
+.insp-head .iconbtn { flex: none; }
 .sec { display: grid; gap: 8px; }
 .sec-h { display: flex; align-items: center; justify-content: space-between; font: 650 12px/1 var(--font); color: var(--text); padding-top: 14px; border-top: 1px solid var(--line); }
 .sec:first-of-type .sec-h { border-top: 0; padding-top: 0; }
 .prow { display: grid; grid-template-columns: 16px 76px 1fr; align-items: center; gap: 6px; min-height: 30px; }
 .prow.nokey { grid-template-columns: 0 92px 1fr; }
 .prow > label { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.prow .vals { display: flex; gap: 5px; min-width: 0; }
+.prow .vals { display: flex; gap: 5px; min-width: 0; align-items: center; }
 .prow .vals > * { flex: 1; min-width: 0; }
 .kf { width: 14px; height: 14px; display: grid; place-items: center; color: var(--line2); transition: color .15s var(--ease), transform .15s var(--ease); }
 .kf svg { width: 10px; height: 10px; }
@@ -307,3 +308,8 @@ input[type="range"] { accent-color: var(--text); width: 100%; padding: 0; backgr
 .curve-foot { font-size: 11.5px; padding: 6px 12px 8px; }
 .curve-empty { display: grid; gap: 6px; justify-items: start; padding: 18px 20px; max-width: 620px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
 .curve-empty b { color: var(--text); font-size: 13.5px; }
+
+/* empty canvas hint */
+.vempty { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); display: grid; gap: 4px; justify-items: center; text-align: center; padding: 14px 20px; border-radius: 16px; background: rgba(255, 255, 255, .92); box-shadow: var(--shadow-md); pointer-events: none; max-width: 340px; font-size: 12.5px; color: var(--muted); }
+.vempty b { color: var(--text); font-size: 14px; }
+.vals .unit { font-size: 12px; margin-left: 6px; align-self: center; flex: none; }

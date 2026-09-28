@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
+import { insertTime } from "../reveal";
 import { Doc as DocSchema, type Doc } from "../../fmd/schema";
 import { validate, type Op } from "../../fmd/ops";
 import { outline } from "../../fmd/outline";
 import { assetUrl, importAsset } from "../../assets/assets";
 import { useStore, useDisplayDoc } from "../store";
-import { playhead } from "../playhead";
 import { createLayerOps } from "../create";
 import { findLayer } from "../edit";
 import { Icon, TYPE_ICON } from "./ui";
@@ -90,7 +90,7 @@ export function LayersPanel() {
             onClick={() => {
               const st = useStore.getState();
               const selDev = st.selection.map((s) => findLayer(st.doc, s)).find((l) => l?.type === "device");
-              const ops: Op[] = selDev ? [{ op: "set", path: `${selDev.id}/screen`, value: id }] : createLayerOps(st.doc, "image", playhead.get(), { asset: id }).ops;
+              const ops: Op[] = selDev ? [{ op: "set", path: `${selDev.id}/screen`, value: id }] : createLayerOps(st.doc, "image", insertTime(), { asset: id }).ops;
               st.commit(ops, { source: "you", intent: selDev ? `${id} on ${selDev.id} screen` : `Added ${id}` });
             }}
           >

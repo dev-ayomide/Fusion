@@ -11,6 +11,7 @@ import { onHtmlReady } from "../../render/html";
 import { onAssetsChanged, importAsset, LIBRARY, libraryUrl, isAudioFile } from "../../assets/assets";
 import { uploadAudio } from "../../audio/actions";
 import { setChannelOps, findLayer, localTime, uniqueId } from "../edit";
+import { insertTime, revealLayer } from "../reveal";
 import { createLayerOps, type NewKind } from "../create";
 import { Icon } from "./ui";
 
@@ -324,13 +325,16 @@ export function Viewport() {
   };
 
   /* ------------------------------ add ------------------------------ */
+
   const add = (kind: NewKind, asset?: string) => {
     setMenu(null);
     const st = useStore.getState();
-    const { ops, id } = createLayerOps(st.doc, kind, playhead.get(), { asset });
+    const at = insertTime();
+    const { ops, id } = createLayerOps(st.doc, kind, at, { asset });
     const r = st.commit(ops, { source: "you", intent: `Added ${id}` });
     if (r.ok) {
       st.select([id]);
+      revealLayer(id, at);
       if (st.mode === "pro" || kind === "text") st.setTab("inspect");
     } else st.toast(r.errors[0], "error");
   };
@@ -341,13 +345,16 @@ export function Viewport() {
     const id = st.doc.assets[name] ? name : uniqueId(st.doc, name);
     const entry = { src: `lib://${pack}/${name}`, mime: "image/webp", name };
     const doc1 = { ...st.doc, assets: { ...st.doc.assets, [id]: entry } };
-    const c = createLayerOps(doc1, "image", playhead.get(), { asset: id });
+    const at = insertTime();
+    const c = createLayerOps(doc1, "image", at, { asset: id });
     const layer = (c.ops[0] as { layer: Record<string, unknown> }).layer;
     layer.w = 260;
     delete layer.radius;
     const r = st.commit([{ op: "set", path: `assets/${id}`, value: entry }, ...c.ops], { source: "you", intent: `Added ${name}` });
-    if (r.ok) st.select([c.id]);
-    else st.toast(r.errors[0], "error");
+    if (r.ok) {
+      st.select([c.id]);
+      revealLayer(c.id, at);
+    } else st.toast(r.errors[0], "error");
   };
 
   const importFiles = async (files: FileList | File[], at?: { x: number; y: number }) => {
@@ -373,9 +380,13 @@ export function Viewport() {
         useStore.getState().commit(ops, { source: "you", intent: `Put ${f.name} on ${targetL.id}'s screen` });
         useStore.getState().toast(`Placed ${f.name} on the ${targetL.id} screen`);
       } else {
-        const c = createLayerOps({ ...doc0, assets: { ...doc0.assets, [id]: entry } }, "image", playhead.get(), { asset: id });
+        const at = insertTime();
+        const c = createLayerOps({ ...doc0, assets: { ...doc0.assets, [id]: entry } }, "image", at, { asset: id });
         const r = useStore.getState().commit([...ops, ...c.ops], { source: "you", intent: `Added image ${f.name}` });
-        if (r.ok) useStore.getState().select([c.id]);
+        if (r.ok) {
+          useStore.getState().select([c.id]);
+          revealLayer(c.id, at);
+        }
       }
     }
   };
@@ -413,6 +424,12 @@ export function Viewport() {
     >
       <canvas ref={canvasRef} data-testid="viewport-canvas" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onWheel={onWheel} onDoubleClick={onDoubleClick} />
       <div ref={overlay} className="tl-overlay" />
+      {doc.layers.every((l) => l.type === "gradient" || l.type === "camera" || l.type === "sky") && (
+        <div className="vempty" aria-live="polite">
+          <b>Your canvas is empty</b>
+          <span>Add text, a shape or an image from the toolbar below, or drop an image here.</span>
+        </div>
+      )}
       <div className="vtop">
         <div className="seg" role="group" aria-label="View">
           <button aria-pressed={view === "shot"} onClick={() => useStore.getState().setView("shot")} title="Camera output only">

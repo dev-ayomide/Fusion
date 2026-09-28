@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { insertTime, revealLayer } from "./reveal";
 import { devMode } from "./devMode";
 import { useStore } from "./store";
 import { playhead } from "./playhead";
@@ -71,8 +72,12 @@ function useShortcuts() {
       const t = playhead.get();
       const one = st.selection.length === 1 ? findLayer(st.doc, st.selection[0]) : undefined;
       const add = (kind: Parameters<typeof createLayerOps>[1]) => {
-        const { ops, id } = createLayerOps(st.doc, kind, t);
-        if (st.commit(ops, { source: "you", intent: `Added ${id}` }).ok) st.select([id]);
+        const at = insertTime();
+        const { ops, id } = createLayerOps(st.doc, kind, at);
+        if (st.commit(ops, { source: "you", intent: `Added ${id}` }).ok) {
+          st.select([id]);
+          revealLayer(id, at);
+        }
       };
       // After Effects keyframe assistants and navigation
       if (e.key === "F9") {
