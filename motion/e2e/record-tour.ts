@@ -1,7 +1,9 @@
 /**
  * Screen-records a guided test of the whole product in the real editor:
- * landing → prompt → storyboard (edit before building) → build scene by scene → assistant edit →
- * music (library + upload) → export → the "Your videos" library.
+ * landing (every section) → prompt → storyboard (settings, edit, reorder, add/delete) → build scene
+ * by scene → assistant edit, Vibe, Edit and History tabs → Pro mode (layers, inspector, graph editor,
+ * split view, shortcuts) → music (library + upload) → export → the "Your videos" library (rename,
+ * duplicate, delete, reopen) → opening a template.
  *
  * The AI side is answered through window.fusion.bridge with scripted replies (the same path the
  * e2e suite and any external agent use), so the recording needs no API key. With a key in
@@ -169,15 +171,67 @@ async function main() {
   await pause(2000);
   await cdp.send("Page.startScreencast", { format: "jpeg", quality: 88, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
   await pause(800);
-  await caption("Fusion Motion: guided test of the latest changes");
-  await moveTo(W * 0.3, H * 0.4);
+  const scrollTo = async (sel: string) => {
+    await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ behavior: "smooth", block: "start" }), sel);
+    await pause(1500);
+  };
+  const wheel = async (dy: number, times = 1) => {
+    for (let k = 0; k < times; k++) { await page.mouse.wheel(0, dy); await pause(700); }
+  };
+  await caption("Fusion Motion: a walkthrough of every screen");
+  await moveTo(W * 0.3, H * 0.45);
   await pause(2200);
-  await caption("1 · Landing page: redesigned, dark theme with its own type (no stretched fonts)");
-  await page.mouse.wheel(0, 700); await pause(1600);
-  await page.mouse.wheel(0, 900); await pause(1600);
-  await page.mouse.wheel(0, 900); await pause(1400);
-  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  await caption("1 · Landing page: serif headline, one prompt box, example prompts underneath");
+  await pause(2600);
+  await click(page.getByRole("button", { name: "A launch promo for my budgeting app — phone floating in 3D" }));
   await pause(1400);
+  check((await page.getByLabel("Describe your video").inputValue()).includes("budgeting"), "an example prompt fills the prompt box");
+  await page.getByLabel("Describe your video").fill("");
+  await pause(400);
+
+  await caption("The live preview plays real templates with the same engine as the editor. Switch between them:");
+  await scrollTo(".lp-show");
+  await pause(1200);
+  await click(page.getByRole("tab", { name: "Kinetic type" }));
+  await pause(2200);
+  await click(page.getByRole("tab", { name: "Logo reveal" }));
+  await pause(2200);
+
+  await caption("How it works: three cards that stack as you scroll");
+  await click(page.locator(".lp-links button", { hasText: "How it works" }));
+  await pause(1600);
+  await moveTo(W * 0.5, H * 0.6);
+  await wheel(500, 5);
+
+  await caption("Features: try the energy and bounce sliders right on the page");
+  await click(page.locator(".lp-links button", { hasText: "Features" }));
+  await pause(1500);
+  const energy = page.getByLabel("Demo energy");
+  await energy.scrollIntoViewIfNeeded();
+  const eb = (await energy.boundingBox())!;
+  await moveTo(eb.x + eb.width * 0.6, eb.y + eb.height / 2);
+  await page.mouse.down(); await moveTo(eb.x + eb.width * 0.95, eb.y + eb.height / 2, 12); await page.mouse.up();
+  await pause(1800);
+  await wheel(500, 3);
+
+  await caption("Developers: any AI agent can drive the editor through window.fusion");
+  await click(page.locator(".lp-links button", { hasText: "Developers" }));
+  await pause(2600);
+
+  await caption("Templates: every card is rendered by the real engine");
+  await click(page.locator(".lp-links button", { hasText: "Templates" }));
+  await pause(2400);
+  await moveTo(W * 0.3, H * 0.55);
+  await pause(1000);
+  await moveTo(W * 0.62, H * 0.55);
+  await pause(1200);
+  await wheel(600, 3);
+  await caption("The end of the page: start with a prompt or a blank canvas");
+  await pause(2400);
+  await caption("“Start with a prompt” takes you back to the prompt box");
+  await click(page.getByRole("button", { name: "Start with a prompt" }));
+  await pause(1600);
+  check(await page.evaluate(() => document.activeElement?.getAttribute("aria-label") === "Describe your video"), "“Start with a prompt” focuses the prompt box");
 
   await caption("2 · Describe the video and press Create");
   await type(page.getByLabel("Describe your video"), IDEA, 18);
@@ -227,6 +281,32 @@ async function main() {
   await pause(1200);
   check((await doc()).scenes[1].title === "In motion", "undo restores the scene order");
 
+  await caption("Length, format and look sit on one line. Click it to open the settings");
+  await click(page.getByTestId("board-settings"));
+  await pause(1600);
+  const look = page.getByLabel("Look and palette");
+  await click(look);
+  await page.keyboard.press("End");
+  await page.keyboard.type(". Soft film grain.", { delay: 26 });
+  await click(page.locator(".sb-head h2"));
+  await pause(900);
+  await click(page.getByTestId("board-settings"));
+  await pause(1000);
+
+  await caption("Add a scene, then delete it again");
+  await click(page.getByTestId("add-scene"));
+  await pause(1200);
+  const d3b = await doc();
+  check(d3b.scenes.length === 5, `Add scene adds a fifth scene (${d3b.scenes.length})`);
+  const added = d3b.scenes[4];
+  const addedCard = page.getByTestId(`scene-${added.id}`);
+  await addedCard.scrollIntoViewIfNeeded();
+  await addedCard.hover();
+  await pause(600);
+  await click(addedCard.getByLabel(`Delete ${added.title}`));
+  await pause(1200);
+  check((await doc()).scenes.length === 4, "deleting it brings the plan back to four scenes");
+
   /* ------------------------------ build ------------------------------ */
   await caption("6 · Build video: the AI sets the look once, then builds one scene at a time");
   await click(page.getByTestId("build-video"));
@@ -266,6 +346,64 @@ async function main() {
   await pause(900);
   check((await doc()).layers.find((l) => l.id === "s1-line1")?.size === 280, "assistant edit applied after Keep");
   await pause(1200);
+
+  await caption("Vibe: energy, bounce and depth sliders change the whole video instantly, no AI call");
+  await click(page.getByRole("button", { name: "Vibe" }));
+  await pause(1400);
+  const slider = page.locator(".vibe input[type=range]").first();
+  if (await slider.count()) {
+    const sb = (await slider.boundingBox())!;
+    await moveTo(sb.x + sb.width * 0.5, sb.y + sb.height / 2);
+    await page.mouse.down(); await moveTo(sb.x + sb.width * 0.85, sb.y + sb.height / 2, 10); await page.mouse.up();
+    await pause(1200);
+    await play(0, 3);
+    await page.keyboard.press("ControlOrMeta+z");
+    await pause(600);
+  }
+  await click(page.getByRole("button", { name: "Vibe" }));
+  await pause(600);
+
+  await caption("Edit tab: pick a layer and change it with simple controls");
+  await fusion("(f, t) => f.time.set(t)", 2.2);
+  await fusion("(f) => f.select(['s1-line1'])").catch(() => page.evaluate(() => (window as any).__store.getState().select(["s1-line1"]))); // eslint-disable-line @typescript-eslint/no-explicit-any
+  await click(page.getByTestId("tab-inspect"));
+  await pause(2600);
+  await caption("History: every change, yours or the AI's, as one step you can jump back to");
+  await click(page.getByTestId("tab-history"));
+  await pause(2800);
+  await click(page.getByTestId("tab-assistant"));
+  await pause(600);
+
+  /* ------------------------------ pro mode ------------------------------ */
+  await caption("Pro mode: layers, full inspector, keyframes and the graph editor");
+  await click(page.getByRole("group", { name: "Editor mode" }).getByRole("button", { name: "Pro" }));
+  await pause(1800);
+  await click(page.getByRole("group", { name: "Left panel" }).getByRole("button", { name: "Layers" }));
+  await pause(1600);
+  const row = page.getByTestId("layer-s3-num");
+  if (await row.count()) { await click(row); await pause(1400); }
+  await click(page.getByTestId("tab-inspect"));
+  await pause(2200);
+  await caption("Graph editor: the easing curve of the selected animation");
+  await click(page.getByTestId("graph-toggle"));
+  await pause(2600);
+  await click(page.getByTestId("graph-toggle"));
+  await pause(600);
+  await caption("Split view: the scene camera next to the final shot");
+  await click(page.getByRole("group", { name: "View" }).getByRole("button", { name: "Split" }));
+  await pause(2600);
+  await click(page.getByRole("group", { name: "View" }).getByRole("button", { name: "Shot" }));
+  await pause(600);
+  await caption("Keyboard shortcuts, After Effects style");
+  await click(page.getByRole("button", { name: "Shortcuts" }));
+  await pause(2600);
+  await page.keyboard.press("Escape");
+  await pause(500);
+  if (await page.getByRole("dialog", { name: "Keyboard shortcuts" }).count()) await click(page.getByRole("dialog", { name: "Keyboard shortcuts" }).getByLabel("Close"));
+  await click(page.getByRole("group", { name: "Left panel" }).getByRole("button", { name: "Scenes" }));
+  await click(page.getByRole("group", { name: "Editor mode" }).getByRole("button", { name: "Simple" }));
+  await click(page.getByTestId("tab-assistant"));
+  await pause(1000);
 
   /* ------------------------------ music ------------------------------ */
   await caption("8 · Music: free CC0 tracks, or upload your own");
@@ -324,6 +462,28 @@ async function main() {
   await pause(3500);
   const cards = await page.locator(".pj-grid .pj-card, .pj-grid [data-testid^=project-open]").count();
   check((await page.getByTestId("projects").innerText()).includes("Calm") || cards > 0, "the new video appears under Your videos");
+  await caption("Duplicate a video, rename the copy, then delete it");
+  const card0 = page.getByTestId("project-card").first();
+  await card0.hover();
+  await pause(500);
+  await click(card0.getByTestId("project-duplicate"));
+  await pause(1500);
+  check((await page.getByTestId("project-card").count()) >= 2, "Duplicate adds a second card");
+  const copy = page.getByTestId("project-card").first();
+  await copy.hover();
+  await click(copy.getByTestId("project-rename"));
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type("Calm — alt cut", { delay: 30 });
+  await page.keyboard.press("Enter");
+  await pause(1400);
+  check((await page.getByTestId("projects").innerText()).includes("alt cut"), "rename shows the new name");
+  const alt = page.getByTestId("project-card").filter({ hasText: "alt cut" }).first();
+  await alt.hover();
+  await click(alt.getByTestId("project-delete"));
+  await pause(1200);
+  await click(page.getByTestId("project-delete-confirm"));
+  await pause(1500);
+  check(!(await page.getByTestId("projects").innerText()).includes("alt cut"), "delete removes the copy");
   await caption("Reopen it: storyboard, layers and music are all still there");
   const open = page.getByTestId("projects").getByText(/launch film for Calm/i).first();
   if (await open.count()) await click(open);
@@ -332,6 +492,17 @@ async function main() {
   await pause(1500);
   const d7 = await doc();
   check(d7.scenes.length === 4 && d7.audio.length >= 1, `reopened project keeps ${d7.scenes.length} scenes and ${d7.audio.length} music tracks`);
+  await play(0, 4);
+
+  /* ------------------------------ a template ------------------------------ */
+  await caption("11 · Or start from a template: back to the landing page, pick one, and it opens as a new video");
+  await click(page.getByTestId("home"));
+  await page.getByTestId("start").waitFor();
+  await pause(1200);
+  await click(page.getByTestId("tpl-kinetic"));
+  await page.getByTestId("editor").waitFor();
+  await pause(1200);
+  check((await doc()).layers.length > 2, "the Kinetic type template opens in the editor");
   await play(0, 4);
   await caption("");
   await pause(800);
