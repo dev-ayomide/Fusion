@@ -10,7 +10,7 @@ import { onEnvReady } from "../../render/env";
 import { onHtmlReady } from "../../render/html";
 import { onAssetsChanged, importAsset, LIBRARY, libraryUrl, isAudioFile } from "../../assets/assets";
 import { uploadAudio } from "../../audio/actions";
-import { setChannelOps, findLayer, localTime, uniqueId } from "../edit";
+import { setChannelOps, findLayer, localTime, uniqueId, layerLabel } from "../edit";
 import { insertTime, revealLayer } from "../reveal";
 import { createLayerOps, type NewKind } from "../create";
 import { Icon } from "./ui";
@@ -26,6 +26,8 @@ function fit(area: Rect, aspect: number): Rect {
   }
   return { x: area.x + (area.w - w) / 2, y: area.y + (area.h - h) / 2, w, h };
 }
+
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 export function Viewport() {
   const wrap = useRef<HTMLDivElement>(null);
@@ -119,12 +121,13 @@ export function Viewport() {
     const ai = useStore.getState().aiChanged;
     const ids = new Set(sel);
     if (previewing) for (const [id, ts] of Object.entries(ai)) if (now - ts < 6000) ids.add(id);
+    const lbl = (id: string) => { const L = findLayer(useStore.getState().doc, id); return L ? layerLabel(L) : id; };
     for (const id of ids) {
       const b = stage.bounds(id);
       if (!b) continue;
       const isAi = !sel.includes(id);
       const rz = resizing.current?.id === id ? ` · ${Math.round(resizing.current.scale * 100)}%` : "";
-      boxes.push(`<div class="selbox${isAi ? " ai" : ""}" style="left:${shot.x + b.x * shot.w}px;top:${shot.y + b.y * shot.h}px;width:${b.w * shot.w}px;height:${b.h * shot.h}px"><span class="lbl">${id}${rz}</span><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i></div>`);
+      boxes.push(`<div class="selbox${isAi ? " ai" : ""}" style="left:${shot.x + b.x * shot.w}px;top:${shot.y + b.y * shot.h}px;width:${b.w * shot.w}px;height:${b.h * shot.h}px"><span class="lbl">${esc(lbl(id))}${rz}</span><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i></div>`);
     }
     if (hover.current && !ids.has(hover.current) && !playhead.isPlaying()) {
       const b = stage.bounds(hover.current);

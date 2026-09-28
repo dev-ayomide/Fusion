@@ -6,7 +6,7 @@ import { outline } from "../../fmd/outline";
 import { assetUrl, importAsset } from "../../assets/assets";
 import { useStore, useDisplayDoc } from "../store";
 import { createLayerOps } from "../create";
-import { findLayer } from "../edit";
+import { findLayer, layerLabel } from "../edit";
 import { Icon, TYPE_ICON } from "./ui";
 import { estTokens } from "../bridge";
 
@@ -60,7 +60,7 @@ export function LayersPanel() {
             }}
           >
             <span className="tbadge"><Icon name={TYPE_ICON[L.type]} sm /></span>
-            <span className="nm">{L.name ?? L.id}</span>
+            <span className="nm">{layerLabel(L)}</span>
             <span className="ty">{L.type}</span>
             <button
               className={`iconbtn eye${L.hidden ? " off" : ""}`}

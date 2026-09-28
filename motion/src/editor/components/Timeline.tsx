@@ -6,7 +6,7 @@ import { CATALOG } from "../../fmd/catalog";
 import { activeCamera, behDur, channel } from "../../runtime/evaluate";
 import { useStore, useDisplayDoc, displayDoc } from "../store";
 import { playhead, fmtTime } from "../playhead";
-import { behColor, BEH_COLORS } from "../edit";
+import { behColor, BEH_COLORS, layerLabel } from "../edit";
 import { Icon, TYPE_ICON } from "./ui";
 import { CurvePanel } from "./GraphEditor";
 import { cubicOf } from "../../runtime/ease";
@@ -1038,7 +1038,7 @@ export function Timeline() {
                     </button>
                   ) : null}
                   <Icon name={TYPE_ICON[row.L.type]} sm className="faint" />
-                  <span className="nm">{row.L.name ?? row.L.id}</span>
+                  <span className="nm">{layerLabel(row.L)}</span>
                   {(row.L.beh?.length ?? 0) > 0 && <span className="faint mono" style={{ fontSize: 10 }}>{row.L.beh!.length}</span>}
                 </div>
               ) : (

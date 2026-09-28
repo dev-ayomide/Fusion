@@ -153,3 +153,19 @@ export function revealTime(doc: Doc, id: string): number | null {
   }
   return Math.min(Math.max(0, (L.out ?? doc.comp.dur) - 0.05), (L.in ?? 0) + end);
 }
+
+const TYPE_LABEL: Record<string, string> = {
+  gradient: "Background", image: "Image", device: "Device", cloner: "Pattern", camera: "Camera", group: "Group",
+  html: "UI card", path: "Line", mesh: "3D object", sky: "Sky", adjust: "Effect",
+};
+
+/** What people see for a layer: its name if it has one, else its words (text) or what it is — never the internal id. */
+export function layerLabel(L: Layer): string {
+  if (L.name) return L.name;
+  if (L.type === "text") {
+    const s = L.text.replace(/\s+/g, " ").trim();
+    return s ? (s.length > 22 ? s.slice(0, 21) + "…" : s) : "Text";
+  }
+  if (L.type === "shape") return L.shape === "ellipse" ? "Circle" : "Rectangle";
+  return TYPE_LABEL[L.type] ?? L.id;
+}

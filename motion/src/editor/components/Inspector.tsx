@@ -10,7 +10,7 @@ import { ENV_NAMES } from "../../render/env";
 import { importAsset, assetUrl } from "../../assets/assets";
 import { useStore, useDisplayDoc } from "../store";
 import { playhead } from "../playhead";
-import { setChannelOps, toggleKeyOps, ownerOf, keyIndexAt, localTime, uniqueBehId, duplicateOps, deleteOps, behColor } from "../edit";
+import { setChannelOps, toggleKeyOps, ownerOf, keyIndexAt, localTime, uniqueBehId, duplicateOps, deleteOps, behColor, layerLabel } from "../edit";
 import { Icon, NumField, ColorField, Seg, TYPE_ICON, colourName } from "./ui";
 
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
@@ -426,7 +426,7 @@ function LayerInspector({ doc, L, pro }: { doc: Doc; L: Layer; pro: boolean }) {
     <div className="insp" data-testid="inspector">
       <div className="insp-head">
         <span className="tbadge"><Icon name={TYPE_ICON[L.type]} sm /></span>
-        <input aria-label="Layer name" defaultValue={L.name ?? L.id} key={L.id + (L.name ?? "")} onBlur={(e) => e.target.value !== (L.name ?? L.id) && set("name", e.target.value, `Renamed ${id}`)} onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} />
+        <input aria-label="Layer name" defaultValue={pro ? L.name ?? L.id : layerLabel(L)} key={L.id + (L.name ?? "") + (L.type === "text" ? L.text : "")} onBlur={(e) => e.target.value !== (pro ? L.name ?? L.id : layerLabel(L)) && set("name", e.target.value, `Renamed ${id}`)} onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} />
         <button className="iconbtn" title="Duplicate (⌘D)" aria-label="Duplicate" onClick={() => {
           const d = duplicateOps(doc, id);
           if (d && commit(d.ops, `Duplicated ${id}`)) useStore.getState().select([d.newId]);
