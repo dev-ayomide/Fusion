@@ -10,7 +10,7 @@ describe("AI proxy", () => {
     const res = await handleAiRequest(new Request("https://fusion.example/api/ai/providers"), "ai/providers", ENV);
     expect(res.status).toBe(200);
     const text = await res.text();
-    expect(JSON.parse(text)).toEqual({ anthropic: true, agentrouter: false, mistral: true });
+    expect(JSON.parse(text)).toEqual({ anthropic: true, deepseek: false, agentrouter: false, mistral: true });
     expect(text).not.toContain("sk-ant");
   });
 
@@ -140,5 +140,17 @@ describe("inline SVG logos", () => {
     expect(out).toContain('xmlns="http://www.w3.org/2000/svg"');
     expect(out).toContain('width="88"');
     expect(fixSvgDataUrl("https://x.com/a.svg")).toBe("https://x.com/a.svg");
+  });
+});
+
+describe("DeepSeek official API", () => {
+  it("POST /api/deepseek/chat/completions goes to api.deepseek.com with the key as a Bearer token", async () => {
+    const f = vi.fn(async () => new Response('{"choices":[]}', { headers: { "content-type": "application/json" } }));
+    const req = new Request("https://app.test/api/deepseek/chat/completions", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer from-browser" }, body: "{}" });
+    const res = await handleAiRequest(req, "deepseek/chat/completions", { DEEPSEEK_API_KEY: "ds-key" }, f as unknown as typeof fetch);
+    expect(res.status).toBe(200);
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.deepseek.com/chat/completions");
+    expect(new Headers(init.headers).get("authorization")).toBe("Bearer ds-key");
   });
 });

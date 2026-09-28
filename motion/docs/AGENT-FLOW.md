@@ -87,11 +87,11 @@ setInterval(async () => {
 ## In-app providers
 
 `src/editor/agentProvider.ts` is a bridge client like any other. Keys live in `motion/.env`. They are never
-`VITE_`-prefixed, so they never reach the browser. The dev server proxies `/api/anthropic`, `/api/agentrouter` and
+`VITE_`-prefixed, so they never reach the browser. The dev server proxies `/api/anthropic`, `/api/deepseek`, `/api/agentrouter` and
 `/api/mistral` and attaches the key server-side. It re-reads `.env` on every request, so no restart is needed.
 `GET /api/ai/providers` returns only booleans. On load the editor auto-connects the best provider that has a key, in
-this order: Claude (`ANTHROPIC_API_KEY`, model `claude-opus-5-5`), then DeepSeek (`AGENTROUTER_API_KEY`), then
-Mistral (`MISTRAL_API_KEY`). It does not auto-connect in automated browsers unless the URL has `?ai=auto`. `?ai=off`
+this order: Claude (`ANTHROPIC_API_KEY`, model `claude-opus-5-5`), then DeepSeek (`DEEPSEEK_API_KEY`, the official API, model
+`deepseek-v4-pro`), then DeepSeek via AgentRouter (`AGENTROUTER_API_KEY`), then Mistral (`MISTRAL_API_KEY`). It does not auto-connect in automated browsers unless the URL has `?ai=auto`. `?ai=off`
 disables it, and `?ai=<id>` picks a provider.
 
 For each turn the provider calls the model with a system prompt for that kind (`src/ai/prompts.ts`), parses the JSON
@@ -185,7 +185,7 @@ instantly, no model call).
 ### In-app providers
 
 `autoConnect()` runs on load and connects the first provider whose key is present on the dev server
-(`motion/.env`, read on every request — no restart): **Claude** (`ANTHROPIC_API_KEY`) › **DeepSeek via
+(`motion/.env`, read on every request — no restart): **Claude** (`ANTHROPIC_API_KEY`) › **DeepSeek** (`DEEPSEEK_API_KEY`) › **DeepSeek via
 AgentRouter** (`AGENTROUTER_API_KEY`) › **Mistral** (`MISTRAL_API_KEY`). Keys never reach the browser:
 the Vite proxy attaches them. `?ai=<id>` picks one, `?ai=off` disables it; automated browsers skip
 auto-connect unless `?ai=auto`. Any external `bridge.connect(name)` takes over from an in-app provider.

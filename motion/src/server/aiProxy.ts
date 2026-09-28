@@ -3,8 +3,9 @@
  * /api/<provider>/… paths and this attaches the API key server-side, so keys never reach the bundle.
  * Used by api/proxy.ts on Vercel. Web-standard Request/Response only, so it runs on any Fetch runtime.
  *
- *   GET  /api/ai/providers          → { anthropic: bool, agentrouter: bool, mistral: bool }
+ *   GET  /api/ai/providers          → { anthropic: bool, deepseek: bool, agentrouter: bool, mistral: bool }
  *   POST /api/anthropic/<path>      → https://api.anthropic.com/<path>      (x-api-key)
+ *   POST /api/deepseek/<path>       → https://api.deepseek.com/<path>       (Bearer)
  *   POST /api/mistral/<path>        → https://api.mistral.ai/<path>         (Bearer)
  *   POST /api/agentrouter/<path>    → https://agentrouter.org/v1/<path>     (Bearer + agent User-Agent)
  *   GET  /api/brand?url=…           → a website's brand name, colours and logos (see brand.ts; no key)
@@ -12,18 +13,19 @@
 
 import { handleBrandRequest } from "./brand.js";
 
-export const KEYS = { anthropic: "ANTHROPIC_API_KEY", agentrouter: "AGENTROUTER_API_KEY", mistral: "MISTRAL_API_KEY" } as const;
+export const KEYS = { anthropic: "ANTHROPIC_API_KEY", deepseek: "DEEPSEEK_API_KEY", agentrouter: "AGENTROUTER_API_KEY", mistral: "MISTRAL_API_KEY" } as const;
 type Provider = keyof typeof KEYS;
 type Env = Record<string, string | undefined>;
 
 const UPSTREAM: Record<Provider, { base: string; headers: (key: string) => Record<string, string> }> = {
   anthropic: { base: "https://api.anthropic.com", headers: (k) => ({ "x-api-key": k, "anthropic-version": "2023-06-01" }) },
+  deepseek: { base: "https://api.deepseek.com", headers: (k) => ({ authorization: `Bearer ${k}` }) },
   mistral: { base: "https://api.mistral.ai", headers: (k) => ({ authorization: `Bearer ${k}` }) },
   // AgentRouter (DeepSeek) also requires a coding-agent User-Agent
   agentrouter: { base: "https://agentrouter.org/v1", headers: (k) => ({ authorization: `Bearer ${k}`, "user-agent": "opencode/1.17.12" }) },
 };
 
-const NAME: Record<Provider, string> = { anthropic: "Anthropic", mistral: "Mistral", agentrouter: "AgentRouter" };
+const NAME: Record<Provider, string> = { anthropic: "Anthropic", deepseek: "DeepSeek", mistral: "Mistral", agentrouter: "AgentRouter" };
 
 /** Request headers worth forwarding; everything else (cookies, origin, the browser's own auth) is dropped. */
 const PASS_REQUEST = ["content-type", "accept", "anthropic-beta"];
@@ -94,7 +96,7 @@ export async function handleAiRequest(req: Request, route: string, env: Env, fet
     return json(502, {
       error: {
         type: "upstream_blocked",
-        message: `${NAME[provider]}'s firewall blocked this server and answered with a web page instead of its API. Add a Claude or Mistral key, or pick another model.`,
+        message: `${NAME[provider]}'s firewall blocked this server and answered with a web page instead of its API. Add a Claude, DeepSeek or Mistral key, or pick another model.`,
       },
     });
   }

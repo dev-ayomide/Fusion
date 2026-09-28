@@ -11,7 +11,7 @@ import { prepareTurnOps, respond, type PendingTurn } from "./bridge";
  * connected model, and answers through `bridge.respond`. Keys stay on the dev server (vite.config.ts).
  */
 
-export type ProviderId = "anthropic" | "agentrouter" | "mistral";
+export type ProviderId = "anthropic" | "deepseek" | "agentrouter" | "mistral";
 
 export interface Provider extends ModelConfig {
   id: ProviderId;
@@ -22,9 +22,23 @@ export interface Provider extends ModelConfig {
 
 export const PROVIDERS: Record<ProviderId, Provider> = {
   anthropic: { id: "anthropic", label: "Claude Opus 5.5", vendor: "Anthropic", env: "ANTHROPIC_API_KEY", wire: "anthropic", endpoint: "/api/anthropic/v1/messages", model: "claude-opus-5-5", maxTokens: 64000 },
+  // DeepSeek's own API (api.deepseek.com): OpenAI-style, JSON output, and no bot firewall, so it works from a server
+  deepseek: {
+    id: "deepseek",
+    label: "DeepSeek",
+    vendor: "DeepSeek",
+    env: "DEEPSEEK_API_KEY",
+    wire: "openai",
+    endpoint: "/api/deepseek/chat/completions",
+    model: "deepseek-v4-pro",
+    jsonMode: true,
+    maxTokens: 32000,
+    // ops replies are structured — thinking tokens would just eat the budget
+    extraBody: { thinking: { type: "disabled" } },
+  },
   agentrouter: {
     id: "agentrouter",
-    label: "DeepSeek",
+    label: "DeepSeek (AgentRouter)",
     vendor: "DeepSeek via AgentRouter",
     env: "AGENTROUTER_API_KEY",
     wire: "openai",
@@ -38,7 +52,7 @@ export const PROVIDERS: Record<ProviderId, Provider> = {
   mistral: { id: "mistral", label: "Mistral", vendor: "Mistral AI", env: "MISTRAL_API_KEY", wire: "openai", endpoint: "/api/mistral/v1/chat/completions", model: "mistral-medium-latest", jsonMode: true, maxTokens: 16000 },
 };
 /** Auto-connect preference. */
-export const PROVIDER_ORDER: ProviderId[] = ["anthropic", "agentrouter", "mistral"];
+export const PROVIDER_ORDER: ProviderId[] = ["anthropic", "deepseek", "agentrouter", "mistral"];
 
 /* ------------------------------- prompts ------------------------------- */
 
@@ -229,7 +243,7 @@ export function activeProviderId() {
 
 /** Which providers have a key on the dev server. */
 export async function checkProviders(): Promise<Record<ProviderId, boolean>> {
-  let avail = { anthropic: false, agentrouter: false, mistral: false };
+  let avail = { anthropic: false, deepseek: false, agentrouter: false, mistral: false };
   try {
     const r = await fetch("/api/ai/providers", { cache: "no-store" });
     if (r.ok) avail = { ...avail, ...(await r.json()) };

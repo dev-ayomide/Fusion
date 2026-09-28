@@ -23,6 +23,7 @@ in this order:
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-…     # Claude Opus 5.5 (preferred)
+DEEPSEEK_API_KEY=…             # DeepSeek's official API (deepseek-v4-pro)
 AGENTROUTER_API_KEY=…          # DeepSeek via AgentRouter
 MISTRAL_API_KEY=…              # Mistral
 ```
@@ -35,17 +36,18 @@ drive everything through `window.fusion.bridge` (see `docs/AGENT-FLOW.md`).
 
 The editor, renderer, export and library all run in the browser, so production is the static build plus one small
 function that does the dev server's job of attaching the AI key: `api/proxy.ts`, which calls
-`src/server/aiProxy.ts` (same four routes, keys read from the environment, never sent to the browser, responses
+`src/server/aiProxy.ts` (same routes, keys read from the environment, never sent to the browser, responses
 streamed straight through, calls from other sites refused). `vercel.json` rewrites every `/api/*` path to it.
 
 1. In Vercel, **Add New → Project**, import this repo and set **Root Directory** to `motion`. Everything else comes
    from `vercel.json` (Vite, `npm run build`, output `dist`, 300 s function limit for long scene builds).
-2. Under **Settings → Environment Variables**, add at least one of `ANTHROPIC_API_KEY`, `AGENTROUTER_API_KEY`,
+2. Under **Settings → Environment Variables**, add at least one of `ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`, `AGENTROUTER_API_KEY`,
    `MISTRAL_API_KEY` for Production (and Preview if you want previews to talk to the AI), then redeploy.
 3. Open the deployment: the Assistant pill should connect on its own (`/api/ai/providers` lists which keys exist).
 
 Anyone who can open the URL can spend the AI credit, so share it carefully or put it behind a login. AgentRouter's
-firewall may challenge requests from data-centre IPs; Claude or Mistral are the dependable choices on a server.
+firewall may challenge requests from data-centre IPs; Claude, DeepSeek (official) or Mistral are the dependable
+choices on a server.
 
 ## What's in the box
 

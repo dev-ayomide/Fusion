@@ -10,7 +10,7 @@ import { handleBrandRequest } from "./src/server/brand";
  * browser calls same-origin /api/<provider> paths; the dev server attaches the key. Keys are re-read
  * on every request, so adding one to .env works without restarting the dev server.
  */
-const KEYS = { anthropic: "ANTHROPIC_API_KEY", agentrouter: "AGENTROUTER_API_KEY", mistral: "MISTRAL_API_KEY" } as const;
+const KEYS = { anthropic: "ANTHROPIC_API_KEY", deepseek: "DEEPSEEK_API_KEY", agentrouter: "AGENTROUTER_API_KEY", mistral: "MISTRAL_API_KEY" } as const;
 
 export default defineConfig(({ mode }) => {
   const key = (name: string) => loadEnv(mode, process.cwd(), "")[name] || process.env[name] || "";
@@ -73,6 +73,19 @@ export default defineConfig(({ mode }) => {
           },
         },
         // AgentRouter (DeepSeek) also requires a coding-agent User-Agent
+        // DeepSeek's own API
+        "/api/deepseek": {
+          target: "https://api.deepseek.com",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/deepseek/, ""),
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              scrub(proxyReq);
+              const k = key(KEYS.deepseek);
+              if (k) proxyReq.setHeader("Authorization", `Bearer ${k}`);
+            });
+          },
+        },
         "/api/agentrouter": {
           target: "https://agentrouter.org",
           changeOrigin: true,
