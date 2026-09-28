@@ -28,6 +28,7 @@
     "immer": "^11.1.18",
     "lucide-static": "^1.48.0",
     "mediabunny": "^1.59.1",
+    "openbrand": "^0.2.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "three": "^0.186.1",

@@ -3,6 +3,7 @@ import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import type { ClientRequest } from "node:http";
+import { handleBrandRequest } from "./src/server/brand";
 
 /**
  * AI keys live in motion/.env (never VITE_-prefixed, so they never reach the browser bundle). The
@@ -26,6 +27,14 @@ export default defineConfig(({ mode }) => {
         res.setHeader("content-type", "application/json");
         res.setHeader("cache-control", "no-store");
         res.end(JSON.stringify(Object.fromEntries(Object.entries(KEYS).map(([id, env]) => [id, !!key(env)]))));
+      });
+      // GET /api/brand?url=… and /api/brand/image?url=… — the brand fetcher (src/server/brand.ts)
+      server.middlewares.use("/api/brand", async (req, res) => {
+        const u = new URL(req.url ?? "/", "http://dev");
+        const out = await handleBrandRequest(u.pathname.replace(/^\/+|\/+$/g, ""), u.searchParams);
+        res.statusCode = out.status;
+        out.headers.forEach((v, k) => res.setHeader(k, v));
+        res.end(Buffer.from(await out.arrayBuffer()));
       });
     },
   };

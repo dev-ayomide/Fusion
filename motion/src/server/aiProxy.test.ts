@@ -93,3 +93,52 @@ describe("AI proxy", () => {
     expect(res.status).toBe(502);
   });
 });
+
+describe("brand fetcher route", () => {
+  it("refuses private and non-web addresses", async () => {
+    const { normalizeUrl } = await import("./brand");
+    for (const bad of ["localhost:3000", "http://127.0.0.1", "http://10.0.0.5/x", "http://192.168.1.1", "file:///etc/passwd", "http://169.254.169.254/latest", "http://printer.local", "http://[::1]/"]) expect(normalizeUrl(bad)).toBeNull();
+    expect(normalizeUrl("stripe.com")?.toString()).toBe("https://stripe.com/");
+  });
+
+  it("shapes OpenBrand output: distinct colours, best logo first", async () => {
+    const { shapeBrand } = await import("./brand");
+    const b = shapeBrand(
+      {
+        brand_name: "Stripe",
+        colors: [{ hex: "#FFF", usage: "background" }, { hex: "#533afd", usage: "primary" }, { hex: "#533AFD" }, { hex: "nope" }],
+        logos: [{ url: "https://x.com/favicon.ico", type: "favicon", resolution: { width: 48, height: 48 } }, { url: "https://x.com/logo.svg", type: "logo" }],
+        backdrop_images: [{ url: "https://x.com/og.jpg" }],
+      },
+      "https://stripe.com/",
+    );
+    expect(b.colors).toEqual([{ hex: "#533afd", usage: "primary" }, { hex: "#ffffff", usage: "background" }]);
+    expect(b.logos[0].url).toBe("https://x.com/logo.svg");
+    expect(b.image).toBe("https://x.com/og.jpg");
+  });
+
+  it("GET /api/brand/image only returns images, and checks every redirect hop", async () => {
+    const f = vi.fn(async (u: string) =>
+      u.includes("start") ? new Response(null, { status: 302, headers: { location: "http://127.0.0.1/secret" } }) : new Response("png", { headers: { "content-type": "image/png" } }),
+    );
+    const bounced = await handleAiRequest(new Request("https://app.test/api/brand/image?url=https://cdn.test/start"), "brand/image", {}, f as unknown as typeof fetch);
+    expect(bounced.status).toBe(502);
+    expect(f).toHaveBeenCalledTimes(1);
+    const ok = await handleAiRequest(new Request("https://app.test/api/brand/image?url=https://cdn.test/logo.png"), "brand/image", {}, f as unknown as typeof fetch);
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("content-type")).toBe("image/png");
+    const html = vi.fn(async () => new Response("<html>", { headers: { "content-type": "text/html" } }));
+    expect((await handleAiRequest(new Request("https://app.test/api/brand/image?url=https://cdn.test/x"), "brand/image", {}, html as unknown as typeof fetch)).status).toBe(502);
+  });
+});
+
+describe("inline SVG logos", () => {
+  it("get the xmlns and width an image needs", async () => {
+    const { fixSvgDataUrl } = await import("./brand");
+    const raw = '<svg height="22" viewBox="0 0 400 100" fill="currentColor"><path d="M0 0h1"/></svg>';
+    const out = decodeURIComponent(fixSvgDataUrl(`data:image/svg+xml;base64,${btoa(raw)}`).split(",")[1]);
+    expect(out).toContain('xmlns="http://www.w3.org/2000/svg"');
+    expect(out).toContain('width="88"');
+    expect(fixSvgDataUrl("https://x.com/a.svg")).toBe("https://x.com/a.svg");
+  });
+});

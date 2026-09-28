@@ -5,6 +5,8 @@ import { Stage } from "../../render/stage";
 import { fontsReady, ensureFont } from "../../render/glyphs";
 import { newProjectFromDoc } from "../persist";
 import { relativeTime, renderDocThumb } from "../projects";
+import { BrandInput } from "./BrandFetch";
+import type { Brand } from "../brand";
 import { openDoc, startProject } from "../startFlow";
 import { ProjectsSection, openFromLibrary, useProjects } from "./Projects";
 import { CATALOG } from "../../fmd/catalog";
@@ -226,6 +228,8 @@ export function StartScreen() {
   const thumbs = useThumbnails();
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [brand, setBrand] = useState<Brand | null>(null);
+  const [brandOpen, setBrandOpen] = useState(false);
   const projects = useProjects();
   const recent = projects[0];
   const root = useRef<HTMLDivElement>(null);
@@ -240,7 +244,7 @@ export function StartScreen() {
   const openEditor = () => (recent ? void openFromLibrary(recent.id) : openBlank());
   // the prompt drafts a storyboard of the whole video; building starts from the editor
   const begin = () => {
-    if (text.trim() || files.length) void startProject(text, files);
+    if (text.trim() || files.length || brand) void startProject(text, files, {}, brand);
   };
   const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   const toPrompt = () => {
@@ -313,6 +317,17 @@ export function StartScreen() {
               <input type="file" accept="image/*" multiple hidden onChange={(e) => setFiles([...files, ...[...(e.target.files ?? [])]])} data-testid="start-upload" />
               <Icon name="image" sm /> Add logo or screenshots
             </label>
+            {brand ? (
+              <span className="brand-chip" data-testid="brand-chip" title={brand.colors.map((c) => c.hex).join("  ")}>
+                {brand.colors.slice(0, 4).map((c) => <i key={c.hex} style={{ background: c.hex }} />)}
+                {brand.name}
+                <button aria-label="Remove brand" onClick={() => setBrand(null)}><Icon name="x" sm /></button>
+              </span>
+            ) : (
+              <button className="attach" onClick={() => setBrandOpen(!brandOpen)} aria-expanded={brandOpen} data-testid="brand-open">
+                <Icon name="wand" sm /> Use my brand
+              </button>
+            )}
             <div className="thumbs">
               {files.map((f, i) => (
                 <img key={i} src={URL.createObjectURL(f)} alt={f.name} title={f.name} />
@@ -320,10 +335,15 @@ export function StartScreen() {
             </div>
             <div className="spacer" />
             <span className="faint" style={{ fontSize: 12 }}>⌘↵</span>
-            <button className="btn ai" onClick={begin} disabled={!text.trim() && !files.length} data-testid="start-create">
+            <button className="btn ai" onClick={begin} disabled={!text.trim() && !files.length && !brand} data-testid="start-create">
               <Icon name="sparkle" sm /> Create with AI
             </button>
           </div>
+          {brandOpen && !brand && (
+            <div className="prompt-brand">
+              <BrandInput compact placeholder="Your website, e.g. stripe.com — we'll use its colours and logo" onBrand={(b) => { setBrand(b); setBrandOpen(false); }} />
+            </div>
+          )}
         </div>
         <div className="hero-examples">
           {EXAMPLES.map((e) => (

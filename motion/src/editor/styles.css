@@ -313,3 +313,112 @@ input[type="range"] { accent-color: var(--text); width: 100%; padding: 0; backgr
 .vempty { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); display: grid; gap: 4px; justify-items: center; text-align: center; padding: 14px 20px; border-radius: 16px; background: rgba(255, 255, 255, .92); box-shadow: var(--shadow-md); pointer-events: none; max-width: 340px; font-size: 12.5px; color: var(--muted); }
 .vempty b { color: var(--text); font-size: 14px; }
 .vals .unit { font-size: 12px; margin-left: 6px; align-self: center; flex: none; }
+
+/* ---------- brand fetcher ---------- */
+.brand-fetch { display: flex; flex-direction: column; gap: 10px; }
+.brand-in { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.brand-in-row { display: flex; gap: 6px; min-width: 0; }
+.brand-in-row input { flex: 1; min-width: 0; }
+.brand-err { font-size: 12px; color: var(--danger); line-height: 1.35; }
+.brand-card { border: 1px solid var(--line2); border-radius: 12px; padding: 10px; background: var(--panel2); display: flex; flex-direction: column; gap: 10px; }
+.brand-card-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-card-head img, .brand-card-noimg { width: 34px; height: 34px; object-fit: contain; border-radius: 8px; background: #fff; border: 1px solid var(--line); padding: 3px; flex: none; display: grid; place-items: center; color: var(--faint); }
+.brand-card-head b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brand-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.brand-sw { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 44px; }
+.brand-sw span { width: 28px; height: 28px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+.brand-sw small { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.brand-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---------- Simple mode animation picker: roomy tiles with a live demo each ---------- */
+.anim-row { display: grid; gap: 8px; }
+.anim-row + .anim-row, .anim-row + .field, .field + .anim-row { margin-top: 6px; }
+.anim-row-h { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--text); min-height: 22px; }
+.anim-none { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 500; color: var(--muted); background: none; border: 0; border-radius: 999px; padding: 3px 8px 3px 5px; cursor: pointer; }
+.anim-none:hover { background: var(--raise); color: var(--text); }
+.anim-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+.anim-grid button { background: var(--raise); border: 0; border-radius: 12px; padding: 8px 8px 9px; display: grid; gap: 7px; justify-items: stretch; text-align: center; font: 500 12px/1.2 var(--font); color: var(--text); cursor: pointer; transition: background .15s var(--ease), box-shadow .15s var(--ease), transform .12s var(--ease); }
+.anim-grid button:hover, .anim-grid button.hov { background: var(--raise2); }
+.anim-grid button:active { transform: scale(.97); }
+.anim-grid button[aria-pressed="true"] { background: var(--panel); box-shadow: 0 0 0 1.5px var(--text), var(--shadow-sm); font-weight: 600; }
+.anim-demo { height: 40px; border-radius: 8px; background: var(--panel); display: grid; place-items: center; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+.anim-grid button[aria-pressed="true"] .anim-demo { background: var(--lav-tint); box-shadow: none; }
+.anim-desc { font-size: 12px; color: var(--muted); line-height: 1.4; min-height: 17px; }
+.ad-sq { display: block; width: 18px; height: 18px; border-radius: 6px; background: var(--ai); }
+.ad-txt { display: inline-flex; font: 700 17px/1 var(--font); color: var(--ai); letter-spacing: .5px; }
+.ad-txt > span { display: inline-block; }
+
+/* each demo runs only while its tile is hovered or focused; at rest it shows the finished state */
+.anim-grid button.hov .ad-o, .anim-grid button.hov .ad-txt > span { animation-duration: 1.9s; animation-iteration-count: infinite; animation-timing-function: cubic-bezier(.2, .8, .3, 1); }
+.anim-grid button.hov .k-fadeIn { animation-name: k-fade; }
+.anim-grid button.hov .k-rise { animation-name: k-rise; }
+.anim-grid button.hov .k-drop { animation-name: k-drop; animation-timing-function: linear; }
+.anim-grid button.hov .k-slideIn { animation-name: k-slide; }
+.anim-grid button.hov .k-popIn { animation-name: k-pop; animation-timing-function: linear; }
+.anim-grid button.hov .k-settle { animation-name: k-settle; }
+.anim-grid button.hov .k-spinIn { animation-name: k-spinin; }
+.anim-grid button.hov .k-flipIn { animation-name: k-flip; }
+.anim-grid button.hov .k-typeUp > span { animation-name: k-rise; animation-delay: calc(var(--i) * .12s); animation-fill-mode: backwards; }
+.anim-grid button.hov .k-cascade > span { animation-name: k-cascade; animation-delay: calc(var(--i) * .14s); animation-fill-mode: backwards; }
+.anim-grid button.hov .k-bounceIn > span { animation-name: k-pop; animation-timing-function: linear; animation-delay: calc(var(--i) * .14s); animation-fill-mode: backwards; }
+.anim-grid button.hov .k-typewriter > span { animation-name: k-type; animation-timing-function: steps(1, end); animation-delay: calc(var(--i) * .25s); animation-fill-mode: backwards; }
+.anim-grid button.hov .k-float { animation: k-float 1.6s ease-in-out infinite alternate; }
+.anim-grid button.hov .k-pulse { animation: k-pulse 1.1s ease-in-out infinite alternate; }
+.anim-grid button.hov .k-wiggle { animation: k-wiggle .5s ease-in-out infinite alternate; }
+.anim-grid button.hov .k-sway { animation: k-sway 1.4s ease-in-out infinite alternate; }
+.anim-grid button.hov .k-spin { animation: k-spin 1.6s linear infinite; }
+.anim-grid button.hov .k-fadeOut { animation-name: k-fadeout; }
+.anim-grid button.hov .k-sink { animation-name: k-sink; }
+.anim-grid button.hov .k-dolly { animation: k-dolly 1.9s ease-in-out infinite; }
+.anim-grid button.hov .k-truck { animation: k-truck 1.9s ease-in-out infinite alternate; }
+.anim-grid button.hov .k-orbit { animation: k-sway 1.6s ease-in-out infinite alternate; }
+.anim-grid button.hov .k-shake { animation: k-shake .35s linear infinite; }
+@keyframes k-fade { 0% { opacity: 0 } 45%, 100% { opacity: 1 } }
+@keyframes k-rise { 0% { opacity: 0; transform: translateY(14px) } 45%, 100% { opacity: 1; transform: none } }
+@keyframes k-drop { 0% { opacity: 0; transform: translateY(-20px) } 22% { opacity: 1; transform: translateY(3px) } 30% { transform: translateY(-4px) } 38%, 100% { transform: none } }
+@keyframes k-slide { 0% { opacity: 0; transform: translateX(-30px) } 45%, 100% { opacity: 1; transform: none } }
+@keyframes k-pop { 0% { transform: scale(0) } 18% { transform: scale(1.25) } 28% { transform: scale(.92) } 36%, 100% { transform: scale(1) } }
+@keyframes k-settle { 0% { opacity: 0; transform: scale(1.9) } 45%, 100% { opacity: 1; transform: none } }
+@keyframes k-spinin { 0% { opacity: 0; transform: rotate(-200deg) scale(.3) } 50%, 100% { opacity: 1; transform: none } }
+@keyframes k-flip { 0% { opacity: 0; transform: perspective(90px) rotateY(95deg) } 50%, 100% { opacity: 1; transform: perspective(90px) rotateY(0) } }
+@keyframes k-cascade { 0% { opacity: 0; transform: translateY(-14px) rotate(-25deg) } 40%, 100% { opacity: 1; transform: none } }
+@keyframes k-type { 0% { opacity: 0 } 12%, 100% { opacity: 1 } }
+@keyframes k-float { from { transform: translateY(5px) } to { transform: translateY(-5px) } }
+@keyframes k-pulse { from { transform: scale(.88) } to { transform: scale(1.15) } }
+@keyframes k-wiggle { from { transform: rotate(-9deg) translateX(-1px) } to { transform: rotate(9deg) translateX(1px) } }
+@keyframes k-sway { from { transform: perspective(90px) rotateY(-40deg) } to { transform: perspective(90px) rotateY(40deg) } }
+@keyframes k-spin { to { transform: rotate(360deg) } }
+@keyframes k-fadeout { 0%, 40% { opacity: 1 } 85%, 100% { opacity: 0 } }
+@keyframes k-sink { 0%, 35% { opacity: 1; transform: none } 80%, 100% { opacity: 0; transform: translateY(16px) } }
+@keyframes k-dolly { 0%, 10% { transform: scale(.7) } 80%, 100% { transform: scale(1.35) } }
+@keyframes k-truck { from { transform: translateX(-16px) } to { transform: translateX(16px) } }
+@keyframes k-shake { 0% { transform: translate(0, 0) } 25% { transform: translate(1.5px, -1px) rotate(2deg) } 50% { transform: translate(-1px, 1px) } 75% { transform: translate(1px, 1.5px) rotate(-2deg) } 100% { transform: translate(0, 0) } }
+@media (prefers-reduced-motion: reduce) { .anim-grid button.hov .ad-o, .anim-grid button.hov .ad-txt > span { animation: none !important; } }
+/* at rest, a faint "ghost" hints where each move comes from, so the tiles differ before any hover */
+.ad-sq { position: relative; }
+.ad-sq::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--ai); opacity: .22; transition: opacity .15s; }
+.anim-grid button.hov .ad-sq::before { opacity: 0; }
+.ad-sq.k-fadeIn { opacity: .55; } .ad-sq.k-fadeIn::before { opacity: 0; }
+.ad-sq.k-rise::before { transform: translateY(11px); }
+.ad-sq.k-drop::before { transform: translateY(-11px); }
+.ad-sq.k-slideIn::before { transform: translateX(-16px); }
+.ad-sq.k-popIn::before { transform: scale(1.5); background: none; box-shadow: inset 0 0 0 1.5px var(--ai); opacity: .45; }
+.ad-sq.k-settle::before { transform: scale(1.8); opacity: .14; }
+.ad-sq.k-spinIn::before { transform: rotate(35deg) scale(1.2); }
+.ad-sq.k-flipIn::before { transform: perspective(90px) rotateY(60deg) translateX(8px); }
+.ad-sq.k-float::before { transform: translateY(-8px); opacity: .16; }
+.ad-sq.k-pulse::before { transform: scale(1.45); opacity: .16; }
+.ad-sq.k-wiggle::before { transform: rotate(-14deg); }
+.ad-sq.k-sway::before { transform: perspective(90px) rotateY(-50deg); }
+.ad-sq.k-spin::before { transform: rotate(45deg); }
+.ad-sq.k-fadeOut::before { opacity: 0; } .ad-sq.k-fadeOut { opacity: .35; }
+.ad-sq.k-sink::before { transform: translateY(11px); opacity: .14; }
+.ad-sq.k-dolly::before { transform: scale(1.6); opacity: .14; }
+.ad-sq.k-truck::before { transform: translateX(16px); }
+.ad-sq.k-orbit::before { transform: perspective(90px) rotateY(55deg); }
+.ad-sq.k-shake::before { transform: translate(3px, -2px) rotate(6deg); }
+.anim-grid button:not(.hov) .k-typeUp > span { transform: translateY(calc(var(--i) * 3px)); opacity: calc(1 - var(--i) * .3); }
+.anim-grid button:not(.hov) .k-cascade > span:nth-child(3) { transform: translateY(-5px) rotate(-22deg); opacity: .55; }
+.anim-grid button:not(.hov) .k-bounceIn > span { transform: scale(calc(1 - var(--i) * .22)); }
+.anim-grid button:not(.hov) .k-typewriter > span:nth-child(3) { opacity: 0; }
+.anim-grid button:not(.hov) .k-typewriter::after { content: "|"; font-weight: 400; margin-left: -8px; opacity: .6; }

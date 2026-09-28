@@ -4,6 +4,7 @@ import { TEMPLATES } from "../templates";
 import { importAsset } from "../assets/assets";
 import { requestPlan } from "../ai/director";
 import type { Doc } from "../fmd/schema";
+import { brandBrief, brandColourOps, brandLogoFile, type Brand } from "./brand";
 
 /** Open a document in the editor at t = 0. */
 export function openDoc(doc: Doc) {
@@ -18,11 +19,19 @@ export function openDoc(doc: Doc) {
  * imported as assets, then the prompt handed to the AI as a request for a scene plan of the whole
  * video (the storyboard). Building starts when the user presses Build. The landing page only calls this.
  */
-export async function startProject(text: string, files: File[], opts: { length?: number; aspect?: string; look?: string } = {}) {
+export async function startProject(text: string, files: File[], opts: { length?: number; aspect?: string; look?: string } = {}, brand?: Brand | null) {
   const doc = TEMPLATES.find((t) => t.id === "blank")!.make();
-  doc.name = text.trim().split(/[.,\n—]/)[0].slice(0, 40) || "Untitled";
+  doc.name = text.trim().split(/[.,\n—]/)[0].slice(0, 40) || (brand ? `${brand.name} video` : "Untitled");
   openDoc(doc);
   const st = useStore.getState();
+  if (brand) {
+    // the brand's colours become the video's, and its logo goes in with the other attached images
+    const colours = brandColourOps(st.doc, brand);
+    if (colours.length) st.commit(colours, { source: "you", intent: `${brand.name} colours` });
+    const logo = await brandLogoFile(brand, useStore.getState().doc.brand.colors.ink);
+    if (logo) files = [logo, ...files];
+    text = `${text.trim()}${text.trim() ? "\n\n" : `A short launch video for ${brand.name}.\n\n`}${brandBrief(brand, !!logo)}`;
+  }
   const ops = [];
   for (const f of files) {
     const { id, entry } = await importAsset(f, Object.keys(st.doc.assets).concat(ops.map((o) => o.path.split("/")[1])));

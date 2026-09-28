@@ -10,7 +10,9 @@ import { ENV_NAMES } from "../../render/env";
 import { importAsset, assetUrl } from "../../assets/assets";
 import { useStore, useDisplayDoc } from "../store";
 import { playhead } from "../playhead";
-import { setChannelOps, toggleKeyOps, ownerOf, keyIndexAt, localTime, uniqueBehId, duplicateOps, deleteOps, behColor, layerLabel } from "../edit";
+import { BrandFetcher } from "./BrandFetch";
+import { AnimChoices } from "./AnimPicker";
+import { setChannelOps, toggleKeyOps, ownerOf, keyIndexAt, localTime, uniqueBehId, duplicateOps, deleteOps, behColor, layerLabel, revealTime } from "../edit";
 import { Icon, NumField, ColorField, Seg, TYPE_ICON, colourName } from "./ui";
 
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
@@ -312,6 +314,8 @@ function AddBehavior({ doc, L, onDone }: { doc: Doc; L: Layer; onDone: () => voi
   );
 }
 
+let previewTimer: ReturnType<typeof setTimeout> | undefined;
+
 /** Novice: pick an entrance / loop / exit in one click. Each slot is one behavior with a fixed id. */
 function SimpleAnimation({ doc, L }: { doc: Doc; L: Layer }) {
   const slot = (groups: BehGroup[]) => (L.beh ?? []).find((b) => groups.includes(CATALOG[b.use]?.group));
@@ -333,25 +337,38 @@ function SimpleAnimation({ doc, L }: { doc: Doc; L: Layer }) {
     }
     commit(ops, use ? `${L.id}: ${CATALOG[use].label}` : `${L.id}: no ${groups[0].toLowerCase()} animation`);
   };
-  const rowFor = (title: string, groups: BehGroup[], uses: string[], slotId: string) => {
-    const cur = slot(groups);
-    return (
-      <div className="sec" style={{ gap: 5 }}>
-        <div className="hint" style={{ color: "var(--muted)" }}>{title}</div>
-        <div className="big-choices">
-          <button aria-pressed={!cur} onClick={() => choose(groups, null, slotId)}>None</button>
-          {uses.map((u) => (
-            <button key={u} aria-pressed={cur?.use === u} onClick={() => choose(groups, u, slotId)}>
-              <span style={{ width: 10, height: 3, borderRadius: 2, background: behColor(u) }} />
-              {CATALOG[u].label}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
+  const rowFor = (title: string, groups: BehGroup[], uses: string[], slotId: string) => (
+    <AnimChoices
+      title={title}
+      uses={uses}
+      current={slot(groups)?.use ?? null}
+      testid={`anim-${slotId}`}
+      onPick={(u) => {
+        choose(groups, u, slotId);
+        if (u) showInViewport(u);
+      }}
+    />
+  );
+  /** Play the part of the layer's life where the chosen animation happens, so its effect is seen at once. */
+  const showInViewport = (use: string) => {
+    const d = useStore.getState().doc;
+    const cur = d.layers.find((x) => x.id === L.id);
+    if (!cur) return;
+    const a = cur.in ?? 0, z = Math.min(cur.out ?? d.comp.dur, d.comp.dur);
+    const g = CATALOG[use].group;
+    const [from, to] = g === "Exit" ? [Math.max(a, z - 1.4), z - 0.02] : g === "Loop" ? [playhead.get(), Math.min(z, playhead.get() + 2.4)] : [a, Math.min(z, (revealTime(d, L.id) ?? a + 1.2) + 0.3)];
+    if (to <= from) return;
+    clearTimeout(previewTimer);
+    playhead.pause();
+    playhead.set(from);
+    playhead.play();
+    previewTimer = setTimeout(() => {
+      playhead.pause();
+      if (g !== "Exit") playhead.set(to);
+    }, (to - from) * 1000);
   };
   if (L.type === "camera") return rowFor("Camera move", ["Camera"], ["dolly", "truck", "orbit", "shake"], "move");
-  const enter = L.type === "text" ? ["typeUp", "bounceIn", "cascade", "rise", "fadeIn"] : ["rise", "popIn", "slideIn", "fadeIn", "flipIn"];
+  const enter = L.type === "text" ? ["fadeIn", "rise", "typeUp", "cascade", "bounceIn", "typewriter", "popIn", "drop"] : ["fadeIn", "rise", "popIn", "slideIn", "drop", "spinIn", "settle", "flipIn"];
   const entr = slot(["Enter", "Text"]);
   return (
     <>
@@ -361,7 +378,7 @@ function SimpleAnimation({ doc, L }: { doc: Doc; L: Layer }) {
           <input type="range" min={0.2} max={2} step={0.05} value={2.2 - behDur(entr)} aria-label="Entrance speed" onChange={(e) => preview([{ op: "set", path: `${L.id}/beh/${entr.id}/dur`, value: r3(2.2 - Number(e.target.value)) }])} onPointerUp={(e) => commit([{ op: "set", path: `${L.id}/beh/${entr.id}/dur`, value: r3(2.2 - Number((e.target as HTMLInputElement).value)) }], `${L.id} entrance speed`)} />
         </Field>
       )}
-      {rowFor("While on screen", ["Loop"], ["float", "wiggle", "pulse", "sway", "spin"], "loop")}
+      {rowFor("While on screen", ["Loop"], ["float", "pulse", "wiggle", "sway", "spin"], "loop")}
       {rowFor("Exit", ["Exit"], ["fadeOut", "sink"], "out")}
     </>
   );
@@ -762,6 +779,10 @@ function CompInspector({ doc }: { doc: Doc }) {
           </select>
         </Field>
         <Field label="Background"><ColorField doc={doc} value={doc.comp.bg} onChange={(v) => v && set("comp/bg", v, "Background colour")} /></Field>
+      </Section>
+      <Section title="Match a brand">
+        <div className="hint" style={{ marginTop: -2 }}>Paste a company's website to use its colours and logo.</div>
+        <BrandFetcher />
       </Section>
       <Section title="Colours & font">
         <Field label="Font">

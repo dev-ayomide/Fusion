@@ -7,7 +7,10 @@
  *   POST /api/anthropic/<path>      → https://api.anthropic.com/<path>      (x-api-key)
  *   POST /api/mistral/<path>        → https://api.mistral.ai/<path>         (Bearer)
  *   POST /api/agentrouter/<path>    → https://agentrouter.org/v1/<path>     (Bearer + agent User-Agent)
+ *   GET  /api/brand?url=…           → a website's brand name, colours and logos (see brand.ts; no key)
  */
+
+import { handleBrandRequest } from "./brand.js";
 
 export const KEYS = { anthropic: "ANTHROPIC_API_KEY", agentrouter: "AGENTROUTER_API_KEY", mistral: "MISTRAL_API_KEY" } as const;
 type Provider = keyof typeof KEYS;
@@ -52,6 +55,12 @@ export async function handleAiRequest(req: Request, route: string, env: Env, fet
   if (parts[0] === "ai" && parts[1] === "providers" && parts.length === 2) {
     if (req.method !== "GET") return json(405, { error: "method not allowed" });
     return json(200, Object.fromEntries(Object.entries(KEYS).map(([id, name]) => [id, !!env[name]])));
+  }
+
+  if (parts[0] === "brand" && parts.length <= 2) {
+    if (req.method !== "GET") return json(405, { error: "method not allowed" });
+    if (foreignOrigin(req)) return json(403, { error: "cross-origin requests are not allowed" });
+    return handleBrandRequest(parts[1] ?? "", new URL(req.url).searchParams, undefined, fetchImpl);
   }
 
   const provider = parts[0] as Provider;

@@ -72,6 +72,34 @@ test.describe("inspector + undo", () => {
     expect((await layer(page, "title")).beh.map((b: { use: string }) => b.use)).toEqual(["bounceIn", "float"]);
   });
 
+  test("simple mode: each animation choice explains itself and None clears it", async ({ page }) => {
+    await openTemplate(page, "launch", "Simple");
+    await page.getByTestId("tl-row-title").click();
+    await page.getByTestId("tab-inspect").click();
+    const row = page.getByTestId("anim-in");
+    await row.getByRole("button", { name: "Typewriter" }).hover();
+    await expect(row.locator(".anim-desc")).toHaveText(/letter by letter/);
+    await row.getByRole("button", { name: "Typewriter" }).click();
+    expect((await layer(page, "title")).beh.map((b: { use: string }) => b.use)).toEqual(["typewriter"]);
+    await row.getByRole("button", { name: /No entrance/ }).click();
+    expect((await layer(page, "title")).beh ?? []).toEqual([]);
+  });
+
+  test("match a brand: paste a site, use its colours", async ({ page }) => {
+    await page.route("**/api/brand?*", (r) =>
+      r.fulfill({ json: { name: "Acme", url: "https://acme.test/", colors: [{ hex: "#ff3366", usage: "primary" }, { hex: "#111111" }, { hex: "#fafafa" }], logos: [] } }),
+    );
+    await openTemplate(page, "blank", "Simple");
+    await page.getByTestId("tab-inspect").click();
+    await page.getByTestId("brand-url").fill("acme.test");
+    await page.getByTestId("brand-fetch").click();
+    await expect(page.getByTestId("brand-card")).toContainText("Acme");
+    await expect(page.getByTestId("brand-card")).toContainText("Accent");
+    await page.getByTestId("brand-use-colours").click();
+    const colors = await page.evaluate(() => (window as unknown as { fusion: { doc: () => { brand: { colors: Record<string, string> } } } }).fusion.doc().brand.colors);
+    expect(colors.accent).toBe("#ff3366");
+  });
+
   test("owner conflicts are refused with a reason", async ({ page }) => {
     await openTemplate(page, "launch");
     await page.getByTestId("layer-sub").click();
