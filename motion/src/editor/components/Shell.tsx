@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useStore } from "../store";
 import { getSaveState, subscribeSaveState } from "../persist";
-import { BrandMark } from "./Brand";
 import { exportVideo, downloadBlob, type ExportResult } from "../../export/export";
 import { Icon, Seg } from "./ui";
 
@@ -15,7 +14,7 @@ export function TopBar() {
   return (
     <header className="topbar">
       <button className="tb-home" onClick={() => st.set("screen", "start")} title="All videos" aria-label="Back to your videos" data-testid="home">
-        <BrandMark size={22} />
+        <span className="brand-mark" aria-hidden="true" />
         <span className="tb-home-label">Your videos</span>
       </button>
       <span className="tb-sep" aria-hidden="true">/</span>
