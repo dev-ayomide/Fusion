@@ -31,6 +31,22 @@ Keys stay on the Vite dev server, which proxies `/api/<provider>` and attaches t
 Switch models from the pill at the top of the Assistant; `?ai=off` disables auto-connect. External agents can still
 drive everything through `window.fusion.bridge` (see `docs/AGENT-FLOW.md`).
 
+## Deploy (Vercel)
+
+The editor, renderer, export and library all run in the browser, so production is the static build plus one small
+function that does the dev server's job of attaching the AI key: `api/proxy.ts`, which calls
+`src/server/aiProxy.ts` (same four routes, keys read from the environment, never sent to the browser, responses
+streamed straight through, calls from other sites refused). `vercel.json` rewrites every `/api/*` path to it.
+
+1. In Vercel, **Add New → Project**, import this repo and set **Root Directory** to `motion`. Everything else comes
+   from `vercel.json` (Vite, `npm run build`, output `dist`, 300 s function limit for long scene builds).
+2. Under **Settings → Environment Variables**, add at least one of `ANTHROPIC_API_KEY`, `AGENTROUTER_API_KEY`,
+   `MISTRAL_API_KEY` for Production (and Preview if you want previews to talk to the AI), then redeploy.
+3. Open the deployment: the Assistant pill should connect on its own (`/api/ai/providers` lists which keys exist).
+
+Anyone who can open the URL can spend the AI credit, so share it carefully or put it behind a login. AgentRouter's
+firewall may challenge requests from data-centre IPs; Claude or Mistral are the dependable choices on a server.
+
 ## What's in the box
 
 - **Landing page** — describe the video, attach a logo/screenshots, or pick a template (thumbnails are rendered live).
@@ -73,6 +89,7 @@ src/runtime/   ease + normalized spring, seeded noise, expression interpreter, e
 src/render/    Stage: SDF quad material, per-glyph text, PBR device mockups, cloners, gradient, camera, picking
 src/editor/    store (op log, preview, transient drags), playhead, bridge, components (Viewport, Timeline, Inspector, Assistant, …)
 src/export/    mediabunny exporter
+src/server/    the production AI-key proxy (api/proxy.ts is its Vercel Function; vercel.json routes /api/* to it)
 e2e/           Playwright suites, session recorder, fixtures
 docs/          PLAN-v2 (verbatim), PLAN-DELTA, FMD-SPEC, TOKENS, ARCHITECTURE, MOTION-DESIGN, QUALITY
 fixtures/pear/ the Pear breakdown replicated as four FMD docs (+ generator)
