@@ -1,4 +1,5 @@
 import { Doc as DocSchema, type Doc } from "../fmd/schema";
+import { forgetChat } from "./chatHistory";
 import { Stage } from "../render/stage";
 import { fontsReady, ensureFont } from "../render/glyphs";
 import { loadStoredAssets } from "../assets/assets";
@@ -189,6 +190,7 @@ export async function duplicateProject(id: string): Promise<ProjectMeta | null> 
 }
 
 export async function deleteProject(id: string) {
+  forgetChat(id);
   cache.delete(id);
   writeIndex(index.filter((p) => p.id !== id));
   await idbReq("readwrite", (s) => s.delete(id));

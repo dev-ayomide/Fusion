@@ -8,7 +8,7 @@ import { useStore, useDisplayDoc, displayDoc } from "../store";
 import { playhead, fmtTime } from "../playhead";
 import { behColor, BEH_COLORS } from "../edit";
 import { Icon, TYPE_ICON } from "./ui";
-import { GraphEditor } from "./GraphEditor";
+import { CurvePanel } from "./GraphEditor";
 import { cubicOf } from "../../runtime/ease";
 import "./TimelineAudio.css";
 import { MusicPicker, NoteGlyph, SpeakerGlyph } from "./MusicPicker";
@@ -929,12 +929,18 @@ export function Timeline() {
       source: "you",
       intent: doc.comp.motionBlur ? "Motion blur off" : "Motion blur on",
     });
-  // graph editor target: the selected key's channel, else the selected layer's first keyed channel
+  // curves view target: the selected key's layer and channel, else the selected layer (keyed first)
   const graphTarget = (() => {
     if (!graphOpen) return null;
-    const L = keySel ? doc.layers.find((l) => l.id === keySel.layer) : doc.layers.find((l) => sel.includes(l.id) && Object.keys(l.keys ?? {}).length);
-    const ch = keySel && L?.id === keySel.layer ? keySel.channel : Object.keys(L?.keys ?? {})[0];
-    return L && ch && L.keys?.[ch] ? { L, ch, index: keySel && keySel.layer === L.id && keySel.channel === ch ? keySel.index : null } : null;
+    const L =
+      (keySel && doc.layers.find((l) => l.id === keySel.layer)) ||
+      doc.layers.find((l) => sel.includes(l.id) && Object.keys(l.keys ?? {}).length) ||
+      doc.layers.find((l) => sel.includes(l.id)) ||
+      null;
+    const keyed = Object.keys(L?.keys ?? {}).filter((c) => (L?.keys?.[c]?.length ?? 0) > 0);
+    const ch = keySel && L?.id === keySel.layer && keyed.includes(keySel.channel) ? keySel.channel : keyed[0] ?? null;
+    const index = keySel && L && keySel.layer === L.id && keySel.channel === ch ? keySel.index : null;
+    return { L, keyed, ch, index };
   })();
   return (
     <section className="timeline" style={{ height: height + pinnedH, ["--names" as string]: `${namesW}px`, gridTemplateRows: "6px 44px minmax(0, 1fr) auto auto" }} aria-label="Timeline">
@@ -972,9 +978,14 @@ export function Timeline() {
             <button className={`chip-toggle${doc.comp.motionBlur ? " on" : ""}`} data-testid="mb-toggle" title="Motion blur for the whole comp (AE's comp switch). Per-layer switches live in the inspector." onClick={toggleMB}>
               <span className="mb-glyph" aria-hidden="true" />Motion blur
             </button>
-            <button className={`chip-toggle${graphOpen ? " on" : ""}`} data-testid="graph-toggle" title="Graph editor (⇧F3): shape the curve between keyframes" onClick={() => st.set("graphOpen", !graphOpen)}>
-              <Icon name="graph" sm />Graph
-            </button>
+            <div className="seg sm tl-view" role="group" aria-label="Timeline view">
+              <button aria-pressed={!graphOpen} onClick={() => st.set("graphOpen", false)} title="Layers as bars: when things happen">
+                Bars
+              </button>
+              <button aria-pressed={graphOpen} data-testid="graph-toggle" onClick={() => st.set("graphOpen", !graphOpen)} title="Motion curves: how things speed up and slow down (⇧F3)">
+                <Icon name="graph" sm />Curves
+              </button>
+            </div>
           </>
         )}
         <span className="faint" style={{ fontSize: 11.5, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -1046,12 +1057,9 @@ export function Timeline() {
             onWheel={onWheel}
           >
             <canvas ref={tracksCanvas} data-testid="tracks" style={{ display: graphOpen ? "none" : "block" }} onPointerDown={(e) => onTrackDown(e, "main")} onPointerMove={(e) => onTrackMove(e, "main")} onDoubleClick={onTrackDbl} />
-            {graphOpen &&
-              (graphTarget ? (
-                <GraphEditor L={graphTarget.L} ch={graphTarget.ch} keyIndex={graphTarget.index} width={width} height={Math.max(120, height - 140)} X={X} />
-              ) : (
-                <div className="faint" style={{ padding: "14px 16px" }}>Select a keyframe (or a layer with keyframes) to see its curve. F9 applies Easy Ease.</div>
-              ))}
+            {graphOpen && graphTarget && (
+              <CurvePanel L={graphTarget.L} keyed={graphTarget.keyed} ch={graphTarget.ch} keyIndex={graphTarget.index} width={width} height={Math.max(146, height - 140)} X={X} />
+            )}
             {!rows.length && <div className="faint" style={{ position: "absolute", top: 10, left: 14 }}>Add something from the toolbar or ask the AI.</div>}
           </div>
           <div ref={headRef} style={{ position: "absolute", top: 0, bottom: 0, left: namesW, width: 1.5, background: "#0a9bf0", pointerEvents: "none", boxShadow: "0 0 6px rgba(10,155,240,.4)" }} />

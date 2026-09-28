@@ -2,6 +2,7 @@ import { useStore } from "./store";
 import type { Doc } from "../fmd/schema";
 import { loadStoredAssets } from "../assets/assets";
 import { openDoc } from "./startFlow";
+import { loadChat, saveChat } from "./chatHistory";
 import {
   cachedProjectDoc,
   createProject,
@@ -99,8 +100,19 @@ export function startAutosave() {
   if (recent) void loadProjectDoc(recent.id);
 
   let lastDoc: Doc | null = null;
+  let lastTurns = useStore.getState().turns;
+  let chatTimer = 0;
+  const saveChatSoon = () => {
+    const id = currentId;
+    if (!id) return;
+    clearTimeout(chatTimer);
+    chatTimer = window.setTimeout(() => saveChat(id, useStore.getState().turns), 300);
+  };
   let lastScreen = useStore.getState().screen;
-  const onHide = () => void flush();
+  const onHide = () => {
+    void flush();
+    if (currentId && useStore.getState().screen === "editor") saveChat(currentId, useStore.getState().turns);
+  };
   window.addEventListener("pagehide", onHide);
   document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && onHide());
 
@@ -111,6 +123,8 @@ export function startAutosave() {
       if (was === "editor") {
         // leaving the editor: save now and refresh the card's thumbnail
         const id = currentId;
+        clearTimeout(chatTimer);
+        if (id) saveChat(id, lastTurns);
         void flush().then(() => (id ? refreshThumb(id) : undefined));
       }
       if (s.screen === "editor") {
@@ -118,7 +132,19 @@ export function startAutosave() {
         armed = undefined;
         lastDoc = null;
         setSaveState("idle");
+        // bring back this video's conversation (only if nothing has started in the new session yet)
+        if (currentId && !s.turns.length) {
+          const saved = loadChat(currentId);
+          if (saved.length) {
+            lastTurns = saved;
+            useStore.getState().set("turns", saved);
+          }
+        }
       }
+    }
+    if (s.screen === "editor" && s.turns !== lastTurns) {
+      lastTurns = s.turns;
+      saveChatSoon();
     }
     if (s.screen !== "editor" || s.doc === lastDoc) return;
     const first = lastDoc === null;
@@ -128,6 +154,7 @@ export function startAutosave() {
       if (first && isPristineBlank(s.doc)) return;
       currentId = createProject(s.doc).id;
       setSaveState("saved");
+      saveChatSoon();
       return;
     }
     if (first) return; // just opened: nothing changed yet

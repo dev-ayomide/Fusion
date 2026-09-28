@@ -36,6 +36,8 @@ export function Viewport() {
   const sceneCam = useRef(new THREE.PerspectiveCamera(40, 1, 1, 60000));
   const orbit = useRef({ theta: 0.75, phi: 1.2, r: 4200, target: new THREE.Vector3(0, 0, 0) });
   const hover = useRef<string | null>(null);
+  /** the layer being resized from a corner handle, and its current scale (shown in the label) */
+  const resizing = useRef<{ id: string; scale: number } | null>(null);
   const raf = useRef(0);
   const doc = useDisplayDoc();
   const view = useStore((s) => s.view);
@@ -120,7 +122,8 @@ export function Viewport() {
       const b = stage.bounds(id);
       if (!b) continue;
       const isAi = !sel.includes(id);
-      boxes.push(`<div class="selbox${isAi ? " ai" : ""}" style="left:${shot.x + b.x * shot.w}px;top:${shot.y + b.y * shot.h}px;width:${b.w * shot.w}px;height:${b.h * shot.h}px"><span class="lbl">${id}</span><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i></div>`);
+      const rz = resizing.current?.id === id ? ` · ${Math.round(resizing.current.scale * 100)}%` : "";
+      boxes.push(`<div class="selbox${isAi ? " ai" : ""}" style="left:${shot.x + b.x * shot.w}px;top:${shot.y + b.y * shot.h}px;width:${b.w * shot.w}px;height:${b.h * shot.h}px"><span class="lbl">${id}${rz}</span><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i></div>`);
     }
     if (hover.current && !ids.has(hover.current) && !playhead.isPlaying()) {
       const b = stage.bounds(hover.current);
@@ -167,6 +170,23 @@ export function Viewport() {
     const L = id ? findLayer(displayDoc(), id) : null;
     return L && !L.locked ? id : null;
   };
+  /** A corner handle of a selected layer under (x, y): the layer and its on-screen centre. */
+  const handleAt = (x: number, y: number): { id: string; cx: number; cy: number; corner: "nwse" | "nesw" } | null => {
+    const stage = stageRef.current;
+    const s = shotRect.current;
+    if (!stage || playhead.isPlaying()) return null;
+    for (const id of useStore.getState().selection) {
+      const L = findLayer(displayDoc(), id);
+      if (!L || L.locked || L.type === "gradient" || L.type === "camera" || L.type === "sky" || L.type === "adjust") continue;
+      const b = stage.bounds(id);
+      if (!b) continue;
+      const x0 = s.x + b.x * s.w, y0 = s.y + b.y * s.h, x1 = x0 + b.w * s.w, y1 = y0 + b.h * s.h;
+      for (const [hx, hy, corner] of [[x0, y0, "nwse"], [x1, y1, "nwse"], [x1, y0, "nesw"], [x0, y1, "nesw"]] as const)
+        if (Math.abs(x - hx) <= 9 && Math.abs(y - hy) <= 9) return { id, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, corner };
+    }
+    return null;
+  };
+
   const local = (e: { clientX: number; clientY: number }) => {
     const r = wrap.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -189,6 +209,39 @@ export function Viewport() {
       const up = () => {
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      return;
+    }
+    // drag a corner handle to resize, keeping proportions, around the layer's centre
+    const hd = handleAt(x, y);
+    if (hd) {
+      const base = st.doc;
+      const L = findLayer(base, hd.id)!;
+      const t = playhead.get();
+      const s0 = trackValue(base, L, "scale", localTime(base, L, t)) || 1;
+      const d0 = Math.max(4, Math.hypot(x - hd.cx, y - hd.cy));
+      let ops: Op[] = [];
+      (e.target as Element).setPointerCapture(e.pointerId);
+      const move = (ev: PointerEvent) => {
+        const p = local(ev);
+        const raw = Math.max(0.05, s0 * (Math.hypot(p.x - hd.cx, p.y - hd.cy) / d0));
+        const sc = ev.altKey ? Math.round(raw * 1000) / 1000 : Math.round(raw * 100) / 100;
+        resizing.current = { id: hd.id, scale: sc };
+        ops = setChannelOps(base, L, "scale", sc, t);
+        const r = applyTxn(base, ops, { source: "you", validate: false });
+        if (r.ok) useStore.getState().setTransient(r.doc);
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        resizing.current = null;
+        if (ops.length) {
+          const r = useStore.getState().commit(ops, { source: "you", intent: `Resized ${hd.id}` });
+          if (!r.ok) useStore.getState().toast(r.errors[0], "error");
+        }
+        useStore.getState().setTransient(null);
       };
       window.addEventListener("pointermove", move);
       window.addEventListener("pointerup", up);
@@ -243,12 +296,13 @@ export function Viewport() {
   const onPointerMove = (e: React.PointerEvent) => {
     if (e.buttons) return;
     const { x, y } = local(e);
+    const hd = handleAt(x, y);
     const id = pickAt(x, y);
     if (id !== hover.current) {
       hover.current = id;
       requestRender();
     }
-    (e.currentTarget as HTMLElement).style.cursor = id ? "move" : inRect(x, y, sceneRect.current) ? "grab" : "default";
+    (e.currentTarget as HTMLElement).style.cursor = hd ? `${hd.corner}-resize` : id ? "move" : inRect(x, y, sceneRect.current) ? "grab" : "default";
   };
 
   const onWheel = (e: React.WheelEvent) => {

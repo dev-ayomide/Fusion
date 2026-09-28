@@ -232,8 +232,8 @@ test.describe("vibe sliders + bindings", () => {
 });
 
 test.describe("json + history", () => {
-  test("JSON edits apply as one transaction and invalid JSON is explained", async ({ page }) => {
-    await openTemplate(page, "launch");
+  test("JSON edits apply as one transaction and invalid JSON is explained (developer mode)", async ({ page }) => {
+    await openTemplate(page, "launch", "Pro", "?dev=1");
     await page.getByTestId("tab-json").click();
     const ta = page.getByLabel("Document JSON");
     const text = await ta.inputValue();

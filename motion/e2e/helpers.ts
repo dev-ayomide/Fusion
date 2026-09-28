@@ -2,15 +2,15 @@ import { expect, type Page } from "@playwright/test";
 
 export type AnyDoc = { layers: { id: string; [k: string]: unknown }[]; [k: string]: unknown };
 
-export async function fresh(page: Page) {
-  await page.goto("/");
+export async function fresh(page: Page, query = "") {
+  await page.goto("/" + query);
   await page.evaluate(() => localStorage.clear());
-  await page.goto("/");
+  await page.goto("/" + query);
   await expect(page.getByTestId("start")).toBeVisible();
 }
 
-export async function openTemplate(page: Page, id: string, mode: "Simple" | "Pro" = "Pro") {
-  await fresh(page);
+export async function openTemplate(page: Page, id: string, mode: "Simple" | "Pro" = "Pro", query = "") {
+  await fresh(page, query);
   await page.getByTestId(`tpl-${id}`).click();
   await expect(page.getByTestId("editor")).toBeVisible();
   await page.getByRole("group", { name: "Editor mode" }).getByRole("button", { name: mode }).click();

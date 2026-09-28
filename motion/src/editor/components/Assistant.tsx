@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { devMode } from "../devMode";
 import { describeOp, applyTxn, type Op } from "../../fmd/ops";
 import { useStore, type Turn } from "../store";
 import { sendPrompt, respond, estTokens } from "../bridge";
@@ -16,7 +17,6 @@ const STYLE: { k: StyleKey; label: string; hint: string }[] = [
   { k: "speed", label: "Speed", hint: "Overall pacing" },
 ];
 
-const fmtK = (n: number) => (n >= 10000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
 
 /* ------------------------------ provider pill ------------------------------ */
 
@@ -32,7 +32,6 @@ function ProviderPill() {
     window.addEventListener("mousedown", off);
     return () => window.removeEventListener("mousedown", off);
   }, [open]);
-  const none = providers && !Object.values(providers).some(Boolean);
   return (
     <div className="pp" ref={ref}>
       <button className={`pp-btn${agent ? " on" : ""}`} onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open} data-testid="provider-pill" title={agent ? `${agent.name} answers your requests` : "Connect an AI"}>
@@ -61,7 +60,7 @@ function ProviderPill() {
               >
                 <span className="pp-item-main">
                   <b>{p.label}</b>
-                  <span>{has ? p.vendor : `Add ${p.env} to motion/.env`}</span>
+                  {!has && <span>Not set up</span>}
                 </span>
                 {on && <CheckIcon />}
               </button>
@@ -71,7 +70,6 @@ function ProviderPill() {
             <div className="pp-item on static">
               <span className="pp-item-main">
                 <b>{agent.name}</b>
-                <span>External agent via the bridge</span>
               </span>
               <CheckIcon />
             </div>
@@ -87,7 +85,6 @@ function ProviderPill() {
               Disconnect
             </button>
           )}
-          {none && <div className="pp-note">No API key found. Add one to <code>motion/.env</code> — e.g. <code>ANTHROPIC_API_KEY=…</code> — it's picked up without a restart.</div>}
         </div>
       )}
     </div>
@@ -101,14 +98,8 @@ function SetupHint() {
   if (agent || !providers || Object.values(providers).some(Boolean)) return null;
   return (
     <div className="setup-hint" data-testid="ai-setup-hint">
-      <b>Connect an AI to start creating</b>
-      <p>
-        Add a key to <code>motion/.env</code> and it connects automatically:
-      </p>
-      <pre>ANTHROPIC_API_KEY=sk-ant-…</pre>
-      <p className="faint">
-        DeepSeek (<code>AGENTROUTER_API_KEY</code>) and Mistral (<code>MISTRAL_API_KEY</code>) work too. Or drive the editor from any agent through <code>window.fusion.bridge</code>.
-      </p>
+      <b>The assistant isn’t switched on yet</b>
+      <p>You can still build and edit your video by hand: add text, shapes and images from the toolbar, drag them into place, and pick animations in the Edit tab.</p>
     </div>
   );
 }
@@ -131,10 +122,10 @@ function VibeDrawer() {
   };
   const nudge = (k: StyleKey, d: number, label: string) => {
     const st = useStore.getState();
-    if (!st.doc.bindings.some((b) => b.from === `style.${k}`)) return st.toast(`Nothing in this project is wired to ${k} yet — ask the AI instead`);
+    if (!st.doc.bindings.some((b) => b.from === `style.${k}`)) return st.toast(`This video doesn’t use ${k} yet. Ask the assistant to add some.`);
     const v = Math.max(0, Math.min(1, Math.round((st.doc.style[k] + d) * 100) / 100));
     st.commit([{ op: "style", key: k, value: v }], { source: "style", intent: label });
-    st.toast(`${label} · no AI call`);
+    st.toast(label);
   };
   const tweaks: { label: string; run: () => void }[] = [
     { label: "Snappier", run: () => nudge("energy", 0.2, "Snappier") },
@@ -145,7 +136,7 @@ function VibeDrawer() {
   ];
   return (
     <div className="vibe" data-testid="style-box">
-      <div className="vibe-cap">{total ? `Drives ${total} settings directly — instant, no AI call` : "Nothing is wired to these yet — the AI wires them when it builds"}</div>
+      <div className="vibe-cap">{total ? "Drag to change the feel of the whole video" : "These light up once the assistant builds your video"}</div>
       {STYLE.filter((s) => bound(s.k) || s.k !== "speed").map((s) => (
         <div className="style-row" key={s.k} title={s.hint}>
           <label htmlFor={`style-${s.k}`}>{s.label}</label>
@@ -178,7 +169,6 @@ function VibeDrawer() {
 /* --------------------------------- changes -------------------------------- */
 
 function Changes({ turn }: { turn: Turn }) {
-  const mode = useStore((s) => s.mode);
   const lastTxn = useStore((s) => s.past.at(-1)?.id);
   const [open, setOpen] = useState(false);
   const ops = turn.ops ?? [];
@@ -219,22 +209,10 @@ function Changes({ turn }: { turn: Turn }) {
                   <input type="checkbox" checked={accepted[i]} disabled={turn.status !== "review"} onChange={() => useStore.getState().togglePreviewOp(i)} aria-label={describeOp(op)} />
                   <span className="d">{describeOp(op)}</span>
                 </label>
-                {mode === "pro" && <div className="raw">{JSON.stringify(op)}</div>}
                 {turn.opErrors?.[i] && <div className="err">{turn.opErrors[i]}</div>}
               </li>
             ))}
           </ol>
-          <div className="ch-meta">
-            <span className="mono" title="Tokens for this turn (estimated when the agent doesn't report usage)">
-              {fmtK(turn.tokens?.in ?? 0)} in · {fmtK(turn.tokens?.out ?? 0)} out
-            </span>
-            {turn.context && (
-              <details className="ctx">
-                <summary>What the AI saw</summary>
-                <pre>{turn.context}</pre>
-              </details>
-            )}
-          </div>
         </div>
       )}
       {turn.status === "review" && (
@@ -400,10 +378,10 @@ export function Assistant() {
   const chatSceneId = useStore((s) => s.chatScene);
   const chatScene = useStore((s) => s.doc.scenes.find((x) => x.id === s.chatScene));
   const hasScenes = useStore((s) => s.doc.scenes.length > 0);
-  const mode = useStore((s) => s.mode);
   const [text, setText] = useState("");
   const [vibe, setVibe] = useState(false);
   const [paste, setPaste] = useState(false);
+  const dev = devMode();
   const msgs = useRef<HTMLDivElement>(null);
   useEffect(() => {
     msgs.current?.scrollTo({ top: msgs.current.scrollHeight, behavior: "smooth" });
@@ -422,7 +400,7 @@ export function Assistant() {
       <div className="asst-head">
         <ProviderPill />
         <span className="spacer" />
-        <button className={`vibe-btn${vibe ? " on" : ""}`} onClick={() => setVibe(!vibe)} aria-expanded={vibe} title="Energy, bounce and depth sliders — instant, no AI call">
+        <button className={`vibe-btn${vibe ? " on" : ""}`} onClick={() => setVibe(!vibe)} aria-expanded={vibe} title="Change the feel of the whole video">
           <svg className="icon sm" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
             <circle cx="16" cy="7" r="2" />
@@ -439,7 +417,7 @@ export function Assistant() {
           <div className="empty-chat">
             <span className="orb lg" />
             <h3>What should it do?</h3>
-            <p>Ask for any change in plain words. The AI edits the project directly — small, reviewable changes you can undo. Select a layer first to focus it.</p>
+            <p>Ask for any change in plain words. You’ll see it before it’s kept, and you can undo it anytime. Click something in the video first to change just that.</p>
             <div className="examples">
               {EXAMPLES.map((e) => (
                 <button key={e} className="example" onClick={() => send(e)}>
@@ -454,7 +432,7 @@ export function Assistant() {
           <TurnView key={t.id} turn={t} latest={t.id === lastAgent} />
         ))}
       </div>
-      {paste && mode === "pro" && <PasteOps onDone={() => setPaste(false)} />}
+      {paste && dev && <PasteOps onDone={() => setPaste(false)} />}
       <form
         className="composer"
         onSubmit={(e) => {
@@ -498,7 +476,7 @@ export function Assistant() {
           aria-label="Message the AI"
         />
         <div className="composer-row">
-          {mode === "pro" ? (
+          {dev ? (
             <button type="button" className="linkbtn" onClick={() => setPaste(!paste)} aria-expanded={paste}>
               Paste ops from any AI
             </button>

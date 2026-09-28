@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { devMode } from "./devMode";
 import { useStore } from "./store";
 import { playhead } from "./playhead";
 import { TopBar, ExportDialog, HelpDialog } from "./components/Shell";
@@ -22,7 +23,7 @@ function RightPanel() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "assistant", label: "Assistant" },
     { id: "inspect", label: mode === "pro" ? "Inspect" : "Edit" },
-    ...(mode === "pro" ? [{ id: "json" as Tab, label: "JSON" }] : []),
+    ...(mode === "pro" && devMode() ? [{ id: "json" as Tab, label: "JSON" }] : []),
     { id: "history", label: "History" },
   ];
   return (

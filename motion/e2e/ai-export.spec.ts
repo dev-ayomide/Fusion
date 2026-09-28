@@ -98,8 +98,8 @@ test.describe("AI bridge", () => {
     expect(await doc(page)).toEqual(before);
   });
 
-  test("pasting ops from any AI works without a connected agent", async ({ page }) => {
-    await openTemplate(page, "launch");
+  test("pasting ops from any AI works without a connected agent (developer mode)", async ({ page }) => {
+    await openTemplate(page, "launch", "Pro", "?dev=1");
     await page.getByRole("button", { name: "Paste ops from any AI" }).click();
     await page.getByLabel("Ops to paste").fill('{"op":"set","path":"title/text","value":"Hello"}\n{"op":"set","path":"title/size","delta":10}');
     await page.getByRole("button", { name: "Preview ops" }).click();

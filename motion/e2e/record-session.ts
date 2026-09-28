@@ -216,7 +216,7 @@ async function main() {
   await click(page.getByRole("button", { name: "Shot", exact: true }));
 
   await caption("14 · The JSON is the source of truth — and the outline is all the AI reads");
-  await click(page.getByTestId("tab-json"));
+  await click(page.getByTestId("tab-json")).catch(() => undefined); // developer mode only
   await pause(1600);
   await click(page.getByRole("button", { name: "What the AI sees" }));
   await pause(2200);

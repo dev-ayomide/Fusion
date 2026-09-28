@@ -59,8 +59,10 @@ export function GraphEditor({ L, ch, width, height, X, keyIndex }: Props) {
     // value grid
     ctx.font = "10px JetBrains Mono Variable, monospace";
     ctx.textBaseline = "middle";
-    for (let k = 0; k <= 4; k++) {
-      const v = lo + ((hi - lo) * k) / 4;
+    // fewer value lines when the panel is short, so the labels never overlap
+    const lines = height < 150 ? 2 : height < 220 ? 3 : 4;
+    for (let k = 0; k <= lines; k++) {
+      const v = lo + ((hi - lo) * k) / lines;
       ctx.fillStyle = "#efeef2";
       ctx.fillRect(0, Math.round(Y(v)), width, 1);
       ctx.fillStyle = "#a3a0aa";
@@ -172,4 +174,107 @@ export function GraphEditor({ L, ch, width, height, X, keyIndex }: Props) {
   };
 
   return <canvas ref={canvas} data-testid="graph-editor" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} style={{ display: "block", cursor: drag ? "grabbing" : "crosshair" }} />;
+}
+
+/* ------------------------------ curve panel ------------------------------ */
+
+/** Plain names for the channels people keyframe. */
+const CHANNEL_NAMES: Record<string, string> = {
+  "pos.x": "Move left / right",
+  "pos.y": "Move up / down",
+  "pos.z": "Move closer / further",
+  "rot.x": "Tilt",
+  "rot.y": "Turn",
+  "rot.z": "Rotate",
+  scale: "Size",
+  opacity: "Fade",
+};
+export const channelName = (ch: string) => CHANNEL_NAMES[ch] ?? ch.replace(/[._]/g, " ");
+
+/** One-click shapes for the move between two keyframes, with the ease each one writes. */
+const PRESETS: { label: string; ease: string; hint: string; path: string }[] = [
+  { label: "Steady", ease: "linear", hint: "Same speed all the way", path: "M2 18 L22 2" },
+  { label: "Ease in", ease: "in", hint: "Starts slow, ends fast", path: "M2 18 C14 18 20 10 22 2" },
+  { label: "Ease out", ease: "out", hint: "Starts fast, settles gently", path: "M2 18 C4 8 10 2 22 2" },
+  { label: "Smooth", ease: "easy", hint: "Gentle start and gentle stop", path: "M2 18 C10 18 14 2 22 2" },
+  { label: "Overshoot", ease: "back", hint: "Goes a little past, then settles", path: "M2 18 C6 -6 14 1 22 2" },
+];
+
+interface PanelProps {
+  L: Layer | null;
+  keyed: string[];
+  ch: string | null;
+  keyIndex: number | null;
+  width: number;
+  height: number;
+  X: (t: number) => number;
+}
+
+/**
+ * The Curves view: which move you're shaping, one-click presets, and the graph itself for fine
+ * control. Presets apply to the whole move, or to the move right after the selected keyframe.
+ */
+export function CurvePanel({ L, keyed, ch, keyIndex, width, height, X }: PanelProps) {
+  const st = useStore.getState();
+  if (!L)
+    return (
+      <div className="curve-empty">
+        <b>Click a layer to see how it moves</b>
+        <span>Pick it on the canvas or in the list on the left.</span>
+      </div>
+    );
+  if (!ch || !keyed.length)
+    return (
+      <div className="curve-empty">
+        <b>“{L.id}” doesn’t use keyframes</b>
+        <span>Its motion comes from ready-made animations, which you can change in the Edit tab. Curves shape moves you keyframe yourself: click the ◇ next to a property in Edit to start.</span>
+        <button className="btn sm" onClick={() => st.setTab("inspect")}>Open Edit</button>
+      </div>
+    );
+  const tr = L.keys?.[ch] ?? [];
+  const segs = keyIndex !== null && tr.length > 1 ? [Math.min(tr.length - 1, keyIndex + 1)] : tr.map((_, i) => i).slice(1);
+  const current = segs.length ? tr[segs[0]]?.[2] ?? "linear" : null;
+  const apply = (ease: string) => {
+    const next = tr.map((k) => [...k] as [number, number, string?]);
+    for (const i of segs) {
+      if (ease === "linear") next[i].length = 2;
+      else next[i][2] = ease;
+    }
+    const preset = PRESETS.find((p) => p.ease === ease)!;
+    st.commit([{ op: "key", path: `${L.id}/keys/${ch}`, keys: next }], { source: "you", intent: `${preset.label} · ${L.id} ${channelName(ch)}` });
+  };
+  return (
+    <div className="curve-panel">
+      <div className="curve-head">
+        <span className="curve-title">
+          <b>{L.id}</b>
+          {keyed.length > 1 ? (
+            <select value={ch} onChange={(e) => st.setKeySel({ layer: L.id, channel: e.target.value, index: 0 })} aria-label="Which move to shape">
+              {keyed.map((c) => (
+                <option key={c} value={c}>
+                  {channelName(c)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span>{channelName(ch)}</span>
+          )}
+        </span>
+        <span className="curve-scope faint">{tr.length < 2 ? "" : keyIndex !== null && tr.length > 2 ? `Shaping the move after keyframe ${Math.min(keyIndex + 1, tr.length - 1)}` : "Shaping the whole move"}</span>
+        <span className="spacer" />
+        <div className="curve-presets" role="group" aria-label="Motion shape">
+          {PRESETS.map((p) => (
+            <button key={p.ease} className={current === p.ease || (p.ease === "linear" && !current) ? "on" : ""} title={p.hint} disabled={tr.length < 2} onClick={() => apply(p.ease)}>
+              <svg viewBox="0 0 24 20" aria-hidden="true">
+                <path d={p.path} />
+              </svg>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <GraphEditor L={L} ch={ch} keyIndex={keyIndex} width={width} height={Math.max(100, height - 46)} X={X} />
+      {tr.length >= 2 && <div className="curve-foot faint">Click a keyframe (square) to shape just the move after it, then drag the orange handles to fine-tune.</div>}
+    </div>
+  );
 }
