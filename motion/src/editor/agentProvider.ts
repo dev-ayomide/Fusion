@@ -1,4 +1,4 @@
-import { callModel, parseLooseJson, type ModelConfig } from "../ai/llm";
+import { callModel, ModelError, parseLooseJson, type ModelConfig } from "../ai/llm";
 import { systemFor, type TaskKind } from "../ai/prompts";
 import { repairOps, sanitizeOps } from "../ai/repair";
 import type { Op } from "../fmd/ops";
@@ -141,6 +141,34 @@ function fusion() {
   return (window as unknown as { fusion?: { bridge: { connect(name: string, o?: { provider?: string }): boolean; disconnect(): void; pending(): PendingTurn[] } } }).fusion;
 }
 
+/**
+ * Providers that can't be reached from this server (e.g. a firewall answers instead of the API). Kept for the
+ * browser session so a reload doesn't try them first again.
+ */
+const BLOCKED_KEY = "fusion-blocked-providers";
+function blockedProviders(): Set<ProviderId> {
+  try {
+    return new Set(JSON.parse(sessionStorage.getItem(BLOCKED_KEY) ?? "[]"));
+  } catch {
+    return new Set();
+  }
+}
+function markBlocked(id: ProviderId) {
+  const set = blockedProviders().add(id);
+  try {
+    sessionStorage.setItem(BLOCKED_KEY, JSON.stringify([...set]));
+  } catch {
+    /* storage unavailable: the fallback still works for this page */
+  }
+}
+
+/** The next provider with a key that isn't known to be blocked, if any. */
+function fallbackFor(id: ProviderId): ProviderId | null {
+  const avail = useStore.getState().providers ?? {};
+  const blocked = blockedProviders();
+  return PROVIDER_ORDER.find((p) => p !== id && avail[p] && !blocked.has(p)) ?? null;
+}
+
 function tick(cfg: Provider) {
   const bridge = fusion()?.bridge;
   if (!bridge) return;
@@ -151,6 +179,18 @@ function tick(cfg: Provider) {
     inFlight.add(turn.turnId);
     handle(cfg, turn)
       .catch((e: Error) => {
+        // this provider can't be reached from here: hand the same turn to the next one instead of failing it
+        if (e instanceof ModelError && e.blocked) {
+          markBlocked(cfg.id);
+          const next = fallbackFor(cfg.id);
+          if (next && activeProvider === cfg.id) {
+            if (useStore.getState().preview?.turnId === turn.turnId) useStore.getState().discardPreview();
+            useStore.getState().toast(`${cfg.label} can't be reached from this server. Switched to ${PROVIDERS[next].label}.`);
+            inFlight.delete(turn.turnId);
+            connectProvider(next);
+            return;
+          }
+        }
         const t = useStore.getState().turns.find((x) => x.id === turn.turnId);
         if (t && (t.status === "waiting" || t.status === "streaming")) {
           if (useStore.getState().preview?.turnId === turn.turnId) useStore.getState().discardPreview();
@@ -211,6 +251,7 @@ export async function autoConnect() {
   if (q === "off") return;
   if (navigator.webdriver && !q) return;
   if (useStore.getState().agent) return;
-  const pick = (q && q in PROVIDERS && avail[q as ProviderId] ? (q as ProviderId) : null) ?? PROVIDER_ORDER.find((id) => avail[id]);
+  const blocked = blockedProviders();
+  const pick = (q && q in PROVIDERS && avail[q as ProviderId] ? (q as ProviderId) : null) ?? PROVIDER_ORDER.find((id) => avail[id] && !blocked.has(id)) ?? PROVIDER_ORDER.find((id) => avail[id]);
   if (pick) connectProvider(pick);
 }

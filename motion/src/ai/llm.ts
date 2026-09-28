@@ -42,10 +42,17 @@ export class ModelError extends Error {
     message: string,
     public status?: number,
     public retryable = false,
+    /** the provider can't be reached from this server at all (e.g. its firewall answered) — try another one */
+    public blocked = false,
   ) {
     super(message);
   }
 }
+
+const looksLikeHtml = (body: string) => /^\s*</.test(body);
+/** A web page where an API reply should be: the /api function is missing from this deployment. */
+const pageError = (cfg: ModelConfig, status?: number) =>
+  new ModelError(`${cfg.label}: the AI endpoint answered with a web page, not an API reply. The /api function isn't running on this deployment (on Vercel, set the Root Directory to motion and redeploy).`, status, false, true);
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -66,15 +73,17 @@ export async function callModel(cfg: ModelConfig, o: CallOpts, fetchImpl: typeof
 
 async function httpError(cfg: ModelConfig, res: Response): Promise<ModelError> {
   const body = await res.text().catch(() => "");
+  if (looksLikeHtml(body)) return pageError(cfg, res.status);
   let detail = body;
   try {
     const j = JSON.parse(body);
+    if (j?.error?.type === "upstream_blocked") return new ModelError(`${cfg.label}: ${j.error.message}`, res.status, false, true);
     detail = j?.error?.message ?? j?.message ?? body;
   } catch {
     /* plain text */
   }
   const retryable = res.status === 429 || res.status === 408 || res.status === 529 || res.status >= 500;
-  const hint = res.status === 401 || res.status === 403 ? " — check the API key in motion/.env" : "";
+  const hint = res.status === 401 || res.status === 403 ? " — check the API key (motion/.env locally, or the hosting environment variables)" : "";
   return new ModelError(`${cfg.label} ${res.status}${detail ? ": " + String(detail).slice(0, 180) : ""}${hint}`, res.status, retryable);
 }
 
@@ -96,7 +105,14 @@ async function callOpenAI(cfg: ModelConfig, o: CallOpts, f: typeof fetch): Promi
     }),
   });
   if (!res.ok) throw await httpError(cfg, res);
-  const data = await res.json();
+  const raw = await res.text();
+  if (looksLikeHtml(raw)) throw pageError(cfg, res.status);
+  let data: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    throw new ModelError(`${cfg.label} sent a reply that isn't JSON`, res.status, true);
+  }
   if (data?.error) throw new ModelError(`${cfg.label}: ${data.error.message ?? "error"}`, undefined, /content-blocked|overload|timeout/i.test(String(data.error.message ?? data.error.code)));
   const choice = data.choices?.[0];
   const text = choice?.message?.content;
@@ -124,6 +140,7 @@ async function callAnthropic(cfg: ModelConfig, o: CallOpts, f: typeof fetch): Pr
     }),
   });
   if (!res.ok) throw await httpError(cfg, res);
+  if (/text\/html/i.test(res.headers.get("content-type") ?? "")) throw pageError(cfg, res.status);
   if (!res.body) throw new ModelError(`${cfg.label} returned no stream`, undefined, true);
   const reader = res.body.getReader();
   const dec = new TextDecoder();

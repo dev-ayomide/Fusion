@@ -20,6 +20,8 @@ const UPSTREAM: Record<Provider, { base: string; headers: (key: string) => Recor
   agentrouter: { base: "https://agentrouter.org/v1", headers: (k) => ({ authorization: `Bearer ${k}`, "user-agent": "opencode/1.17.12" }) },
 };
 
+const NAME: Record<Provider, string> = { anthropic: "Anthropic", mistral: "Mistral", agentrouter: "AgentRouter" };
+
 /** Request headers worth forwarding; everything else (cookies, origin, the browser's own auth) is dropped. */
 const PASS_REQUEST = ["content-type", "accept", "anthropic-beta"];
 /** Response headers worth returning; encoding and length are dropped because fetch already decoded the body. */
@@ -76,6 +78,16 @@ export async function handleAiRequest(req: Request, route: string, env: Env, fet
     res = await fetchImpl(target, { method: "POST", headers, body: await req.arrayBuffer() });
   } catch (e) {
     return json(502, { error: `could not reach ${provider}: ${(e as Error).message}` });
+  }
+  // an API never answers with a web page: this is the provider's firewall (bot) challenge for server IPs
+  if (/text\/html/i.test(res.headers.get("content-type") ?? "")) {
+    await res.body?.cancel();
+    return json(502, {
+      error: {
+        type: "upstream_blocked",
+        message: `${NAME[provider]}'s firewall blocked this server and answered with a web page instead of its API. Add a Claude or Mistral key, or pick another model.`,
+      },
+    });
   }
   const out = new Headers({ "cache-control": "no-store" });
   for (const h of PASS_RESPONSE) {

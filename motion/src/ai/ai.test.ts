@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { normalizeScenes, fitScenes, planEditOps, prefixSceneOps, clearSceneOps, createdIds, sceneTotal } from "./plan";
-import { parseLooseJson, closeTruncated, callModel, type ModelConfig } from "./llm";
+import { parseLooseJson, closeTruncated, callModel, ModelError, type ModelConfig } from "./llm";
 import { repairOps, sanitizeOps } from "./repair";
 import { applyTxn, validate, type Op } from "../fmd/ops";
 import { blankTemplate } from "../templates";
@@ -262,5 +262,34 @@ describe("Claude transport (mocked fetch)", () => {
     await vi.runAllTimersAsync();
     expect((await p).text).toBe("{}");
     vi.useRealTimers();
+  });
+});
+
+describe("web pages where an API reply should be", () => {
+  const ds: ModelConfig = { id: "agentrouter", label: "DeepSeek", wire: "openai", endpoint: "/api/agentrouter/chat/completions", model: "m", maxTokens: 100 };
+  const claude: ModelConfig = { id: "anthropic", label: "Claude", wire: "anthropic", endpoint: "/api/anthropic/v1/messages", model: "m", maxTokens: 100 };
+  const html = "<!doctype html>\n<html><body>challenge</body></html>";
+  const catchErr = (p: Promise<unknown>) => p.then(() => null, (e) => e as ModelError);
+
+  it("a 200 web page is a readable, blocked error, never 'Unexpected token <'", async () => {
+    const e = await catchErr(callModel(ds, { system: "", user: "" }, (async () => new Response(html, { status: 200, headers: { "content-type": "text/html" } })) as unknown as typeof fetch));
+    expect(e).toBeInstanceOf(ModelError);
+    expect(e!.blocked).toBe(true);
+    expect(e!.message).not.toMatch(/Unexpected token/);
+    expect(e!.message).toMatch(/web page/);
+    const c = await catchErr(callModel(claude, { system: "", user: "" }, (async () => new Response(html, { status: 200, headers: { "content-type": "text/html; charset=utf-8" } })) as unknown as typeof fetch));
+    expect(c!.blocked).toBe(true);
+  });
+
+  it("the proxy's upstream_blocked answer is a blocked error with its message", async () => {
+    const body = JSON.stringify({ error: { type: "upstream_blocked", message: "AgentRouter's firewall blocked this server and answered with a web page instead of its API." } });
+    const e = await catchErr(callModel(ds, { system: "", user: "" }, (async () => new Response(body, { status: 502 })) as unknown as typeof fetch));
+    expect(e!.blocked).toBe(true);
+    expect(e!.message).toMatch(/DeepSeek: AgentRouter's firewall blocked this server/);
+  });
+
+  it("ordinary errors are not marked blocked", async () => {
+    const e = await catchErr(callModel(ds, { system: "", user: "" }, (async () => new Response('{"error":{"message":"bad key"}}', { status: 401 })) as unknown as typeof fetch));
+    expect(e!.blocked).toBe(false);
   });
 });

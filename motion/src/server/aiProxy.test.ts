@@ -78,6 +78,14 @@ describe("AI proxy", () => {
     expect((await handleAiRequest(post("anthropic/v1/messages", "{}", { origin: "https://fusion.example" }), "anthropic/v1/messages", ENV, f)).status).toBe(200);
   });
 
+  it("turns a provider's firewall page into a typed 502 instead of passing HTML through", async () => {
+    const res = await handleAiRequest(post("agentrouter/chat/completions"), "agentrouter/chat/completions", { AGENTROUTER_API_KEY: "ar" }, async () =>
+      new Response("<!doctype html><html></html>", { status: 200, headers: { "content-type": "text/html; charset=utf-8" } }),
+    );
+    expect(res.status).toBe(502);
+    expect((await res.json()).error.type).toBe("upstream_blocked");
+  });
+
   it("returns 502 when the provider can't be reached", async () => {
     const res = await handleAiRequest(post("mistral/v1/chat/completions"), "mistral/v1/chat/completions", ENV, async () => {
       throw new Error("ECONNRESET");
