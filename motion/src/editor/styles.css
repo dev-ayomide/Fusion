@@ -250,7 +250,10 @@ input[type="range"] { accent-color: var(--text); width: 100%; padding: 0; backgr
 .tl-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 5px; vertical-align: 0; }
 .tl-body { display: grid; grid-template-columns: var(--names, 210px) minmax(0, 1fr); min-height: 0; position: relative; }
 .tl-names { border-right: 1px solid var(--line); overflow: hidden; background: var(--panel); }
-.tl-name { height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border-bottom: 1px solid #f3f2f5; font-size: 12.5px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background .12s var(--ease); }
+.tl-name { height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border-bottom: 1px solid #f3f2f5; font-size: 12.5px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background .12s var(--ease), opacity .25s var(--ease); }
+/* layers not on screen at the playhead step back (the timeline follows the playhead) */
+.tl-name.dim { opacity: .38; }
+.tl-name.dim:hover { opacity: .8; }
 .tl-name:hover { background: var(--panel2); }
 .tl-name.sub { color: var(--muted); padding-left: 34px; font: 11.5px var(--mono); }
 .tl-name.sel { background: var(--accent-bg); }
