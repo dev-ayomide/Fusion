@@ -32,22 +32,46 @@ type HitKind = "bar" | "barL" | "barR" | "clip" | "clipR" | "key";
 interface Hit { kind: HitKind; x: number; y: number; w: number; h: number; id: string; beh?: string; ch?: string; idx?: number }
 interface Win { start: number; pps: number }
 
-function buildRows(doc: Doc, expanded: Record<string, boolean>, pro: boolean): Row[] {
+export type RowOrder = "time" | "stack";
+
+function buildRows(doc: Doc, expanded: Record<string, boolean>, pro: boolean, order: RowOrder = "stack"): Row[] {
   const rows: Row[] = [];
   const layers = doc.layers.filter((l) => l.type !== "camera");
-  const childrenOf = (id: string | undefined) => layers.filter((l) => (l.parent ?? undefined) === id).reverse();
+  const index = new Map(layers.map((l, i) => [l.id, i]));
+  // "time": a waterfall, earliest first (ties: longer first, then document order); "stack": front-most first
+  const byTime = (a: Layer, b: Layer) => span(doc, a)[0] - span(doc, b)[0] || span(doc, b)[1] - span(doc, a)[1] || index.get(a.id)! - index.get(b.id)!;
+  const sorted = (ls: Layer[]) => (order === "time" ? ls.sort(byTime) : ls.reverse());
+  const childrenOf = (id: string | undefined) => sorted(layers.filter((l) => (l.parent ?? undefined) === id));
   const walk = (L: Layer, indent: number) => {
     rows.push({ kind: "layer", L, indent });
     if (pro && expanded[L.id]) for (const ch of Object.keys(L.keys ?? {})) rows.push({ kind: "channel", L, ch });
     for (const c of childrenOf(L.id)) walk(c, indent + 1);
   };
-  // front-most first, like After Effects and Figma
-  for (const L of [...layers].reverse()) if (!L.parent || !layers.some((p) => p.id === L.parent)) walk(L, 0);
+  for (const L of sorted(layers.filter((l) => !l.parent || !layers.some((p) => p.id === l.parent)))) walk(L, 0);
   return rows;
 }
 
 function span(doc: Doc, L: Layer): [number, number] {
   return [L.in ?? 0, L.out ?? doc.comp.dur];
+}
+
+/** Fill of a bar whose layer is on screen at the playhead. */
+const LIVE = "#6c5ce7";
+
+/** Layers on screen at time t: a layer counts only while it and every parent are (children often have no out point). */
+function liveAt(doc: Doc, t: number): Set<string> {
+  const byId = new Map(doc.layers.map((l) => [l.id, l]));
+  const memo = new Map<string, boolean>();
+  const alive = (L: Layer | undefined): boolean => {
+    if (!L) return true;
+    const hit = memo.get(L.id);
+    if (hit !== undefined) return hit;
+    const [a, b] = span(doc, L);
+    const v = t >= a && t < b && alive(L.parent ? byId.get(L.parent) : undefined);
+    memo.set(L.id, v);
+    return v;
+  };
+  return new Set(doc.layers.filter((l) => l.type !== "camera" && alive(l)).map((l) => l.id));
 }
 
 /** Clips inside a bar, each assigned a lane so overlapping behaviors stay readable. */
@@ -69,7 +93,7 @@ function clipLanes(doc: Doc, L: Layer) {
   return { clips, lanes: Math.max(1, ends.length) };
 }
 
-function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: number, win: Win, sel: string[], ai: Record<string, number>, keySel: { layer: string; channel: string; index: number } | null, hits: Hit[], camLane = false) {
+function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: number, win: Win, sel: string[], ai: Record<string, number>, keySel: { layer: string; channel: string; index: number } | null, hits: Hit[], camLane = false, live: Set<string> | null = null) {
   const X = (t: number) => PAD + (t - win.start) * win.pps;
   const now = Date.now();
   ctx.font = "500 11px Inter Variable, system-ui, sans-serif";
@@ -92,16 +116,41 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
     ctx.fillStyle = "#f3f2f5";
     ctx.fillRect(0, y + ROW - 1, w, 1);
     const [a, b] = span(doc, L);
+    // what's on screen at the playhead stays bright; everything else steps back
+    const dim = !!live && live.size > 0 && !live.has(L.id) && !isSel;
+    ctx.globalAlpha = dim ? 0.3 : 1;
     if (row.kind === "layer") {
       const x0 = X(a), x1 = X(b);
+      if (live && live.has(L.id) && !camLane) {
+        ctx.save();
+        ctx.shadowColor = "rgba(108,92,231,.35)";
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = "rgba(108,92,231,.10)";
+        rr(ctx, x0, y + 4, x1 - x0, ROW - 8, (ROW - 8) / 2);
+        ctx.fill();
+        ctx.restore();
+      }
       const top = y + 4, h = ROW - 8;
       const pill = h / 2;
       // behaviour clips (computed first: the whole bar takes the colour of the layer's main animation)
       const { clips, lanes } = clipLanes(doc, L);
       const main = clips.find((c) => !c.loop) ?? clips[0];
-      ctx.fillStyle = camLane ? "rgba(255,154,61,.18)" : main ? hexA(behColor(main.bh.use), 0.62) : isSel ? "rgba(10,155,240,.14)" : "#efeef2";
+      const isLive = !camLane && !!live && live.has(L.id);
+      ctx.fillStyle = camLane ? "rgba(255,154,61,.18)" : isLive ? LIVE : main ? hexA(behColor(main.bh.use), 0.62) : isSel ? "rgba(10,155,240,.14)" : "#efeef2";
       rr(ctx, x0, top, x1 - x0, h, pill);
       ctx.fill();
+      // a live bar carries its layer's name (behaviour clips, drawn next, keep their own labels)
+      const firstClip = Math.min(...clips.filter((c) => !c.loop).map((c) => X(c.t0)), x1);
+      if (isLive && firstClip - x0 > 40) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x0, top, firstClip - x0 - 4, h);
+        ctx.clip();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "600 11px Inter Variable, system-ui, sans-serif";
+        ctx.fillText(`▸ ${layerLabel(L)}`, x0 + 10, top + h / 2 + 0.5);
+        ctx.restore();
+      }
       if (isSel) {
         ctx.strokeStyle = "#0a9bf0";
         ctx.lineWidth = 1.5;
@@ -184,6 +233,7 @@ function drawRows(ctx: CanvasRenderingContext2D, doc: Doc, rows: Row[], w: numbe
       });
     }
   });
+  ctx.globalAlpha = 1;
 }
 
 function niceStep(pps: number): number {
@@ -434,7 +484,37 @@ export function Timeline() {
   const graphOpen = useStore((s) => s.graphOpen);
   const ai = useStore((s) => s.aiChanged);
   const pro = mode === "pro";
-  const rows = useMemo(() => buildRows(doc, expanded, pro), [doc, expanded, pro]);
+  const [order, setOrderState] = useState<RowOrder>(() => {
+    try {
+      return localStorage.getItem("fusion-tl-order") === "stack" ? "stack" : "time";
+    } catch {
+      return "time";
+    }
+  });
+  const setOrder = (o: RowOrder) => {
+    setOrderState(o);
+    try {
+      localStorage.setItem("fusion-tl-order", o);
+    } catch {
+      /* private mode: the choice lasts for this session */
+    }
+  };
+  const rows = useMemo(() => buildRows(doc, expanded, pro, order), [doc, expanded, pro, order]);
+  // layers on screen at the playhead; recomputed per frame but only re-renders when the set changes
+  const [live, setLive] = useState<Set<string>>(() => liveAt(doc, playhead.get()));
+  useEffect(() => {
+    let key = "";
+    const update = () => {
+      const next = liveAt(doc, playhead.get());
+      const k = [...next].join("|");
+      if (k !== key) {
+        key = k;
+        setLive(next);
+      }
+    };
+    update();
+    return playhead.subscribe(update);
+  }, [doc]);
   const cam = activeCamera(doc);
   const [height, setHeight] = useState(pro ? 320 : 280);
   const [width, setWidth] = useState(800);
@@ -484,14 +564,14 @@ export function Timeline() {
     if (!c) return;
     const ctx = fitCanvas(c, width, Math.max(rows.length * ROW, 10));
     hits.current = [];
-    drawRows(ctx, doc, rows, width, win, sel, ai, keySel, hits.current);
+    drawRows(ctx, doc, rows, width, win, sel, ai, keySel, hits.current, false, live);
     const cc = camCanvas.current;
     if (cc) {
       const cctx = fitCanvas(cc, width, ROW);
       camHits.current = [];
       if (cam) drawRows(cctx, doc, [{ kind: "layer", L: cam, indent: 0 }], width, win, sel, ai, keySel, camHits.current, true);
     }
-  }, [doc, rows, width, win, sel, ai, keySel, cam]);
+  }, [doc, rows, width, win, sel, ai, keySel, cam, live]);
 
   // soundtrack: the engine follows the playhead for the life of the page; lanes redraw as audio decodes
   useEffect(() => {
@@ -598,6 +678,82 @@ export function Timeline() {
 
   useEffect(() => playhead.setLoop(loop), [loop]);
 
+  // Follow the playhead: glide the list so the layers on screen stay in view (the first one a row from the
+  // top, so what just finished is still visible above it). A scroll by the user pauses this for 4 s.
+  const userScrolledAt = useRef(-Infinity);
+  // The names column and the tracks scroll in sync. Every programmatic scroll records where it put each column,
+  // so the scroll events it causes are recognised as echoes — never mistaken for the user, never copied back
+  // (a lagging echo copied back used to drag the list backwards and pause the follow).
+  const glidePos = useRef(-1);
+  const namesPos = useRef(-1);
+  const scrollBoth = (v: number) => {
+    const wrap = tracksWrap.current;
+    if (!wrap) return;
+    wrap.scrollTop = v;
+    glidePos.current = wrap.scrollTop;
+    if (namesRef.current) {
+      namesRef.current.scrollTop = wrap.scrollTop;
+      namesPos.current = namesRef.current.scrollTop;
+    }
+  };
+  const glide = useRef({ target: 0, raf: 0, last: 0, wake: 0, kick: () => {} });
+  const userScrolled = () => {
+    userScrolledAt.current = performance.now();
+    glide.current.kick(); // arms the timer that resumes the follow
+  };
+  useEffect(() => {
+    const g = glide.current;
+    const step = (now: number) => {
+      g.raf = 0;
+      const wrap = tracksWrap.current;
+      if (!wrap) return;
+      const paused = 4000 - (performance.now() - userScrolledAt.current);
+      if (paused > 0) {
+        // the user scrolled: pick the follow back up once they've left it alone for 4 s
+        clearTimeout(g.wake);
+        g.wake = window.setTimeout(() => {
+          g.last = 0;
+          if (!g.raf) g.raf = requestAnimationFrame(step);
+        }, paused + 20);
+        return;
+      }
+      const target = Math.min(Math.max(0, g.target), Math.max(0, wrap.scrollHeight - wrap.clientHeight));
+      const d = target - wrap.scrollTop;
+      if (Math.abs(d) < 1) return;
+      // time-based easing: the same glide at 30, 60 or 120 fps (≈ 90% of the way in 0.2 s)
+      const dt = Math.min(0.1, g.last ? (now - g.last) / 1000 : 1 / 60);
+      g.last = now;
+      scrollBoth(wrap.scrollTop + Math.sign(d) * Math.max(1, Math.abs(d) * (1 - Math.exp(-dt * 11))));
+      g.raf = requestAnimationFrame(step);
+    };
+    g.kick = () => {
+      if (!g.raf) g.raf = requestAnimationFrame(step);
+    };
+    // frame the window of rows that shows the most live layers (earliest such window; one row of context above)
+    const wrap = tracksWrap.current;
+    const isLive = rows.map((r) => (r.kind === "layer" && live.has(r.L.id) ? 1 : 0));
+    const first = isLive.indexOf(1);
+    if (wrap && first >= 0) {
+      const V = Math.max(1, Math.floor(wrap.clientHeight / ROW) - 1);
+      let best = first, bestN = -1, n = 0;
+      for (let i = 0; i < isLive.length; i++) {
+        n += isLive[i] - (i >= V ? isLive[i - V] : 0);
+        const start = Math.max(0, i - V + 1);
+        if (n > bestN && isLive[start]) [best, bestN] = [start, n];
+      }
+      g.target = Math.max(0, (best - 1) * ROW);
+      if (!g.raf) {
+        g.last = 0;
+        g.raf = requestAnimationFrame(step);
+      }
+    }
+    return () => {
+      cancelAnimationFrame(g.raf);
+      clearTimeout(g.wake);
+      g.raf = 0;
+    };
+  }, [rows, live]);
+
   // geometry hook for tests and agents that drive the UI (screen coords of rows, times, clips)
   useEffect(() => {
     (window as unknown as Record<string, unknown>).__timeline = {
@@ -608,8 +764,7 @@ export function Timeline() {
         // bring the row into the visible part of the scrolling track list first
         const wrap = tracksWrap.current;
         if (wrap && (i * ROW < wrap.scrollTop || (i + 1) * ROW > wrap.scrollTop + wrap.clientHeight)) {
-          wrap.scrollTop = Math.max(0, i * ROW - (wrap.clientHeight - ROW) / 2);
-          if (namesRef.current) namesRef.current.scrollTop = wrap.scrollTop;
+          scrollBoth(Math.max(0, i * ROW - (wrap.clientHeight - ROW) / 2));
         }
         const top = tracksCanvas.current?.getBoundingClientRect().top ?? 0;
         return top + i * ROW + ROW / 2;
@@ -988,6 +1143,14 @@ export function Timeline() {
             </div>
           </>
         )}
+        <div className="seg sm tl-view" role="group" aria-label="Layer order">
+          <button aria-pressed={order === "time"} data-testid="order-time" onClick={() => setOrder("time")} title="Layers in the order they appear: a waterfall that follows the playhead">
+            Time
+          </button>
+          <button aria-pressed={order === "stack"} data-testid="order-stack" onClick={() => setOrder("stack")} title="Layers front to back, as they're drawn">
+            Stack
+          </button>
+        </div>
         <span className="faint" style={{ fontSize: 11.5, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {pro ? "Drag bars, clips and keys · edges trim · Alt = no snap" : "Drag bars to retime · Pro mode for keyframes"}
         </span>
@@ -1013,12 +1176,21 @@ export function Timeline() {
           </div>
         )}
         <div className="tl-body" style={{ gridTemplateColumns: `${namesW}px minmax(0,1fr)` }}>
-          <div className="tl-names" ref={namesRef} onScroll={(e) => { if (tracksWrap.current && tracksWrap.current.scrollTop !== (e.target as HTMLElement).scrollTop) tracksWrap.current.scrollTop = (e.target as HTMLElement).scrollTop; }}>
+          <div className="tl-names" ref={namesRef} onWheel={userScrolled} onScroll={(e) => {
+            const v = (e.target as HTMLElement).scrollTop;
+            if (Math.abs(v - namesPos.current) <= 1) return; // an echo of syncing it to the tracks
+            namesPos.current = v; // the user scrolled the names: the tracks follow
+            userScrolled();
+            if (tracksWrap.current && Math.abs(tracksWrap.current.scrollTop - v) > 1) {
+              tracksWrap.current.scrollTop = v;
+              glidePos.current = tracksWrap.current.scrollTop;
+            }
+          }}>
             {rows.map((row) =>
               row.kind === "layer" ? (
                 <div
                   key={row.L.id}
-                  className={`tl-name${sel.includes(row.L.id) ? " sel" : ""}`}
+                  className={`tl-name${sel.includes(row.L.id) ? " sel" : ""}${live.size && !live.has(row.L.id) ? " dim" : ""}`}
                   style={{ paddingLeft: 8 + row.indent * 16 }}
                   onClick={(e) => st.select([row.L.id], e.shiftKey)}
                   onDoubleClick={() => st.setTab("inspect")}
@@ -1052,7 +1224,13 @@ export function Timeline() {
             className="tl-tracks"
             ref={tracksWrap}
             onScroll={(e) => {
-              if (namesRef.current && namesRef.current.scrollTop !== (e.target as HTMLElement).scrollTop) namesRef.current.scrollTop = (e.target as HTMLElement).scrollTop;
+              const v = (e.target as HTMLElement).scrollTop;
+              if (Math.abs(v - glidePos.current) <= 2) return; // our own scroll (or its echo)
+              userScrolled();
+              if (namesRef.current && Math.abs(namesRef.current.scrollTop - v) > 1) {
+                namesRef.current.scrollTop = v;
+                namesPos.current = namesRef.current.scrollTop;
+              }
             }}
             onWheel={onWheel}
           >
